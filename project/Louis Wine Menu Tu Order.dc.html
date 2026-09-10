@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-854fbdbb-000d-46bb-8ddb-257119c89d4b/styles.css">
+<script src="_ds/modernist-854fbdbb-000d-46bb-8ddb-257119c89d4b/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  body{margin:0}
+  .lwo-theme{
+    --color-bg:#efe3cf; --color-surface:#e7d7ba; --color-text:#2b1a12;
+    --color-divider:#a8823a;
+    --color-neutral-100:#f8f0e2; --color-neutral-200:#efe1c8; --color-neutral-300:#ddc79c;
+    --color-neutral-400:#c1a878; --color-neutral-500:#a1855f; --color-neutral-600:#7d6142;
+    --color-neutral-700:#5e4830; --color-neutral-800:#402f1e; --color-neutral-900:#2a1e12;
+    --color-accent:#7c2128; --color-accent-100:#f7e3e0; --color-accent-200:#edc4c2;
+    --color-accent-300:#dd9a97; --color-accent-400:#c46b64; --color-accent-500:#a83f3a;
+    --color-accent-600:#7c2128; --color-accent-700:#5c1620; --color-accent-800:#3f1017; --color-accent-900:#260a0e;
+    --color-accent-2:#b08d3d; --color-accent-2-100:#fbf3df; --color-accent-2-200:#f3e0ab;
+    --color-accent-2-300:#e6c876; --color-accent-2-400:#cfa94a; --color-accent-2-500:#b08d3d;
+    --color-accent-2-600:#8f6f2c; --color-accent-2-700:#6f5620; --color-accent-2-800:#4f3d16; --color-accent-2-900:#33280e;
+  }
+  .lwo-scroll::-webkit-scrollbar{width:8px}
+  .lwo-scroll::-webkit-scrollbar-thumb{background:var(--color-divider)}
+  .lwo-item-card{display:flex;flex-direction:column;background:var(--color-neutral-100);border:1px solid var(--color-divider)}
+  .lwo-item-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--color-neutral-300)}
+  .lwo-cat-btn{display:block;width:100%;text-align:left;font-family:var(--font-heading);font-size:13px;padding:10px 16px;border:0;cursor:pointer;background:transparent;border-bottom:1px solid rgba(255,255,255,.08)}
+</style>
+</helmet>
+
+<div class="lwo-theme" style="width:1280px;height:832px;display:flex;flex-direction:column;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden;border:1px solid var(--color-divider)">
+
+  <header style="display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--color-neutral-100);border-bottom:2px solid var(--color-divider);flex:none">
+    <div style="font:800 20px var(--font-heading);color:var(--color-accent);letter-spacing:.04em">LOUIS WINE</div>
+    <div class="tag tag-outline" style="flex:none">Bàn 07</div>
+    <button class="btn btn-secondary" onClick="{{callStaff}}" style="flex:none">Gọi nhân viên</button>
+    <input class="input" style="flex:1;max-width:420px" placeholder="Nhập tên món..." value="{{searchText}}" onChange="{{onSearchChange}}">
+    <button class="btn btn-primary" onClick="{{toggleCart}}" style="flex:none;position:relative">
+      Giỏ hàng
+      <sc-if value="{{cartCount}}" hint-placeholder-val="{{0}}">
+        <span style="position:absolute;top:-8px;right:-8px;background:var(--color-accent-2);color:var(--color-neutral-900);font-size:11px;font-weight:800;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center">{{cartCount}}</span>
+      </sc-if>
+    </button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:0">
+    <aside class="lwo-scroll" style="width:220px;flex:none;background:var(--color-neutral-800);color:var(--color-neutral-100);overflow-y:auto">
+      <sc-for list="{{categories}}" as="cat" hint-placeholder-count="10">
+        <button class="lwo-cat-btn" onClick="{{cat.onSelect}}" style="{{cat.btnStyle}}">{{cat.name}}</button>
+      </sc-for>
+    </aside>
+
+    <main class="lwo-scroll" style="flex:1;min-width:0;overflow-y:auto;padding:20px 24px">
+      <sc-if value="{{isSearching}}" hint-placeholder-val="{{false}}">
+        <h3 style="margin-top:0">Kết quả cho "{{searchText}}"</h3>
+      </sc-if>
+      <sc-if value="{{isSearching}}" hint-placeholder-val="{{false}}"><span></span></sc-if>
+      <h3 style="margin-top:0;{{titleHideStyle}}">{{activeCatName}}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+        <sc-for list="{{displayItems}}" as="it" hint-placeholder-count="8">
+          <div class="lwo-item-card">
+            <sc-if value="{{it.hasImg}}" hint-placeholder-val="{{true}}">
+              <img class="lwo-item-img" src="{{it.img}}" alt="{{it.name}}">
+            </sc-if>
+            <div style="padding:10px 12px;display:flex;flex-direction:column;gap:4px;flex:1">
+              <div style="font-family:var(--font-heading);font-weight:700;font-size:14px">{{it.name}}</div>
+              <sc-if value="{{it.hasNote}}" hint-placeholder-val="{{false}}">
+                <div class="text-muted" style="font-size:11px">{{it.note}}</div>
+              </sc-if>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px">
+                <span style="color:var(--color-accent);font-weight:700;font-size:13px">{{it.price}}</span>
+                <sc-if value="{{it.orderable}}" hint-placeholder-val="{{true}}">
+                  <button onClick="{{it.onAdd}}" style="width:28px;height:28px;border-radius:50%;border:0;background:var(--color-accent-2);color:var(--color-neutral-900);font-weight:800;cursor:pointer;font-size:16px;line-height:1">+</button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+  </div>
+
+  <footer style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--color-neutral-100);border-top:2px solid var(--color-divider);flex:none">
+    <span class="text-muted" style="font-size:12px">Giá chưa bao gồm VAT. Hải sản tươi sống theo thời giá.</span>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-family:var(--font-heading);font-weight:800;color:var(--color-accent)">{{cartTotalFormatted}}</span>
+      <button class="btn btn-primary" onClick="{{toggleCart}}">Xem giỏ hàng ({{cartCount}})</button>
+    </div>
+  </footer>
+
+  <sc-if value="{{cartOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;inset:0;background:rgba(43,26,18,.5);display:flex;justify-content:flex-end" onClick="{{closeCartBackdrop}}">
+      <div style="width:380px;background:var(--color-bg);height:100%;padding:20px;display:flex;flex-direction:column;gap:12px;border-left:2px solid var(--color-divider)" onClick="{{stop}}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Giỏ hàng</h3>
+          <button class="btn btn-ghost" onClick="{{toggleCart}}">Đóng</button>
+        </div>
+        <hr class="hr" style="margin:0">
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+          <sc-if value="{{cartEmpty}}" hint-placeholder-val="{{false}}">
+            <p class="text-muted">Chưa có món nào trong giỏ.</p>
+          </sc-if>
+          <sc-for list="{{cartLines}}" as="line" hint-placeholder-count="0">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div style="flex:1">
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:13px">{{line.name}}</div>
+                <div class="text-muted" style="font-size:12px">{{line.unitPrice}} × {{line.qty}}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button onClick="{{line.onDec}}" style="width:22px;height:22px;border:1px solid var(--color-divider);background:transparent;cursor:pointer">–</button>
+                <span style="width:20px;text-align:center;font-size:13px">{{line.qty}}</span>
+                <button onClick="{{line.onInc}}" style="width:22px;height:22px;border:1px solid var(--color-divider);background:transparent;cursor:pointer">+</button>
+              </div>
+              <span style="width:90px;text-align:right;font-weight:700;font-size:13px">{{line.lineTotal}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <hr class="hr" style="margin:0">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-heading);font-weight:800;font-size:16px">
+          <span>Tổng</span><span style="color:var(--color-accent)">{{cartTotalFormatted}}</span>
+        </div>
+        <button class="btn btn-primary btn-block">Gửi yêu cầu tới nhân viên</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:832}}">
+const IMG = {
+  'Bò một nắng Tây Bắc':'uploads/bo-mot-nang.jfif','Mực một nắng nướng':'uploads/mưc-mot-nang.jfif',
+  'Pate Louis':'uploads/pate.jfif','Xôi nếp mini Điện Biên':'uploads/xoi-dien-bien.jfif',
+  'Heo Iberico 36 tháng':'uploads/dui-sau-heo-muoi-iberico-bellota-khong-xuong-nguyen-khoi-1.jpg',
+  'Xúc xích Ba Lan':'uploads/Kielbasa.jpg','Salad cá hồi':'uploads/Menu-louis-wine-ca-hoi-chanh-leo.png',
+  'Gỏi bò Louis':'uploads/gỏi-bò.jpg','Gỏi sứa xoài xanh':'uploads/goi-sứa.jpg',
+  'Bào Ngư hấp miến tỏi':'uploads/bao-ngu-hap-mien-toi.jfif','Tôm Hùm Bông':'uploads/tom-hum-bong.png',
+  'Tôm Sú Biển · Càng Xanh':'uploads/tom-su.jfif','Ốc Vòi Voi':'uploads/oc-voi-voi-3.jpg',
+  'Lẩu baba rượu vang':'uploads/ba-ba-nau-ruou-vang-1.jpg','Lẩu gà nhúng lá giang':'uploads/lau-ga-la-giang.jfif',
+  'Rau muống xào tỏi':'uploads/rau-muong-xao-toi.jfif','Rau rừng xào tỏi':'uploads/rau-rung.jfif',
+  'Rau rừng luộc kho quẹt':'uploads/rau-rung.jfif','Cơm chiên hải sản':'uploads/com-chien-hai-san.jfif',
+  'Cháo hải sản':'uploads/chao-hai-san-6509.jpg','Cá Bơn Hàn Quốc':'uploads/ca-bon-han.jpg',
+  'Cá Song (song / mú)':'uploads/ca-song-hap.jpg','Cá Chình':'uploads/ca-trinh.jpg',
+  'Cua Gạch / Cua Thịt':'uploads/ghe-xanh.jfif','Gà Đông Tảo':'uploads/356567-nha-hang-son-quyen-ga-dong-tao-ca-lang-du-mon-body-4.jpg',
+  'Gà đen tiềm trái dừa':'uploads/ga-den-nuong.jfif',
+};
+const RAW = [
+  { id:'noibat', name:'Món Nổi Bật', items:[
+    { name:'Bò một nắng Tây Bắc', price:'268.000đ' },{ name:'Mực một nắng nướng', price:'428.000đ' },
+    { name:'Pate Louis', price:'168.000đ' },{ name:'Salad cá hồi', note:'sốt chanh dây', price:'298.000đ' },
+    { name:'Gỏi bò Louis', price:'198.000đ' },{ name:'Gỏi sứa xoài xanh', note:'kiểu Hàn Quốc', price:'198.000đ' },
+    { name:'Heo Iberico 36 tháng', price:'328.000đ' },{ name:'Xúc xích Ba Lan', price:'228.000đ' },
+    { name:'Bào Ngư hấp miến tỏi', price:'Thời giá' },{ name:'Tôm Hùm Bông', price:'Thời giá' },
+    { name:'Tôm Sú Biển · Càng Xanh', price:'Thời giá' },{ name:'Ốc Vòi Voi', price:'Thời giá' },
+    { name:'Lẩu baba rượu vang', note:'/kg', price:'1.080.000đ' },{ name:'Lẩu gà nhúng lá giang', note:'/nồi', price:'790.000đ' },
+    { name:'Rau muống xào tỏi', price:'128.000đ' },{ name:'Cơm chiên hải sản', price:'248.000đ' },
+    { name:'Cháo hải sản', price:'168.000đ' },{ name:'Cá Bơn Hàn Quốc', price:'Thời giá' },
+    { name:'Cá Chình', price:'Thời giá' },{ name:'Gà Đông Tảo', note:'/kg', price:'428.000đ' },
+  ]},
+  { id:'vang', name:'Rượu Vang Đỏ', items:[
+    { name:'Château Reference Rouge', note:'Bordeaux, Pháp', price:'Đang cập nhật' },
+    { name:'Riserva Esempio', note:'Tuscany, Ý', price:'Đang cập nhật' },
+    { name:'Cabernet Sauvignon Mẫu', note:'Napa Valley, Mỹ', price:'Đang cập nhật' },
+    { name:'Malbec Referencia', note:'Mendoza, Argentina', price:'Đang cập nhật' },
+  ]},
+  { id:'khaivi', name:'Khai Vị', items:[
+    { name:'Bò một nắng Tây Bắc', price:'268.000đ' },{ name:'Mực một nắng nướng', price:'428.000đ' },
+    { name:'Mực khô nướng', price:'388.000đ' },{ name:'Chả mực thượng hạng', price:'269.000đ' },
+    { name:'Chả giò hải sản', price:'229.000đ' },{ name:'Chả bò chiên', price:'228.000đ' },
+    { name:'Tôm một nắng nướng', price:'Thời giá' },{ name:'Pate Louis', price:'168.000đ' },
+    { name:'Xôi nếp mini Điện Biên', note:'/đĩa', price:'168.000đ' },{ name:'Bò Louis', price:'128.000đ' },
+    { name:'Đậu hũ non chả bông', price:'99.000đ' },{ name:'Khoai tây chiên', price:'99.000đ' },
+    { name:'Bánh mỳ bơ tỏi', price:'68.000đ' },{ name:'Bánh mỳ (giỏ)', price:'50.000đ' },
+  ]},
+  { id:'au', name:'Món Âu', items:[
+    { name:'Gan ngỗng Pháp', note:'áp chảo, sốt táo', price:'428.000đ' },
+    { name:'Bò Fuji nướng', note:'sốt tiêu xanh / sốt nấm', price:'488.000đ' },
+    { name:'Cá tuyết Pháp nướng', note:'sốt cam chanh', price:'488.000đ' },
+    { name:'Sườn cừu nướng', note:'lá hương thảo', price:'388.000đ' },
+    { name:'Bò Tomahawk nướng — Dát vàng (Signature)', note:'tảng 1,2kg, phủ vàng lá 24k', price:'2.680.000 – 3.080.000đ' },
+  ]},
+  { id:'nguoi', name:'Đồ Nguội & Phô Mai', items:[
+    { name:'Phô mai tổng hợp đặc biệt', price:'728.000đ' },{ name:'Đồ nguội tổng hợp', price:'528.000đ' },
+    { name:'Phô mai tổng hợp', price:'428.000đ' },{ name:'Heo Iberico 36 tháng', price:'328.000đ' },
+    { name:'Xúc xích Ba Lan', price:'228.000đ' },{ name:'Ô liu hương hoa', price:'198.000đ' },
+    { name:'Phô mai Nga xông khói', price:'148.000đ' },
+  ]},
+  { id:'salad', name:'Salad & Gỏi', items:[
+    { name:'Salad cá hồi', note:'sốt chanh dây', price:'298.000đ' },{ name:'Salad cá ngừ rong nho', price:'248.000đ' },
+    { name:'Salad hoa quả theo mùa', price:'228.000đ' },{ name:'Salad xoài xanh bò khô', price:'198.000đ' },
+    { name:'Gỏi bò Louis', price:'198.000đ' },{ name:'Gỏi sứa xoài xanh', note:'kiểu Hàn Quốc', price:'198.000đ' },
+    { name:'Gỏi chuối rừng', price:'168.000đ' },
+  ]},
+  { id:'soup', name:'Soup', items:[
+    { name:'Soup bào ngư thịt cua', note:'/phần', price:'350.000đ' },{ name:'Soup kim ngư hầm trái bí', price:'350.000đ' },
+    { name:'Soup hải sản trứng cá chuồn Nhật', price:'168.000đ' },{ name:'Soup măng tây hải sản', price:'128.000đ' },
+    { name:'Soup bí đỏ kem tươi', price:'125.000đ' },{ name:'Soup rau dền trứng bắc thảo', price:'90.000đ' },
+  ]},
+  { id:'ga', name:'Món Gà Quê', items:[
+    { name:"Gà H'Mông", note:'hấp/chiên mắm/rang muối/nướng — đặt trước ≥1h', price:'569.000đ' },
+    { name:'Gà tre', note:'hấp/chiên mắm/rang muối/nướng — đặt trước ≥1h', price:'468.000đ' },
+    { name:'Gà Đông Tảo', note:'/kg — hấp xôi/nấu khoai sọ/quay cay', price:'428.000đ' },
+    { name:'Gà đen tiềm trái dừa', price:'228.000đ' },{ name:'Chim câu', note:'/con', price:'280.000đ' },
+  ]},
+  { id:'dactrung', name:'Món Đặc Trưng', items:[
+    { name:'Heo Iberico 36 tháng', price:'328.000đ' },{ name:'Gỏi chuối rừng', price:'168.000đ' },
+    { name:'Bào Ngư hấp miến tỏi', price:'Đang cập nhật' },{ name:'Bò Fuji nướng', price:'488.000đ' },
+  ]},
+  { id:'catheocon', name:'Cá Theo Con', items:[
+    { name:'Cá Bơn Hàn Quốc', note:'sashimi/cháo/hấp/nướng/chiên', price:'Thời giá' },
+    { name:'Cá Song (song / mú)', note:'sashimi/nấu mẻ/hấp/chiên/nướng', price:'Thời giá' },
+    { name:'Cá Chim Trắng', note:'hấp/chiên/nướng', price:'Thời giá' },
+    { name:'Cá Chình', note:'nướng/hấp/rang/om/nấu mẻ', price:'Thời giá' },
+  ]},
+  { id:'tranpham', name:'Trân Phẩm Đại Dương', items:[
+    { name:'Cua Gạch / Cua Thịt', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Tôm Hùm Bông', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Tôm Sú Biển · Càng Xanh', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Tôm Tít', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Bào Ngư', note:'sashimi/hấp/nấu cháo', price:'Thời giá' },
+    { name:'Ốc Hương', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Ốc Vòi Voi', note:'nhiều cách chế biến', price:'Thời giá' },
+    { name:'Sò Dương', note:'8–10 con/kg', price:'Thời giá' },{ name:'Sò Huyết Cồ', note:'30–40 con/kg', price:'Thời giá' },
+  ]},
+  { id:'lau', name:'Lẩu', items:[
+    { name:'Lẩu hải sản chua cay', note:'/nồi', price:'1.088.000đ' },
+    { name:'Lẩu baba rượu vang', note:'/kg', price:'1.080.000đ' },
+    { name:'Lẩu gà nhúng lá giang', note:'/nồi', price:'790.000đ' },
+    { name:'Lẩu riêu cua bắp bò sườn sụn', note:'/nồi', price:'788.000đ' },
+    { name:'Lẩu nấm chim câu', note:'/nồi', price:'728.000đ' },
+  ]},
+  { id:'nhau', name:'Món Nhậu', items:[
+    { name:'Sườn non nướng BBQ', price:'628.000đ' },{ name:'Chân giò chiên Filipin', price:'588.000đ' },
+    { name:'Bò cháy tỏi tiêu xanh', price:'428.000đ' },{ name:'Đuôi lợn luộc', price:'288.000đ' },
+    { name:'Ếch chiên giòn', price:'228.000đ' },
+  ]},
+  { id:'rau', name:'Rau', items:[
+    { name:'Cải thìa xào nấm đông cô', price:'189.000đ' },{ name:'Củ quả luộc chấm kho quẹt', price:'179.000đ' },
+    { name:'Bông bí xào tỏi', price:'128.000đ' },{ name:'Mùng tơi xào tỏi', price:'128.000đ' },
+    { name:'Rau muống xào tỏi', price:'128.000đ' },{ name:'Rau rừng xào tỏi', price:'99.000đ' },
+    { name:'Rau rừng luộc kho quẹt', price:'99.000đ' },
+  ]},
+  { id:'comxao', name:'Cơm - Mỳ - Miến - Cháo', items:[
+    { name:'Cơm chiên hải sản', price:'248.000đ' },{ name:'Cơm chiên cá mặn', price:'188.000đ' },
+    { name:'Mỳ xào hải sản', price:'248.000đ' },{ name:'Miến xào hải sản', price:'248.000đ' },
+    { name:'Mỳ xào bò', price:'188.000đ' },{ name:'Cháo hải sản', price:'168.000đ' },
+    { name:'Cháo hàu', price:'128.000đ' },{ name:'Cháo thịt bò bằm', price:'78.000đ' },
+  ]},
+  { id:'canh', name:'Canh', items:[
+    { name:'Canh nghêu nấu chua', note:'nồi 4-6 khách', price:'169.000đ' },
+    { name:'Canh rau dền tôm tươi', note:'nồi 4-6 khách', price:'169.000đ' },
+    { name:'Canh nghêu mùng tơi', note:'nồi 4-6 khách', price:'149.000đ' },
+    { name:'Canh cải thịt băm', note:'nồi 4-6 khách', price:'108.000đ' },
+    { name:'Canh cua mùng tơi', note:'nồi 4-6 khách', price:'149.000đ' },
+  ]},
+];
+
+function parsePrice(str){
+  const m = String(str).match(/^([\d.]+)đ/);
+  return m ? parseInt(m[1].replace(/\./g,''),10) : null;
+}
+function fmtVnd(n){ return n.toLocaleString('vi-VN') + 'đ'; }
+
+class Component extends DCLogic {
+  state = { activeCat: 'noibat', searchText: '', cart: {}, cartOpen: false };
+
+  buildItem(raw, catId){
+    const key = catId + '::' + raw.name;
+    const value = parsePrice(raw.price);
+    const orderable = value !== null;
+    return {
+      key, name: raw.name, note: raw.note || '', hasNote: !!raw.note,
+      price: raw.price, priceValue: value, orderable,
+      img: IMG[raw.name] || '', hasImg: !!IMG[raw.name],
+      onAdd: orderable ? () => this.addToCart(key, raw.name, value) : undefined,
+    };
+  }
+
+  addToCart(key, name, price){
+    this.setState(s => {
+      const cart = { ...s.cart };
+      const line = cart[key] || { name, price, qty: 0 };
+      cart[key] = { ...line, qty: line.qty + 1 };
+      return { cart };
+    });
+  }
+  changeQty(key, delta){
+    this.setState(s => {
+      const cart = { ...s.cart };
+      const line = cart[key];
+      if (!line) return {};
+      const qty = line.qty + delta;
+      if (qty <= 0) delete cart[key]; else cart[key] = { ...line, qty };
+      return { cart };
+    });
+  }
+
+  renderVals() {
+    const { activeCat, searchText, cart, cartOpen } = this.state;
+    const isSearching = searchText.trim().length > 0;
+    const q = searchText.trim().toLowerCase();
+
+    const categories = RAW.map(c => ({
+      id: c.id, name: c.name,
+      onSelect: () => this.setState({ activeCat: c.id, searchText: '' }),
+      btnStyle: c.id === activeCat && !isSearching
+        ? 'background:var(--color-accent);color:#fff;font-weight:700'
+        : 'color:var(--color-neutral-100)',
+    }));
+
+    let sourceItems = [];
+    let activeCatName = '';
+    if (isSearching) {
+      RAW.forEach(c => c.items.forEach(it => { if (it.name.toLowerCase().includes(q)) sourceItems.push(this.buildItem(it, c.id)); }));
+    } else {
+      const cat = RAW.find(c => c.id === activeCat) || RAW[0];
+      activeCatName = cat.name;
+      sourceItems = cat.items.map(it => this.buildItem(it, cat.id));
+    }
+
+    const cartKeys = Object.keys(cart);
+    const cartLines = cartKeys.map(key => {
+      const line = cart[key];
+      return {
+        key, name: line.name, qty: line.qty,
+        unitPrice: fmtVnd(line.price), lineTotal: fmtVnd(line.price * line.qty),
+        onInc: () => this.changeQty(key, 1), onDec: () => this.changeQty(key, -1),
+      };
+    });
+    const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
+    const cartTotal = cartLines.reduce((s, l) => s + l.qty * cart[l.key].price, 0);
+
+    return {
+      categories,
+      searchText, onSearchChange: e => this.setState({ searchText: e.target.value }),
+      isSearching, activeCatName, titleHideStyle: isSearching ? 'display:none' : '',
+      displayItems: sourceItems,
+      cartOpen, toggleCart: () => this.setState(s => ({ cartOpen: !s.cartOpen })),
+      closeCartBackdrop: () => this.setState({ cartOpen: false }),
+      stop: e => e.stopPropagation(),
+      cartCount, cartEmpty: cartLines.length === 0, cartLines,
+      cartTotalFormatted: fmtVnd(cartTotal),
+      callStaff: () => {},
+    };
+  }
+}
+
+</script>
+</body>
+</html>

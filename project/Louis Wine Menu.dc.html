@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-854fbdbb-000d-46bb-8ddb-257119c89d4b/styles.css">
+<script src="_ds/modernist-854fbdbb-000d-46bb-8ddb-257119c89d4b/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  body{margin:0}
+  .lw-theme{
+    --color-bg:#efe3cf; --color-surface:#e7d7ba; --color-text:#2b1a12;
+    --color-divider:#a8823a;
+    --color-neutral-100:#f8f0e2; --color-neutral-200:#efe1c8; --color-neutral-300:#ddc79c;
+    --color-neutral-400:#c1a878; --color-neutral-500:#a1855f; --color-neutral-600:#7d6142;
+    --color-neutral-700:#5e4830; --color-neutral-800:#402f1e; --color-neutral-900:#2a1e12;
+    --color-accent:#7c2128; --color-accent-100:#f7e3e0; --color-accent-200:#edc4c2;
+    --color-accent-300:#dd9a97; --color-accent-400:#c46b64; --color-accent-500:#a83f3a;
+    --color-accent-600:#7c2128; --color-accent-700:#5c1620; --color-accent-800:#3f1017; --color-accent-900:#260a0e;
+    --color-accent-2:#b08d3d; --color-accent-2-100:#fbf3df; --color-accent-2-200:#f3e0ab;
+    --color-accent-2-300:#e6c876; --color-accent-2-400:#cfa94a; --color-accent-2-500:#b08d3d;
+    --color-accent-2-600:#8f6f2c; --color-accent-2-700:#6f5620; --color-accent-2-800:#4f3d16; --color-accent-2-900:#33280e;
+  }
+  .lw-theme a{color:var(--color-accent)}
+  .lw-theme a:hover{color:var(--color-accent-700)}
+  .lw-theme .grayscale{filter:none}
+  .lw-wrap{max-width:1180px;margin:0 auto;padding:0 var(--space-6)}
+  .lw-section-title{display:flex;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .lw-num{font:800 13px var(--font-heading);color:var(--color-accent)}
+  .lw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-6)}
+  .lw-dish-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+  .lw-dish{display:flex;flex-direction:column}
+  .lw-dish figure{margin:0;overflow:hidden;background:var(--color-neutral-200)}
+</style>
+</helmet>
+
+<div class="lw-theme" style="background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+
+<nav class="nav" style="position:sticky;top:0;background:var(--color-bg);z-index:20;flex-wrap:wrap">
+  <span class="nav-brand">LOUIS WINE</span>
+  <a href="#vang">Rượu vang</a>
+  <a href="#noibat">Món nổi bật</a>
+  <a href="#thucdon">Thực đơn</a>
+  <a href="#vip">Phòng VIP</a>
+  <a href="#lienhe">Liên hệ</a>
+</nav>
+
+<header data-screen-label="Bìa" style="position:relative;height:640px;overflow:hidden">
+  <img class="grayscale" src="uploads/sảnh%20chính.jpg" alt="Không gian Louis Wine" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(32,30,29,.15) 0%, rgba(32,30,29,.55) 65%, rgba(32,30,29,.82) 100%)"></div>
+  <div class="lw-wrap" style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:var(--space-8);color:#f3f2f2">
+    <div class="tag tag-outline" style="border-color:#f3f2f2;color:#f3f2f2;margin-bottom:var(--space-3);width:fit-content">Hầm rượu &amp; Nhà hàng cao cấp</div>
+    <h1 style="font-size:clamp(48px,7vw,96px);color:#fff;margin-bottom:var(--space-2)">LOUIS WINE</h1>
+    <p style="font-size:18px;max-width:640px;opacity:.9">Không gian hầm rượu ấm áp giữa lòng Đà Nẵng — nơi từng chai vang được chọn lựa kỹ càng, sánh cùng những món ăn pairing tinh tế.</p>
+  </div>
+</header>
+
+<main class="lw-wrap" style="padding-top:var(--space-8);padding-bottom:var(--space-8)">
+
+<section id="vang" style="margin-bottom:var(--space-8)">
+  <div class="lw-section-title"><span class="lw-num">01</span><h2>Rượu Vang Đỏ</h2></div>
+  <p class="text-muted" style="max-width:640px">Danh sách rượu vang đang được hoàn thiện — quý khách vui lòng liên hệ nhân viên để được tư vấn loại vang và giá hiện hành phù hợp với thực đơn pairing.</p>
+  <hr class="hr">
+  <table class="table">
+    <thead><tr><th>Tên rượu vang</th><th>Vùng / Quốc gia</th><th>Ghi chú</th><th></th></tr></thead>
+    <tbody>
+      <sc-for list="{{ redWines }}" as="w" hint-placeholder-count="4">
+        <tr>
+          <td style="font-family:var(--font-heading);font-weight:600">{{ w.name }}</td>
+          <td>{{ w.region }}</td>
+          <td class="text-muted">{{ w.note }}</td>
+          <td><span class="tag tag-outline">Đang cập nhật</span></td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+</section>
+
+<section id="noibat" style="margin-bottom:var(--space-8)">
+  <div class="lw-section-title"><span class="lw-num">02</span><h2>Món Nổi Bật</h2></div>
+  <p class="text-muted" style="max-width:640px">Một số món đặc trưng của Louis Wine — hình ảnh thực tế từ nhà hàng.</p>
+  <hr class="hr">
+  <div class="lw-grid">
+    <sc-for list="{{ highlights }}" as="d" hint-placeholder-count="8">
+      <div class="lw-dish card elev-sm">
+        <figure><img class="grayscale lw-dish-img" src="{{ d.img }}" alt="{{ d.name }}"></figure>
+        <div class="card-title">{{ d.name }}</div>
+        <div class="card-meta"><span class="tag tag-accent">{{ d.price }}</span></div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="thucdon" style="margin-bottom:var(--space-8)">
+  <div class="lw-section-title"><span class="lw-num">03</span><h2>Thực Đơn Đầy Đủ</h2></div>
+  <p class="text-muted" style="max-width:640px">Giá chưa bao gồm VAT. Các món hải sản tươi sống tính theo thời giá tại bể.</p>
+  <hr class="hr">
+  <div class="lw-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-2);margin-bottom:var(--space-6)">
+    <sc-for list="{{ menuCategories }}" as="cat" hint-placeholder-count="14">
+      <a href="{{ cat.href }}" class="tag tag-neutral" style="text-decoration:none;justify-content:center;padding:var(--space-2)">{{ cat.name }}</a>
+    </sc-for>
+  </div>
+  <sc-for list="{{ menuCategories }}" as="cat" hint-placeholder-count="14">
+    <div id="{{ cat.id }}" style="margin-bottom:var(--space-6)">
+      <h3>{{ cat.name }}</h3>
+      <table class="table">
+        <tbody>
+          <sc-for list="{{ cat.items }}" as="it" hint-placeholder-count="5">
+            <tr>
+              <td style="font-family:var(--font-heading);font-weight:600;width:34%">{{ it.name }}</td>
+              <td class="text-muted">{{ it.note }}</td>
+              <td style="text-align:right;white-space:nowrap;font-weight:600">{{ it.price }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-for>
+</section>
+
+<section id="vip" style="margin-bottom:var(--space-8)">
+  <div class="lw-section-title"><span class="lw-num">04</span><h2>Phòng VIP Đặt Tiệc</h2></div>
+  <hr class="hr">
+  <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:var(--space-8);align-items:center">
+    <div>
+      <p>Louis Wine có phòng VIP riêng biệt dành cho tiệc gia đình, tiếp khách đối tác hay những buổi thưởng vang trang trọng — không gian gỗ sồi ấm áp, tách biệt, phục vụ theo yêu cầu.</p>
+      <p class="text-muted">Vui lòng liên hệ hotline để được tư vấn sức chứa, thực đơn set và đặt phòng trước.</p>
+      <a class="btn btn-primary" href="#lienhe" style="margin-top:var(--space-2)">Đặt phòng VIP</a>
+    </div>
+    <div style="display:grid;gap:var(--space-3)">
+      <figure style="margin:0;overflow:hidden"><img class="grayscale" src="uploads/sảnh%20chính.jpg" alt="Sảnh chính Louis Wine" style="width:100%;aspect-ratio:16/10;object-fit:cover"></figure>
+      <image-slot id="vip-room-slot" shape="rect" style="width:100%;aspect-ratio:16/10" placeholder="Thêm ảnh phòng VIP"></image-slot>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer id="lienhe" style="border-top:2px solid var(--color-divider);padding:var(--space-8) 0">
+  <div class="lw-wrap" style="display:flex;flex-wrap:wrap;gap:var(--space-6);justify-content:space-between">
+    <div>
+      <div class="nav-brand" style="margin-bottom:var(--space-2)">LOUIS WINE</div>
+      <p class="text-muted" style="max-width:360px">93 Nguyễn Đình Thi, Phường Hòa Xuân, TP. Đà Nẵng</p>
+    </div>
+    <div>
+      <h6>Hotline</h6>
+      <p><a href="tel:0789949393">0789 94 93 93</a></p>
+    </div>
+    <div>
+      <h6>Giờ mở cửa</h6>
+      <p class="text-muted">Vui lòng liên hệ hotline để biết giờ phục vụ</p>
+    </div>
+  </div>
+  <div class="lw-wrap" style="margin-top:var(--space-4)">
+    <p class="text-muted" style="font-size:11px">Giá trên chưa bao gồm VAT. Các món hải sản tươi sống tính theo thời giá tại thời điểm phục vụ.</p>
+  </div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      redWines: [
+        { name: 'Château Reference Rouge', region: 'Bordeaux, Pháp', note: 'Đang cập nhật danh sách vang' },
+        { name: 'Riserva Esempio', region: 'Tuscany, Ý', note: 'Đang cập nhật danh sách vang' },
+        { name: 'Cabernet Sauvignon Mẫu', region: 'Napa Valley, Mỹ', note: 'Đang cập nhật danh sách vang' },
+        { name: 'Malbec Referencia', region: 'Mendoza, Argentina', note: 'Đang cập nhật danh sách vang' },
+      ],
+      highlights: [
+        { name: 'Bò Một Nắng Tây Bắc', img: 'uploads/bo-mot-nang.jfif', price: '268.000đ' },
+        { name: 'Mực Một Nắng Nướng', img: 'uploads/mưc-mot-nang.jfif', price: '428.000đ' },
+        { name: 'Pate Louis', img: 'uploads/pate.jfif', price: '168.000đ' },
+        { name: 'Salad Cá Hồi Sốt Chanh Dây', img: 'uploads/Menu-louis-wine-ca-hoi-chanh-leo.png', price: '298.000đ' },
+        { name: 'Gỏi Bò Louis', img: 'uploads/gỏi-bò.jpg', price: '198.000đ' },
+        { name: 'Gỏi Sứa Xoài Xanh', img: 'uploads/goi-sứa.jpg', price: '198.000đ' },
+        { name: 'Heo Iberico 36 Tháng', img: 'uploads/dui-sau-heo-muoi-iberico-bellota-khong-xuong-nguyen-khoi-1.jpg', price: '328.000đ' },
+        { name: 'Xúc Xích Ba Lan', img: 'uploads/Kielbasa.jpg', price: '228.000đ' },
+        { name: 'Bào Ngư Hấp Miến Tỏi', img: 'uploads/bao-ngu-hap-mien-toi.jfif', price: 'Thời giá' },
+        { name: 'Tôm Hùm Bông', img: 'uploads/tom-hum-bong.png', price: 'Thời giá' },
+        { name: 'Tôm Sú Biển', img: 'uploads/tom-su.jfif', price: 'Thời giá' },
+        { name: 'Ốc Vòi Voi', img: 'uploads/oc-voi-voi-3.jpg', price: 'Thời giá' },
+        { name: 'Lẩu Baba Rượu Vang', img: 'uploads/ba-ba-nau-ruou-vang-1.jpg', price: '1.080.000đ/kg' },
+        { name: 'Lẩu Gà Nhúng Lá Giang', img: 'uploads/lau-ga-la-giang.jfif', price: '790.000đ/nồi' },
+        { name: 'Rau Muống Xào Tỏi', img: 'uploads/rau-muong-xao-toi.jfif', price: '128.000đ' },
+        { name: 'Rau Rừng Xào Tỏi', img: 'uploads/rau-rung.jfif', price: '99.000đ' },
+        { name: 'Cơm Chiên Hải Sản', img: 'uploads/com-chien-hai-san.jfif', price: '248.000đ' },
+        { name: 'Cháo Hải Sản', img: 'uploads/chao-hai-san-6509.jpg', price: '168.000đ' },
+        { name: 'Xôi Nếp Mini Điện Biên', img: 'uploads/xoi-dien-bien.jfif', price: '168.000đ' },
+        { name: 'Cá Bơn Hàn Quốc', img: 'uploads/ca-bon-han.jpg', price: 'Thời giá' },
+        { name: 'Cá Song', img: 'uploads/ca-song-hap.jpg', price: 'Thời giá' },
+        { name: 'Cá Chình', img: 'uploads/ca-trinh.jpg', price: 'Thời giá' },
+      ],
+      menuCategories: [
+        { id: 'cat-khaivi', href: '#cat-khaivi', name: 'Khai Vị', items: [
+          { name: "Bò một nắng Tây Bắc", note: '', price: '268.000đ' },
+          { name: "Mực một nắng nướng", note: '', price: '428.000đ' },
+          { name: "Mực khô nướng", note: '', price: '388.000đ' },
+          { name: "Chả mực thượng hạng", note: '', price: '269.000đ' },
+          { name: "Chả giò hải sản", note: '', price: '229.000đ' },
+          { name: "Chả bò chiên", note: '', price: '228.000đ' },
+          { name: "Tôm một nắng nướng", note: '', price: 'Thời giá' },
+          { name: "Pate Louis", note: '', price: '168.000đ' },
+          { name: "Xôi nếp mini Điện Biên", note: '/đĩa', price: '168.000đ' },
+          { name: "Bò Louis", note: '', price: '128.000đ' },
+          { name: "Đậu hũ non chả bông", note: '', price: '99.000đ' },
+          { name: "Khoai tây chiên", note: '', price: '99.000đ' },
+          { name: "Bánh mỳ bơ tỏi", note: '', price: '68.000đ' },
+          { name: "Bánh mỳ (giỏ)", note: '', price: '50.000đ' },
+        ]},
+        { id: 'cat-au', href: '#cat-au', name: 'Món Âu', items: [
+          { name: "Gan ngỗng Pháp", note: 'áp chảo, sốt táo', price: '428.000đ' },
+          { name: "Bò Fuji nướng", note: 'sốt tiêu xanh / sốt nấm', price: '488.000đ' },
+          { name: "Cá tuyết Pháp nướng", note: 'sốt cam chanh', price: '488.000đ' },
+          { name: "Sườn cừu nướng", note: 'lá hương thảo', price: '388.000đ' },
+          { name: "Bò Tomahawk nướng — Dát vàng (Signature)", note: 'tảng 1,2kg, phủ vàng lá 24k, phục vụ tại bàn', price: '2.680.000 – 3.080.000đ' },
+        ]},
+        { id: 'cat-nguoi', href: '#cat-nguoi', name: 'Đồ Nguội & Phô Mai', items: [
+          { name: "Phô mai tổng hợp đặc biệt", note: '', price: '728.000đ' },
+          { name: "Đồ nguội tổng hợp", note: '', price: '528.000đ' },
+          { name: "Phô mai tổng hợp", note: '', price: '428.000đ' },
+          { name: "Heo Iberico 36 tháng", note: '', price: '328.000đ' },
+          { name: "Xúc xích Ba Lan", note: '', price: '228.000đ' },
+          { name: "Ô liu hương hoa", note: '', price: '198.000đ' },
+          { name: "Phô mai Nga xông khói", note: '', price: '148.000đ' },
+        ]},
+        { id: 'cat-salad', href: '#cat-salad', name: 'Salad & Gỏi', items: [
+          { name: "Salad cá hồi", note: 'sốt chanh dây', price: '298.000đ' },
+          { name: "Salad cá ngừ rong nho", note: '', price: '248.000đ' },
+          { name: "Salad hoa quả theo mùa", note: '', price: '228.000đ' },
+          { name: "Salad xoài xanh bò khô", note: '', price: '198.000đ' },
+          { name: "Gỏi bò Louis", note: '', price: '198.000đ' },
+          { name: "Gỏi sứa xoài xanh", note: 'kiểu Hàn Quốc', price: '198.000đ' },
+          { name: "Gỏi chuối rừng", note: '', price: '168.000đ' },
+        ]},
+        { id: 'cat-soup', href: '#cat-soup', name: 'Soup', items: [
+          { name: "Soup bào ngư thịt cua", note: '/phần', price: '350.000đ' },
+          { name: "Soup kim ngư hầm trái bí", note: '', price: '350.000đ' },
+          { name: "Soup hải sản trứng cá chuồn Nhật", note: '', price: '168.000đ' },
+          { name: "Soup măng tây hải sản", note: '', price: '128.000đ' },
+          { name: "Soup bí đỏ kem tươi", note: '', price: '125.000đ' },
+          { name: "Soup rau dền trứng bắc thảo", note: '', price: '90.000đ' },
+        ]},
+        { id: 'cat-ga', href: '#cat-ga', name: 'Món Gà Quê', items: [
+          { name: "Gà H'Mông", note: 'hấp / chiên mắm / rang muối / nướng — đặt trước ≥1 giờ', price: '569.000đ' },
+          { name: "Gà tre", note: 'hấp / chiên mắm / rang muối / nướng — đặt trước ≥1 giờ', price: '468.000đ' },
+          { name: "Gà Đông Tảo", note: '/kg — hấp xôi / nấu khoai sọ / quay cay', price: '428.000đ' },
+          { name: "Gà đen tiềm trái dừa", note: '', price: '228.000đ' },
+          { name: "Chim câu", note: '/con — tiềm hoa đông trùng / nướng mọi / quay ngũ vị', price: '280.000đ' },
+        ]},
+        { id: 'cat-dactrung', href: '#cat-dactrung', name: 'Món Đặc Trưng (Signature)', items: [
+          { name: "Heo Iberico 36 tháng", note: '', price: '328.000đ' },
+          { name: "Gỏi chuối rừng", note: '', price: '168.000đ' },
+          { name: "Bào Ngư hấp miến tỏi", note: '', price: 'Đang cập nhật' },
+          { name: "Bò Fuji nướng", note: '', price: '488.000đ' },
+        ]},
+        { id: 'cat-catheocon', href: '#cat-catheocon', name: 'Cá Theo Con (bắt tại bể)', items: [
+          { name: "Cá Bơn Hàn Quốc", note: 'sashimi / cháo / hấp Thái / hấp HK / nướng Mã Lai / chiên Tứ Xuyên', price: 'Thời giá' },
+          { name: "Cá Song (song / mú)", note: 'sashimi / nấu mẻ / hấp thảo mộc / hấp tương tàu xì / hấp Thái / hấp HK / chiên tỏi ớt / nướng tương Mã Lai', price: 'Thời giá' },
+          { name: "Cá Chim Trắng", note: 'hấp tương đậu / hấp Thái / hấp HK / chiên tỏi ớt / chiên chua ngọt / nướng Mã Lai', price: 'Thời giá' },
+          { name: "Cá Chình", note: 'nướng Mã Lai / hấp sốt XO / nướng sốt nghệ đỏ Tây Bắc / rang muối HK / om chuối đậu / nấu mẻ', price: 'Thời giá' },
+        ]},
+        { id: 'cat-tranpham', href: '#cat-tranpham', name: 'Trân Phẩm Đại Dương', items: [
+          { name: "Cua Gạch / Cua Thịt", note: 'sốt chilli Singapore / sốt tiêu đen / sốt cà ri vàng / hấp hành gừng / miến xào tay cầm / hấp rượu hoa tiêu / rang me / nướng muối hột', price: 'Thời giá' },
+          { name: "Tôm Hùm Bông", note: 'chiên sốt trứng muối / rang muối ớt / hấp nước dừa / hấp miến tỏi / sốt phô mai lò', price: 'Thời giá' },
+          { name: "Tôm Sú Biển · Càng Xanh", note: 'chiên sốt trứng muối / sốt bơ tỏi / rang muối ớt / hấp miến tỏi / hấp nước dừa / xào miến thố tay cầm', price: 'Thời giá' },
+          { name: "Tôm Tít", note: 'rang muối ớt / hấp / sốt bơ tỏi / sốt me / sốt tỏi', price: 'Thời giá' },
+          { name: "Bào Ngư", note: 'sashimi / hấp tỏi uyên ương / nấu cháo bạch quả', price: 'Thời giá' },
+          { name: "Ốc Hương", note: 'hấp sả / sốt bơ tỏi / xào me / sốt trứng muối / nướng lửa hồng tiêu xanh', price: 'Thời giá' },
+          { name: "Ốc Vòi Voi", note: 'sashimi / cháo bạch quả / xào tương Mã Lai / xào tương XO', price: 'Thời giá' },
+          { name: "Sò Dương", note: '8–10 con/kg — nướng mỡ hành / sốt tương XO / hấp tỏi uyên ương', price: 'Thời giá' },
+          { name: "Sò Huyết Cồ", note: '30–40 con/kg — nướng mọi / chần sốt Thái', price: 'Thời giá' },
+        ]},
+        { id: 'cat-lau', href: '#cat-lau', name: 'Lẩu', items: [
+          { name: "Lẩu hải sản chua cay", note: '/nồi', price: '1.088.000đ' },
+          { name: "Lẩu baba rượu vang", note: '/kg', price: '1.080.000đ' },
+          { name: "Lẩu gà nhúng lá giang", note: '/nồi', price: '790.000đ' },
+          { name: "Lẩu riêu cua bắp bò sườn sụn", note: '/nồi', price: '788.000đ' },
+          { name: "Lẩu nấm chim câu", note: '/nồi', price: '728.000đ' },
+        ]},
+        { id: 'cat-nhau', href: '#cat-nhau', name: 'Món Nhậu', items: [
+          { name: "Sườn non nướng BBQ", note: '', price: '628.000đ' },
+          { name: "Chân giò chiên Filipin", note: '', price: '588.000đ' },
+          { name: "Bò cháy tỏi tiêu xanh", note: '', price: '428.000đ' },
+          { name: "Đuôi lợn luộc", note: '', price: '288.000đ' },
+          { name: "Ếch chiên giòn", note: '', price: '228.000đ' },
+        ]},
+        { id: 'cat-rau', href: '#cat-rau', name: 'Rau', items: [
+          { name: "Cải thìa xào nấm đông cô", note: '', price: '189.000đ' },
+          { name: "Củ quả luộc chấm kho quẹt", note: '', price: '179.000đ' },
+          { name: "Bông bí xào tỏi", note: '', price: '128.000đ' },
+          { name: "Mùng tơi xào tỏi", note: '', price: '128.000đ' },
+          { name: "Rau muống xào tỏi", note: '', price: '128.000đ' },
+          { name: "Rau rừng xào tỏi", note: '', price: '99.000đ' },
+          { name: "Rau rừng luộc kho quẹt", note: '', price: '99.000đ' },
+        ]},
+        { id: 'cat-comxao', href: '#cat-comxao', name: 'Cơm - Mỳ - Miến - Cháo', items: [
+          { name: "Cơm chiên hải sản", note: '', price: '248.000đ' },
+          { name: "Cơm chiên cá mặn", note: '', price: '188.000đ' },
+          { name: "Mỳ xào hải sản", note: '', price: '248.000đ' },
+          { name: "Miến xào hải sản", note: '', price: '248.000đ' },
+          { name: "Mỳ xào bò", note: '', price: '188.000đ' },
+          { name: "Cháo hải sản", note: '', price: '168.000đ' },
+          { name: "Cháo hàu", note: '', price: '128.000đ' },
+          { name: "Cháo thịt bò bằm", note: '', price: '78.000đ' },
+        ]},
+        { id: 'cat-canh', href: '#cat-canh', name: 'Canh', items: [
+          { name: "Canh nghêu nấu chua", note: 'phục vụ theo nồi, cho 4–6 khách', price: '169.000đ' },
+          { name: "Canh rau dền tôm tươi", note: 'phục vụ theo nồi, cho 4–6 khách', price: '169.000đ' },
+          { name: "Canh nghêu mùng tơi", note: 'phục vụ theo nồi, cho 4–6 khách', price: '149.000đ' },
+          { name: "Canh cải thịt băm", note: 'phục vụ theo nồi, cho 4–6 khách', price: '108.000đ' },
+          { name: "Canh cua mùng tơi", note: 'phục vụ theo nồi, cho 4–6 khách', price: '149.000đ' },
+        ]},
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

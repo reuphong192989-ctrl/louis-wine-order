@@ -1,0 +1,93 @@
+Nhóm món | Tên món | Ghi chú / cách chế biến / quy cách | Giá (VNĐ, chưa gồm VAT) | Cần xác nhận / lỗi từ bản gốc
+Khai vị | Bò một nắng Tây Bắc |  | 268.000đ | 
+Khai vị | Mực một nắng nướng |  | 428.000đ | 
+Khai vị | Mực khô nướng |  | 388.000đ | 
+Khai vị | Chả mực thượng hạng |  | 269.000đ | 
+Khai vị | Chả giò hải sản |  | 229.000đ | 
+Khai vị | Chả bò chiên |  | 228.000đ | 
+Khai vị | Tôm một nắng nướng | Thời giá |  | 
+Khai vị | Pate Louis |  | 168.000đ | 
+Khai vị | Xôi nếp mini Điện Biên | /đĩa | 168.000đ | 
+Khai vị | Bò Louis |  | 128.000đ | 
+Khai vị | Đậu hũ non chả bông |  | 99.000đ | 
+Khai vị | Khoai tây chiên |  | 99.000đ | 
+Khai vị | Bánh mỳ bơ tỏi |  | 68.000đ | 
+Khai vị | Bánh mỳ (giỏ) |  | 50.000đ | 
+Món Âu | Gan ngỗng Pháp | áp chảo, sốt táo | 428.000đ | Bản gốc ghi &apos;428k&apos; - khác định dạng các trang khác, cần chuẩn hóa
+Món Âu | Bò Fuji nướng | sốt tiêu xanh/sốt nấm | 488.000đ | Bản gốc ghi &apos;488k&apos;
+Món Âu | Cá tuyết Pháp nướng | sốt cam chanh | 488.000đ | Bản gốc ghi &apos;488k&apos;
+Món Âu | Sườn cừu nướng | lá hương thảo | 388.000đ | Bản gốc ghi &apos;388k&apos;
+Món Âu | Bò Tomahawk nướng - Dát vàng (Signature) | tảng 1,2kg, phủ vàng lá 24k, phục vụ tại bàn | 2.680.000 - 3.080.000đ | 
+Đồ nguội & Phô mai | Phô mai tổng hợp đặc biệt |  | 728.000đ | 
+Đồ nguội & Phô mai | Đồ nguội tổng hợp |  | 528.000đ | 
+Đồ nguội & Phô mai | Phô mai tổng hợp |  | 428.000đ | CẦN XÁC NHẬN: bản thiết kế gốc bị lỗi chữ đè lên dòng này (chữ &apos;PLATTER&apos; đè lên) - có thể là món trùng với &apos;Phô mai tổng hợp đặc biệt&apos; phía trên, cần hỏi lại bếp/thiết kế trước khi đưa vào bản mới
+Đồ nguội & Phô mai | Heo Iberico 36 tháng |  | 328.000đ | 
+Đồ nguội & Phô mai | Xúc xích Ba Lan |  | 228.000đ | 
+Đồ nguội & Phô mai | Ô liu hương hoa |  | 198.000đ | 
+Đồ nguội & Phô mai | Phô mai Nga xông khói |  | 148.000đ | 
+Salad & Gỏi | Salad cá hồi | sốt chanh dây | 298.000đ | 
+Salad & Gỏi | Salad cá ngừ rong nho |  | 248.000đ | 
+Salad & Gỏi | Salad hoa quả theo mùa |  | 228.000đ | 
+Salad & Gỏi | Salad xoài xanh bò khô |  | 198.000đ | 
+Salad & Gỏi | Gỏi bò Louis |  | 198.000đ | 
+Salad & Gỏi | Gỏi sứa xoài xanh | kiểu Hàn Quốc | 198.000đ | 
+Salad & Gỏi | Gỏi chuối rừng |  | 168.000đ | 
+Soup | Soup bào ngư thịt cua | /phần | 350.000đ | 
+Soup | Soup kim ngư hầm trái bí |  | 350.000đ | Xuất hiện lặp lại ở trang &apos;Món Đặc Trưng&apos; - không thấy giá ở lần xuất hiện đó
+Soup | Soup hải sản trứng cá chuồn Nhật |  | 168.000đ | 
+Soup | Soup măng tây hải sản |  | 128.000đ | 
+Soup | Soup bí đỏ kem tươi |  | 125.000đ | 
+Soup | Soup rau dền trứng bắc thảo |  | 90.000đ | 
+Món Gà Quê | Gà H&apos;Mông | hấp/chiên mắm/rang muối/nướng - đặt trước ≥1 giờ | 569.000đ | 
+Món Gà Quê | Gà tre | hấp/chiên mắm/rang muối/nướng - đặt trước ≥1 giờ | 468.000đ | 
+Món Gà Quê | Gà Đông Tảo | /kg - hấp xôi/nấu khoai sọ/quay cay | 428.000đ | 
+Món Gà Quê | Gà đen tiềm trái dừa |  | 228.000đ | 
+Món Gà Quê | Chim câu | /con - tiềm hoa đông trùng/nướng mọi/quay ngũ vị | 280.000đ | 
+Món Đặc Trưng (signature) | Heo Iberico 36 tháng | trùng với mục Đồ nguội | 328.000đ | 
+Món Đặc Trưng (signature) | Gỏi chuối rừng | trùng với mục Salad & Gỏi | 168.000đ | 
+Món Đặc Trưng (signature) | Bào Ngư hấp miến tỏi |  |  | KHÔNG CÓ GIÁ trong bản gốc - cần bổ sung
+Món Đặc Trưng (signature) | Bò Fuji nướng | trùng với mục Món Âu | 488.000đ | 
+Cá theo con (bắt tại bể) | Cá Bơn Hàn Quốc | sashimi/cháo/hấp Thái/hấp HK/nướng Mã Lai/chiên Tứ Xuyên | Thời giá | 
+Cá theo con (bắt tại bể) | Cá Song (song/mú) | sashimi/nấu mẻ/hấp thảo mộc/hấp tương tàu xì/hấp Thái/hấp HK/chiên tỏi ớt/nướng tương Mã Lai | Thời giá | 
+Cá theo con (bắt tại bể) | Cá Chim Trắng | hấp tương đậu/hấp Thái/hấp HK/chiên tỏi ớt/chiên chua ngọt/nướng Mã Lai | Thời giá | 
+Cá theo con (bắt tại bể) | Cá Chình | nướng Mã Lai/hấp sốt XO/nướng sốt nghệ đỏ Tây Bắc/rang muối HK/om chuối đậu/nấu mẻ | Thời giá | 
+Trân phẩm đại dương | Cua Gạch / Cua Thịt | sốt chilli Singapore/sốt tiêu đen/sốt cà ri vàng/hấp hành gừng/miến xào tay cầm/hấp rượu hoa tiêu/rang me/nướng muối hột | Thời giá | 
+Trân phẩm đại dương | Tôm Hùm Bông | chiên sốt trứng muối/rang muối ớt/hấp nước dừa/hấp miến tỏi/sốt phô mai lò | Thời giá | 
+Trân phẩm đại dương | Tôm Sú Biển · Càng Xanh | chiên sốt trứng muối/sốt bơ tỏi/rang muối ớt/hấp miến tỏi/hấp nước dừa/xào miến thố tay cầm | Thời giá | 
+Trân phẩm đại dương | Tôm Tít | rang muối ớt/hấp/sốt bơ tỏi/sốt me/sốt tỏi | Thời giá | 
+Trân phẩm đại dương | Bào Ngư | sashimi/hấp tỏi uyên ương/nấu cháo bạch quả | Thời giá | 
+Trân phẩm đại dương | Ốc Hương | hấp sả/sốt bơ tỏi/xào me/sốt trứng muối/nướng lửa hồng tiêu xanh | Thời giá | 
+Trân phẩm đại dương | Ốc Vòi Voi | sashimi/cháo bạch quả/xào tương Mã Lai/xào tương XO | Thời giá | 
+Trân phẩm đại dương | Sò Dương | 8-10 con/kg - nướng mỡ hành/sốt tương XO/hấp tỏi uyên ương | Thời giá | 
+Trân phẩm đại dương | Sò Huyết Cồ | 30-40 con/kg - nướng mọi/chần sốt Thái | Thời giá | 
+Lẩu | Lẩu hải sản chua cay | /nồi | 1.088.000đ | 
+Lẩu | Lẩu baba rượu vang | /kg | 1.080.000đ | 
+Lẩu | Lẩu gà nhúng lá giang | /nồi | 790.000đ | 
+Lẩu | Lẩu riêu cua bắp bò sườn sụn | /nồi | 788.000đ | 
+Lẩu | Lẩu nấm chim câu | /nồi | 728.000đ | 
+Món Nhậu | Sườn non nướng BBQ |  | 628.000đ | 
+Món Nhậu | Chân giò chiên Filipin |  | 588.000đ | 
+Món Nhậu | Bò cháy tỏi tiêu xanh |  | 428.000đ | 
+Món Nhậu | Đuôi lợn luộc |  | 288.000đ | 
+Món Nhậu | Ếch chiên giòn |  | 228.000đ | 
+Rau | Cải thìa xào nấm đông cô |  | 189.000đ | 
+Rau | Củ quả luộc chấm kho quẹt |  | 179.000đ | 
+Rau | Bông bí xào tỏi |  | 128.000đ | 
+Rau | Mùng tơi xào tỏi |  | 128.000đ | 
+Rau | Rau muống xào tỏi |  | 128.000đ | 
+Rau | Rau rừng xào tỏi |  | 99.000đ | 
+Rau | Rau rừng luộc kho quẹt |  | 99.000đ | 
+Cơm - Mỳ - Miến - Cháo | Cơm chiên hải sản |  | 248.000đ | 
+Cơm - Mỳ - Miến - Cháo | Cơm chiên cá mặn |  | 188.000đ | 
+Cơm - Mỳ - Miến - Cháo | Mỳ xào hải sản |  | 248.000đ | 
+Cơm - Mỳ - Miến - Cháo | Miến xào hải sản |  | 248.000đ | 
+Cơm - Mỳ - Miến - Cháo | Mỳ xào bò |  | 188.000đ | 
+Cơm - Mỳ - Miến - Cháo | Cháo hải sản |  | 168.000đ | 
+Cơm - Mỳ - Miến - Cháo | Cháo hàu |  | 128.000đ | 
+Cơm - Mỳ - Miến - Cháo | Cháo thịt bò bằm |  | 78.000đ | 
+Canh | Canh nghêu nấu chua | phục vụ theo nồi, cho 4-6 khách | 169.000đ | 
+Canh | Canh rau dền tôm tươi | phục vụ theo nồi, cho 4-6 khách | 169.000đ | 
+Canh | Canh nghêu mùng tơi | phục vụ theo nồi, cho 4-6 khách | 149.000đ | 
+Canh | Canh cải thịt băm | phục vụ theo nồi, cho 4-6 khách | 108.000đ | 
+Canh | Canh cua mùng tơi | phục vụ theo nồi, cho 4-6 khách | 149.000đ | 
+Nguồn: trích xuất từ bản nháp menu 14 trang &apos;Louis Wine Đà Nẵng&apos; (folder Louis a Hiền menu DN). Giá chưa gồm VAT theo bản gốc. Bản thiết kế/hình ảnh của file này sẽ KHÔNG dùng lại - chỉ giữ lại dữ liệu món + giá làm nguyên liệu cho bản menu mới. |  |  |  | 
