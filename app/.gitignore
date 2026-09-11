@@ -1,0 +1,7 @@
+node_modules/
+.next/
+public/uploads/admin/
+*.log
+.env
+.env.local
+tsconfig.tsbuildinfo
