@@ -213,6 +213,15 @@ select.input { cursor: pointer; }
   display: flex; justify-content: space-between; font-family: var(--font-heading); font-weight: 800; font-size: 16px;
 }
 
+.confirm-backdrop {
+  position: fixed; inset: 0; background: rgba(43, 26, 18, 0.5); display: flex; align-items: center; justify-content: center;
+  z-index: 60; padding: var(--space-4);
+}
+.confirm-dialog {
+  width: 360px; max-width: 100%; background: var(--color-bg); padding: 24px;
+  display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--color-divider); text-align: center;
+}
+
 @media (max-width: 860px) {
   .order-header { flex-wrap: wrap; height: auto; padding: 10px 14px; }
   .order-search { order: 5; max-width: none; flex-basis: 100%; }

@@ -7,6 +7,7 @@ import { usePolling } from "@/lib/use-polling";
 import { loadCart, saveCart, clearCart, type CartMap } from "@/lib/cart-storage";
 import type { CategoryDTO, MenuItemDTO } from "@/types";
 import CartDrawer, { type CartLine } from "./CartDrawer";
+import OrderSentDialog from "./OrderSentDialog";
 import Toast, { type ToastMsg } from "@/components/Toast";
 
 const HIGHLIGHT_TAB_ID = "__highlight__";
@@ -25,6 +26,7 @@ export default function OrderApp() {
   const [cartOpen, setCartOpen] = useState(false);
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [showSentDialog, setShowSentDialog] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [callStaffCooldown, setCallStaffCooldown] = useState(false);
   const lastOrderIdRef = useRef<string | null>(null);
@@ -163,6 +165,8 @@ export default function OrderApp() {
       if (!res.ok) throw new Error(data.error || "Không gửi được yêu cầu.");
       lastOrderIdRef.current = data.order.id;
       setOrderStatus("sent");
+      setCartOpen(false);
+      setShowSentDialog(true);
     } catch (e) {
       setOrderStatus("error");
       setOrderError((e as Error).message);
@@ -296,6 +300,17 @@ export default function OrderApp() {
         onDec={(id) => changeQty(id, -1)}
         onSubmit={submitOrder}
       />
+
+      {showSentDialog && (
+        <OrderSentDialog
+          onClose={() => setShowSentDialog(false)}
+          onCallStaff={() => {
+            callStaff();
+            setShowSentDialog(false);
+          }}
+          callStaffDisabled={callStaffCooldown}
+        />
+      )}
 
       <Toast toasts={toasts} />
     </div>
