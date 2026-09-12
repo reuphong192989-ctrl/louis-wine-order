@@ -162,21 +162,23 @@ export default function KitchenDashboard({ username, role }: { username: string;
                   </div>
                   <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                     {o.items.map((it) => (
-                      <li
-                        key={it.id}
-                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 13 }}
-                      >
-                        <span style={{ textDecoration: it.kitchenStatus === "DONE" ? "line-through" : "none" }}>
-                          {it.nameSnapshot} × {it.qty}
-                        </span>
-                        <button
-                          className={`btn ${it.kitchenStatus === "DONE" ? "btn-secondary" : it.kitchenStatus === "COOKING" ? "btn-primary" : "btn-secondary"}`}
-                          style={{ flex: "none", fontSize: 12, padding: "4px 10px" }}
-                          disabled={busyIds.has(it.id)}
-                          onClick={() => cycleItemStatus(it.id, it.kitchenStatus)}
-                        >
-                          {STATUS_LABEL[it.kitchenStatus]}
-                        </button>
+                      <li key={it.id} style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 13 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                          <span style={{ textDecoration: it.kitchenStatus === "DONE" ? "line-through" : "none" }}>
+                            {it.nameSnapshot} × {it.qty}
+                          </span>
+                          <button
+                            className={`btn ${it.kitchenStatus === "DONE" ? "btn-secondary" : it.kitchenStatus === "COOKING" ? "btn-primary" : "btn-secondary"}`}
+                            style={{ flex: "none", fontSize: 12, padding: "4px 10px" }}
+                            disabled={busyIds.has(it.id)}
+                            onClick={() => cycleItemStatus(it.id, it.kitchenStatus)}
+                          >
+                            {STATUS_LABEL[it.kitchenStatus]}
+                          </button>
+                        </div>
+                        {it.note && (
+                          <div style={{ color: "var(--color-accent)", fontSize: 12 }}>Ghi chú: {it.note}</div>
+                        )}
                       </li>
                     ))}
                   </ul>

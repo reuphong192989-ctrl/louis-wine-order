@@ -190,6 +190,10 @@ export default function ItemForm({
         <span className="text-muted" style={{ fontSize: 11 }}>
           Tải ảnh lên Google Drive/Photos (chọn "Bất kỳ ai có link"), Imgur, hoặc nơi lưu ảnh khác rồi dán link vào đây.
         </span>
+        <span style={{ fontSize: 11, color: "var(--color-accent)" }}>
+          Khuyến nghị: tránh dán trực tiếp link ảnh từ website khác (vd báo, blog) — link đó có thể bị gỡ hoặc đổi bất kỳ lúc
+          nào khiến ảnh món biến mất, và có thể vướng bản quyền ảnh của bên thứ ba.
+        </span>
       </div>
 
       <label className="checkbox-row">

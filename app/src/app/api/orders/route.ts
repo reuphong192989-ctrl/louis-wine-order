@@ -12,6 +12,7 @@ const orderSchema = z.object({
       z.object({
         menuItemId: z.string().min(1),
         qty: z.number().int().positive().max(999),
+        note: z.string().trim().max(300).optional(),
       })
     )
     .min(1, "Giỏ hàng đang trống."),
@@ -27,7 +28,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   const ids = parsed.data.items.map((i) => i.menuItemId);
   const byId = await findMenuItemsByIds(ids);
 
-  const lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number }[] = [];
+  const lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null }[] = [];
 
   for (const line of parsed.data.items) {
     const item = byId.get(line.menuItemId);
@@ -44,7 +45,14 @@ export const POST = withErrors(async (req: NextRequest) => {
       );
     }
     const lineTotal = item.priceValue * line.qty;
-    lines.push({ menuItemId: item.id, nameSnapshot: item.name, unitPrice: item.priceValue, qty: line.qty, lineTotal });
+    lines.push({
+      menuItemId: item.id,
+      nameSnapshot: item.name,
+      unitPrice: item.priceValue,
+      qty: line.qty,
+      lineTotal,
+      note: line.note?.trim() || null,
+    });
   }
 
   const order = await createOrder({ tableId: parsed.data.tableId, lines });

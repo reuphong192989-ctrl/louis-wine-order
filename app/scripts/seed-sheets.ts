@@ -272,7 +272,7 @@ function parsePriceValue(price: string): number | null {
 }
 
 const ORDERS_HEADERS = ["id", "tableId", "status", "totalAmount", "note", "createdAt", "confirmedAt", "cancelledAt"];
-const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus"];
+const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus", "note"];
 
 async function main() {
   console.log("Đảm bảo các tab (sheet con) đã tồn tại...");

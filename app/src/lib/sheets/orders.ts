@@ -22,7 +22,7 @@ function buildItemsSummary(lines: { nameSnapshot: string; qty: number }[]): stri
 }
 
 const ORDER_ITEMS_TAB = "OrderItems";
-const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus"];
+const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus", "note"];
 
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 export type KitchenStatus = "PENDING" | "COOKING" | "DONE";
@@ -36,6 +36,7 @@ export type OrderItemLine = {
   qty: number;
   lineTotal: number;
   kitchenStatus: KitchenStatus;
+  note: string | null;
 };
 
 export type Order = {
@@ -73,6 +74,7 @@ function decodeOrderItem(values: Record<string, string>): OrderItemLine {
     qty: cell.toInt(values.qty),
     lineTotal: cell.toInt(values.lineTotal),
     kitchenStatus: (values.kitchenStatus || "PENDING") as KitchenStatus,
+    note: cell.strOrNull(values.note ?? ""),
   };
 }
 
@@ -111,7 +113,7 @@ export async function findOrderById(id: string): Promise<Order | null> {
 
 export async function createOrder(input: {
   tableId: string;
-  lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number }[];
+  lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null }[];
 }): Promise<Order> {
   const id = randomUUID();
   const createdAt = new Date().toISOString();
@@ -143,6 +145,7 @@ export async function createOrder(input: {
       qty: cell.int(line.qty),
       lineTotal: cell.int(line.lineTotal),
       kitchenStatus: "PENDING",
+      note: cell.str(line.note),
     });
   }
 

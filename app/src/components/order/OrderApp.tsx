@@ -7,6 +7,7 @@ import { usePolling } from "@/lib/use-polling";
 import { loadCart, saveCart, clearCart, type CartMap } from "@/lib/cart-storage";
 import type { CategoryDTO, MenuItemDTO } from "@/types";
 import CartDrawer, { type CartLine } from "./CartDrawer";
+import MenuItemModal from "./MenuItemModal";
 import OrderSentDialog from "./OrderSentDialog";
 import Toast, { type ToastMsg } from "@/components/Toast";
 
@@ -27,6 +28,7 @@ export default function OrderApp() {
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
   const [orderError, setOrderError] = useState<string | null>(null);
   const [showSentDialog, setShowSentDialog] = useState(false);
+  const [detailItem, setDetailItem] = useState<MenuItemDTO | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [callStaffCooldown, setCallStaffCooldown] = useState(false);
   const lastOrderIdRef = useRef<string | null>(null);
@@ -121,26 +123,38 @@ export default function OrderApp() {
     setSearchText("");
   }
 
-  function addToCart(itemId: string) {
-    setCart((c) => ({ ...c, [itemId]: (c[itemId] ?? 0) + 1 }));
+  function addToCart(itemId: string, qty = 1) {
+    setCart((c) => ({ ...c, [itemId]: { qty: (c[itemId]?.qty ?? 0) + qty, note: c[itemId]?.note ?? "" } }));
   }
 
   function changeQty(itemId: string, delta: number) {
     setCart((c) => {
       const next = { ...c };
-      const qty = (next[itemId] ?? 0) + delta;
+      const cur = next[itemId];
+      const qty = (cur?.qty ?? 0) + delta;
       if (qty <= 0) delete next[itemId];
-      else next[itemId] = qty;
+      else next[itemId] = { qty, note: cur?.note ?? "" };
       return next;
     });
   }
 
+  function setItemNote(itemId: string, note: string) {
+    setCart((c) => (c[itemId] ? { ...c, [itemId]: { ...c[itemId], note } } : c));
+  }
+
   const cartLines: CartLine[] = useMemo(() => {
     return Object.entries(cart)
-      .map(([itemId, qty]) => {
+      .map(([itemId, line]) => {
         const item = itemsById.get(itemId);
         if (!item || item.priceValue == null) return null;
-        return { itemId, name: item.name, unitPrice: item.priceValue, qty, lineTotal: item.priceValue * qty };
+        return {
+          itemId,
+          name: item.name,
+          unitPrice: item.priceValue,
+          qty: line.qty,
+          lineTotal: item.priceValue * line.qty,
+          note: line.note,
+        };
       })
       .filter((l): l is CartLine => l !== null);
   }, [cart, itemsById]);
@@ -158,7 +172,7 @@ export default function OrderApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tableId,
-          items: cartLines.map((l) => ({ menuItemId: l.itemId, qty: l.qty })),
+          items: cartLines.map((l) => ({ menuItemId: l.itemId, qty: l.qty, note: l.note.trim() || undefined })),
         }),
       });
       const data = await res.json();
@@ -256,9 +270,19 @@ export default function OrderApp() {
           <div className="order-grid">
             {displayItems.map((item) => (
               <div className="item-card" key={item.id}>
-                {item.imageUrl && <img className="item-img" src={item.imageUrl} alt={item.name} />}
+                {item.imageUrl && (
+                  <img
+                    className="item-img"
+                    src={item.imageUrl}
+                    alt={item.name}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setDetailItem(item)}
+                  />
+                )}
                 <div className="item-body">
-                  <div className="item-name">{item.name}</div>
+                  <div className="item-name" style={{ cursor: "pointer" }} onClick={() => setDetailItem(item)}>
+                    {item.name}
+                  </div>
                   {item.note && (
                     <div className="item-note text-muted">{item.note}</div>
                   )}
@@ -298,8 +322,17 @@ export default function OrderApp() {
         errorMessage={orderError}
         onInc={(id) => changeQty(id, 1)}
         onDec={(id) => changeQty(id, -1)}
+        onNoteChange={setItemNote}
         onSubmit={submitOrder}
       />
+
+      {detailItem && (
+        <MenuItemModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          onAdd={(qty) => addToCart(detailItem.id, qty)}
+        />
+      )}
 
       {showSentDialog && (
         <OrderSentDialog

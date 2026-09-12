@@ -31,6 +31,7 @@ export type OrderItemDTO = {
   qty: number;
   lineTotal: number;
   kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  note: string | null;
 };
 
 export type OrderDTO = {

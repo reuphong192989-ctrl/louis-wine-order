@@ -180,6 +180,9 @@ export default function StaffDashboard({ username, role }: { username: string; r
                     <li key={it.id}>
                       {it.nameSnapshot} × {it.qty}{" "}
                       <span className="text-muted">({formatVnd(it.lineTotal)})</span>
+                      {it.note && (
+                        <div style={{ color: "var(--color-accent)", fontSize: 12 }}>Ghi chú: {it.note}</div>
+                      )}
                     </li>
                   ))}
                 </ul>
