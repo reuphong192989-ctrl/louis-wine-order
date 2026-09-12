@@ -28,7 +28,10 @@ export const POST = withErrors(async (req: NextRequest) => {
   const pathname = `menu-items/${randomUUID()}.${ext}`;
 
   try {
-    const blob = await put(pathname, file, { access: "public" });
+    const blob = await put(pathname, file, {
+      access: "public",
+      storeId: process.env.PUBLICBLOB_STORE_ID,
+    });
     return NextResponse.json({ url: blob.url });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
