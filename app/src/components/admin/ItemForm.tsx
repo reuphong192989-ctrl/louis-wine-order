@@ -63,6 +63,25 @@ export default function ItemForm({
   const [values, setValues] = useState<ItemFormValues>(() => initialValues(item, defaultCategoryId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handleFileUpload(file: File) {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không tải ảnh lên được.");
+      set("imageUrl", data.url);
+    } catch (e) {
+      setUploadError((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function set<K extends keyof ItemFormValues>(key: K, value: ItemFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -191,6 +210,27 @@ export default function ItemForm({
           value={values.imageUrl}
           onChange={(e) => set("imageUrl", e.target.value)}
         />
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "8px 0" }}>
+          <span className="text-muted" style={{ fontSize: 11 }}>— hoặc —</span>
+        </div>
+
+        <label className="btn btn-secondary" style={{ display: "inline-block", width: "fit-content", cursor: "pointer" }}>
+          {uploading ? "Đang tải ảnh lên..." : "Tải ảnh từ máy lên"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            style={{ display: "none" }}
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {uploadError && <div style={{ color: "var(--color-accent)", fontSize: 12 }}>{uploadError}</div>}
+
         <span className="text-muted" style={{ fontSize: 11 }}>
           Tải ảnh lên Google Drive/Photos (chọn "Bất kỳ ai có link"), Imgur, hoặc nơi lưu ảnh khác rồi dán link vào đây.
         </span>
