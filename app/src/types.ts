@@ -7,6 +7,7 @@ export type MenuItemDTO = {
   priceValue: number | null;
   imageUrl: string | null;
   isHighlight: boolean;
+  isFeaturedSpecial: boolean;
   available: boolean;
   sortOrder: number;
 };

@@ -33,6 +33,7 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
     imageUrl: parsed.data.imageUrl || null,
     available: parsed.data.available ?? true,
     isHighlight: parsed.data.isHighlight ?? false,
+    isFeaturedSpecial: parsed.data.isFeaturedSpecial ?? false,
     sortOrder: existing.sortOrder,
   });
 

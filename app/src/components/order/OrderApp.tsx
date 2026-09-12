@@ -12,6 +12,7 @@ import OrderSentDialog from "./OrderSentDialog";
 import Toast, { type ToastMsg } from "@/components/Toast";
 
 const HIGHLIGHT_TAB_ID = "__highlight__";
+const FEATURED_TAB_ID = "__featured__";
 
 type OrderStatus = "idle" | "sending" | "sent" | "error";
 
@@ -103,6 +104,7 @@ export default function OrderApp() {
 
   const activeCatName = useMemo(() => {
     if (activeCat === HIGHLIGHT_TAB_ID) return "Món Nổi Bật";
+    if (activeCat === FEATURED_TAB_ID) return "Món Đặc Trưng";
     return categories?.find((c) => c.id === activeCat)?.name ?? "";
   }, [activeCat, categories]);
 
@@ -114,6 +116,9 @@ export default function OrderApp() {
     }
     if (activeCat === HIGHLIGHT_TAB_ID) {
       return categories.flatMap((c) => c.items).filter((it) => it.isHighlight);
+    }
+    if (activeCat === FEATURED_TAB_ID) {
+      return categories.flatMap((c) => c.items).filter((it) => it.isFeaturedSpecial);
     }
     return categories.find((c) => c.id === activeCat)?.items ?? [];
   }, [categories, isSearching, q, activeCat]);
@@ -252,6 +257,12 @@ export default function OrderApp() {
             onClick={() => selectCategory(HIGHLIGHT_TAB_ID)}
           >
             Món Nổi Bật
+          </button>
+          <button
+            className={`order-cat-btn ${activeCat === FEATURED_TAB_ID && !isSearching ? "active" : ""}`}
+            onClick={() => selectCategory(FEATURED_TAB_ID)}
+          >
+            Món Đặc Trưng
           </button>
           {categories.map((cat) => (
             <button

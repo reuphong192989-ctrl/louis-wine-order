@@ -55,6 +55,7 @@ export const POST = withErrors(async (req: NextRequest) => {
     imageUrl: parsed.data.imageUrl || null,
     available: parsed.data.available ?? true,
     isHighlight: parsed.data.isHighlight ?? false,
+    isFeaturedSpecial: parsed.data.isFeaturedSpecial ?? false,
     sortOrder,
   });
 

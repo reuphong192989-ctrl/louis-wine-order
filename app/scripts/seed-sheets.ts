@@ -23,6 +23,7 @@ type RawItem = {
   price: string;
   image?: string; // filename under public/uploads
   highlight?: boolean;
+  featuredSpecial?: boolean; // shown in the "Món Đặc Trưng" tab (in addition to its home category)
 };
 
 type RawCategory = { slug: string; name: string; items: RawItem[] };
@@ -63,7 +64,7 @@ const CATEGORIES: RawCategory[] = [
     name: "Món Âu",
     items: [
       { name: "Gan ngỗng Pháp", note: "áp chảo, sốt táo", price: "428.000đ" },
-      { name: "Bò Fuji nướng", note: "sốt tiêu xanh / sốt nấm", price: "488.000đ" },
+      { name: "Bò Fuji nướng", note: "sốt tiêu xanh / sốt nấm", price: "488.000đ", featuredSpecial: true },
       { name: "Cá tuyết Pháp nướng", note: "sốt cam chanh", price: "488.000đ" },
       { name: "Sườn cừu nướng", note: "lá hương thảo", price: "388.000đ" },
       {
@@ -80,7 +81,7 @@ const CATEGORIES: RawCategory[] = [
       { name: "Phô mai tổng hợp đặc biệt", price: "728.000đ" },
       { name: "Đồ nguội tổng hợp", price: "528.000đ" },
       { name: "Phô mai tổng hợp", price: "428.000đ" },
-      { name: "Heo Iberico 36 tháng", price: "328.000đ", image: "heo-iberico.jpg", highlight: true },
+      { name: "Heo Iberico 36 tháng", price: "328.000đ", image: "heo-iberico.jpg", highlight: true, featuredSpecial: true },
       { name: "Xúc xích Ba Lan", price: "228.000đ", image: "xuc-xich-ba-lan.jpg", highlight: true },
       { name: "Ô liu hương hoa", price: "198.000đ" },
       { name: "Phô mai Nga xông khói", price: "148.000đ" },
@@ -96,7 +97,7 @@ const CATEGORIES: RawCategory[] = [
       { name: "Salad xoài xanh bò khô", price: "198.000đ" },
       { name: "Gỏi bò Louis", price: "198.000đ", image: "goi-bo.jpg", highlight: true },
       { name: "Gỏi sứa xoài xanh", note: "kiểu Hàn Quốc", price: "198.000đ", image: "goi-sua.jpg", highlight: true },
-      { name: "Gỏi chuối rừng", price: "168.000đ" },
+      { name: "Gỏi chuối rừng", price: "168.000đ", featuredSpecial: true },
     ],
   },
   {
@@ -126,16 +127,6 @@ const CATEGORIES: RawCategory[] = [
       },
       { name: "Gà đen tiềm trái dừa", price: "228.000đ", image: "ga-den-tiem-trai-dua.jpg" },
       { name: "Chim câu", note: "/con - tiềm hoa đông trùng/nướng mọi/quay ngũ vị", price: "280.000đ" },
-    ],
-  },
-  {
-    slug: "mon-dac-trung",
-    name: "Món Đặc Trưng",
-    items: [
-      { name: "Heo Iberico 36 tháng", note: "trùng với mục Đồ Nguội & Phô Mai", price: "328.000đ", image: "heo-iberico.jpg" },
-      { name: "Gỏi chuối rừng", note: "trùng với mục Salad & Gỏi", price: "168.000đ" },
-      { name: "Bào Ngư hấp miến tỏi", price: "Đang cập nhật", image: "bao-ngu-hap-mien-toi.jpg", highlight: true },
-      { name: "Bò Fuji nướng", note: "trùng với mục Món Âu", price: "488.000đ" },
     ],
   },
   {
@@ -191,6 +182,13 @@ const CATEGORIES: RawCategory[] = [
       },
       { name: "Tôm Tít", note: "rang muối ớt/hấp/sốt bơ tỏi/sốt me/sốt tỏi", price: "Thời giá" },
       { name: "Bào Ngư", note: "sashimi/hấp tỏi uyên ương/nấu cháo bạch quả", price: "Thời giá" },
+      {
+        name: "Bào Ngư hấp miến tỏi",
+        price: "Đang cập nhật",
+        image: "bao-ngu-hap-mien-toi.jpg",
+        highlight: true,
+        featuredSpecial: true,
+      },
       { name: "Ốc Hương", note: "hấp sả/sốt bơ tỏi/xào me/sốt trứng muối/nướng lửa hồng tiêu xanh", price: "Thời giá" },
       {
         name: "Ốc Vòi Voi",
@@ -312,6 +310,7 @@ async function main() {
           priceValue: cell.num(parsePriceValue(it.price)),
           imageUrl: cell.str(it.image ? `/uploads/${it.image}` : null),
           isHighlight: cell.bool(!!it.highlight),
+          isFeaturedSpecial: cell.bool(!!it.featuredSpecial),
           available: cell.bool(true),
           sortOrder: cell.int(ii),
         });

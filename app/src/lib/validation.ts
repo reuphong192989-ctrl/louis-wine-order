@@ -13,6 +13,7 @@ export const menuItemInputSchema = z.object({
   imageUrl: z.string().trim().max(500).optional().nullable(),
   available: z.boolean().optional(),
   isHighlight: z.boolean().optional(),
+  isFeaturedSpecial: z.boolean().optional(),
 });
 
 export type MenuItemInput = z.infer<typeof menuItemInputSchema>;

@@ -34,7 +34,7 @@ export default function ItemsManager() {
     return items.filter((it) => it.categoryId === filterCategoryId);
   }, [items, filterCategoryId]);
 
-  async function toggleField(item: AdminMenuItemDTO, field: "available" | "isHighlight") {
+  async function toggleField(item: AdminMenuItemDTO, field: "available" | "isHighlight" | "isFeaturedSpecial") {
     setBusyIds((s) => new Set(s).add(item.id));
     const payload = {
       categoryId: item.categoryId,
@@ -46,6 +46,7 @@ export default function ItemsManager() {
       imageUrl: item.imageUrl,
       available: field === "available" ? !item.available : item.available,
       isHighlight: field === "isHighlight" ? !item.isHighlight : item.isHighlight,
+      isFeaturedSpecial: field === "isFeaturedSpecial" ? !item.isFeaturedSpecial : item.isFeaturedSpecial,
     };
     try {
       await fetch(`/api/menu-items/${item.id}`, {
@@ -114,6 +115,7 @@ export default function ItemsManager() {
             <th>Giá</th>
             <th>Trạng thái</th>
             <th>Nổi bật</th>
+            <th>Đặc trưng</th>
             <th></th>
           </tr>
         </thead>
@@ -149,6 +151,14 @@ export default function ItemsManager() {
                   checked={item.isHighlight}
                   disabled={busyIds.has(item.id)}
                   onChange={() => toggleField(item, "isHighlight")}
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={item.isFeaturedSpecial}
+                  disabled={busyIds.has(item.id)}
+                  onChange={() => toggleField(item, "isFeaturedSpecial")}
                 />
               </td>
               <td style={{ display: "flex", gap: 6 }}>

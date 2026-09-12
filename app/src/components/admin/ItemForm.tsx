@@ -15,6 +15,7 @@ export type ItemFormValues = {
   imageUrl: string;
   available: boolean;
   isHighlight: boolean;
+  isFeaturedSpecial: boolean;
 };
 
 function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string): ItemFormValues {
@@ -29,6 +30,7 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
       imageUrl: "",
       available: true,
       isHighlight: false,
+      isFeaturedSpecial: false,
     };
   }
   return {
@@ -41,6 +43,7 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
     imageUrl: item.imageUrl ?? "",
     available: item.available,
     isHighlight: item.isHighlight,
+    isFeaturedSpecial: item.isFeaturedSpecial,
   };
 }
 
@@ -84,6 +87,7 @@ export default function ItemForm({
       imageUrl: values.imageUrl || null,
       available: values.available,
       isHighlight: values.isHighlight,
+      isFeaturedSpecial: values.isFeaturedSpecial,
     };
 
     setSaving(true);
@@ -203,6 +207,14 @@ export default function ItemForm({
       <label className="checkbox-row">
         <input type="checkbox" checked={values.isHighlight} onChange={(e) => set("isHighlight", e.target.checked)} />
         Hiển thị trong "Món Nổi Bật"
+      </label>
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={values.isFeaturedSpecial}
+          onChange={(e) => set("isFeaturedSpecial", e.target.checked)}
+        />
+        Hiển thị trong "Món Đặc Trưng" (ngoài danh mục gốc ở trên)
       </label>
 
       {error && <div style={{ color: "var(--color-accent)", fontSize: 13 }}>{error}</div>}

@@ -11,6 +11,7 @@ const HEADERS = [
   "priceValue",
   "imageUrl",
   "isHighlight",
+  "isFeaturedSpecial",
   "available",
   "sortOrder",
 ];
@@ -24,6 +25,7 @@ export type MenuItem = {
   priceValue: number | null;
   imageUrl: string | null;
   isHighlight: boolean;
+  isFeaturedSpecial: boolean;
   available: boolean;
   sortOrder: number;
 };
@@ -38,6 +40,7 @@ function decode(values: Record<string, string>): MenuItem {
     priceValue: cell.numOrNull(values.priceValue),
     imageUrl: cell.strOrNull(values.imageUrl),
     isHighlight: cell.toBool(values.isHighlight),
+    isFeaturedSpecial: cell.toBool(values.isFeaturedSpecial),
     available: values.available === "" ? true : cell.toBool(values.available),
     sortOrder: cell.toInt(values.sortOrder),
   };
@@ -53,6 +56,7 @@ function encode(item: MenuItem): Record<string, string> {
     priceValue: cell.num(item.priceValue),
     imageUrl: cell.str(item.imageUrl),
     isHighlight: cell.bool(item.isHighlight),
+    isFeaturedSpecial: cell.bool(item.isFeaturedSpecial),
     available: cell.bool(item.available),
     sortOrder: cell.int(item.sortOrder),
   };
