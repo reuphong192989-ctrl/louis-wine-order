@@ -30,9 +30,15 @@ export const POST = withErrors(async (req: NextRequest) => {
   try {
     const blob = await put(pathname, file, { access: "public" });
     return NextResponse.json({ url: blob.url });
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    const notConfigured = /No blob credentials|BLOB_READ_WRITE_TOKEN|BLOB_STORE_ID/i.test(message);
     return NextResponse.json(
-      { error: "Chưa cấu hình kho lưu ảnh (Vercel Blob). Vào Vercel Dashboard → Storage để tạo Blob store cho dự án." },
+      {
+        error: notConfigured
+          ? "Chưa cấu hình kho lưu ảnh (Vercel Blob). Vào Vercel Dashboard → Storage để tạo Blob store cho dự án, rồi Redeploy."
+          : `Tải ảnh lên thất bại: ${message}`,
+      },
       { status: 500 }
     );
   }
