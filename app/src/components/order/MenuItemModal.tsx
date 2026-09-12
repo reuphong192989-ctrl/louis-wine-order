@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatVnd } from "@/lib/format";
+import { parseCookingNote } from "@/lib/parse-cooking-note";
 import type { MenuItemDTO } from "@/types";
 
 export default function MenuItemModal({
@@ -15,6 +16,7 @@ export default function MenuItemModal({
 }) {
   const [qty, setQty] = useState(1);
   const canOrder = item.priceValue != null;
+  const parsedNote = item.note ? parseCookingNote(item.note) : null;
 
   return (
     <div className="detail-backdrop" onClick={onClose}>
@@ -32,7 +34,33 @@ export default function MenuItemModal({
 
         <div className="detail-body scroll-y">
           <h3 style={{ margin: 0 }}>{item.name}</h3>
-          {item.note && <p className="text-muted" style={{ margin: 0 }}>{item.note}</p>}
+
+          {parsedNote?.methods ? (
+            <div>
+              <div className="text-muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Có thể chế biến:
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {parsedNote.methods.map((m) => (
+                  <span className="tag tag-neutral" key={m}>
+                    {m}
+                  </span>
+                ))}
+              </div>
+              {parsedNote.intro && (
+                <div className="text-muted" style={{ fontSize: 12, marginTop: 6 }}>
+                  {parsedNote.intro}
+                </div>
+              )}
+            </div>
+          ) : (
+            parsedNote?.plain && (
+              <p className="text-muted" style={{ margin: 0 }}>
+                {parsedNote.plain}
+              </p>
+            )
+          )}
+
           <div className="detail-price">{item.priceText}</div>
         </div>
 
