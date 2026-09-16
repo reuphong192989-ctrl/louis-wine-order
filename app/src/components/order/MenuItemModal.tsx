@@ -7,10 +7,12 @@ import type { MenuItemDTO } from "@/types";
 
 export default function MenuItemModal({
   item,
+  isBottle = false,
   onClose,
   onAdd,
 }: {
   item: MenuItemDTO;
+  isBottle?: boolean;
   onClose: () => void;
   onAdd: (qty: number) => void;
 }) {
@@ -23,7 +25,11 @@ export default function MenuItemModal({
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
         <div style={{ position: "relative", flex: "none" }}>
           {item.imageUrl ? (
-            <img className="detail-img" src={item.imageUrl} alt={item.name} />
+            <img
+              className={`detail-img ${isBottle ? "detail-img--bottle" : ""}`}
+              src={item.imageUrl}
+              alt={item.name}
+            />
           ) : (
             <div className="detail-img detail-img-placeholder">Chưa có ảnh</div>
           )}

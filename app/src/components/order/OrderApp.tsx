@@ -14,6 +14,10 @@ import Toast, { type ToastMsg } from "@/components/Toast";
 const HIGHLIGHT_TAB_ID = "__highlight__";
 const FEATURED_TAB_ID = "__featured__";
 
+// Categories whose product photos are tall standing bottles/cans — shown with
+// a portrait image box instead of the default landscape crop.
+const BOTTLE_CATEGORY_SLUGS = new Set(["vang-do", "ruou-manh", "ruou-ngam-duong-sinh", "bia", "nuoc-ngot"]);
+
 type OrderStatus = "idle" | "sending" | "sent" | "error";
 
 export default function OrderApp() {
@@ -97,6 +101,14 @@ export default function OrderApp() {
       for (const item of cat.items) map.set(item.id, item);
     }
     return map;
+  }, [categories]);
+
+  const bottleCategoryIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const cat of categories ?? []) {
+      if (BOTTLE_CATEGORY_SLUGS.has(cat.slug)) ids.add(cat.id);
+    }
+    return ids;
   }, [categories]);
 
   const isSearching = searchText.trim().length > 0;
@@ -283,7 +295,7 @@ export default function OrderApp() {
               <div className="item-card" key={item.id}>
                 {item.imageUrl && (
                   <img
-                    className="item-img"
+                    className={`item-img ${bottleCategoryIds.has(item.categoryId) ? "item-img--bottle" : ""}`}
                     src={item.imageUrl}
                     alt={item.name}
                     style={{ cursor: "pointer" }}
@@ -340,6 +352,7 @@ export default function OrderApp() {
       {detailItem && (
         <MenuItemModal
           item={detailItem}
+          isBottle={bottleCategoryIds.has(detailItem.categoryId)}
           onClose={() => setDetailItem(null)}
           onAdd={(qty) => addToCart(detailItem.id, qty)}
         />
