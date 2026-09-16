@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, deleteRow, readAllRows, updateRow, cell } from "./core";
+import { appendRow, batchUpdateRows, deleteRow, readAllRows, updateRow, cell } from "./core";
 
 const TAB = "MenuItems";
 const HEADERS = [
@@ -108,6 +108,26 @@ export async function updateMenuItem(id: string, input: Omit<MenuItem, "id">): P
   const next: MenuItem = { ...input, id };
   await updateRow(TAB, row.rowNumber, HEADERS, encode(next));
   return next;
+}
+
+/**
+ * Reassigns sortOrder (0, 1, 2, …) for every item in a category to match `orderedIds`.
+ * Used by the admin drag/number reorder UI — one Sheets API call regardless of item count.
+ */
+export async function reorderItemsInCategory(categoryId: string, orderedIds: string[]): Promise<void> {
+  const rows = await readAllRows(TAB);
+  const rowsById = new Map(rows.map((r) => [r.values.id, r]));
+
+  const updates: { rowNumber: number; record: Record<string, string> }[] = [];
+  orderedIds.forEach((id, index) => {
+    const row = rowsById.get(id);
+    if (!row || row.values.categoryId !== categoryId) return;
+    const item = decode(row.values);
+    if (item.sortOrder === index) return;
+    updates.push({ rowNumber: row.rowNumber, record: encode({ ...item, sortOrder: index }) });
+  });
+
+  await batchUpdateRows(TAB, HEADERS, updates);
 }
 
 export async function deleteMenuItem(id: string): Promise<boolean> {

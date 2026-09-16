@@ -20,6 +20,7 @@ export default function CategoriesManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   async function load() {
     const res = await fetch("/api/categories");
@@ -73,21 +74,34 @@ export default function CategoriesManager() {
     if (!categories) return;
     const target = index + dir;
     if (target < 0 || target >= categories.length) return;
-    const a = categories[index];
-    const b = categories[target];
-    await Promise.all([
-      fetch(`/api/categories/${a.id}`, {
-        method: "PUT",
+    const ids = categories.map((c) => c.id);
+    const [moved] = ids.splice(index, 1);
+    ids.splice(target, 0, moved);
+    await reorder(ids);
+  }
+
+  async function moveToPosition(index: number, newPos: number) {
+    if (!categories) return;
+    const newIndex = Math.max(0, Math.min(categories.length - 1, newPos - 1));
+    if (newIndex === index || Number.isNaN(newIndex)) return;
+    const ids = categories.map((c) => c.id);
+    const [moved] = ids.splice(index, 1);
+    ids.splice(newIndex, 0, moved);
+    await reorder(ids);
+  }
+
+  async function reorder(orderedIds: string[]) {
+    setReordering(true);
+    try {
+      await fetch("/api/categories/reorder", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sortOrder: b.sortOrder }),
-      }),
-      fetch(`/api/categories/${b.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sortOrder: a.sortOrder }),
-      }),
-    ]);
-    await load();
+        body: JSON.stringify({ orderedIds }),
+      });
+      await load();
+    } finally {
+      setReordering(false);
+    }
   }
 
   async function remove(id: string) {
@@ -110,7 +124,7 @@ export default function CategoriesManager() {
       <table className="table">
         <thead>
           <tr>
-            <th style={{ width: 70 }}>Thứ tự</th>
+            <th style={{ width: 120 }}>Thứ tự</th>
             <th>Tên</th>
             <th>Slug</th>
             <th>Số món</th>
@@ -121,11 +135,29 @@ export default function CategoriesManager() {
           {categories.map((cat, i) => (
             <tr key={cat.id}>
               <td>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button className="btn btn-ghost" style={{ padding: "2px 6px" }} disabled={i === 0} onClick={() => move(i, -1)}>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <input
+                    key={`${cat.id}-${i}`}
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={categories.length}
+                    defaultValue={i + 1}
+                    disabled={reordering}
+                    style={{ width: 48, padding: "4px 6px", textAlign: "center" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    onBlur={(e) => {
+                      const val = Number(e.target.value);
+                      if (val && val !== i + 1) moveToPosition(i, val);
+                      else e.target.value = String(i + 1);
+                    }}
+                  />
+                  <button className="btn btn-ghost" style={{ padding: "2px 6px" }} disabled={i === 0 || reordering} onClick={() => move(i, -1)}>
                     ↑
                   </button>
-                  <button className="btn btn-ghost" style={{ padding: "2px 6px" }} disabled={i === categories.length - 1} onClick={() => move(i, 1)}>
+                  <button className="btn btn-ghost" style={{ padding: "2px 6px" }} disabled={i === categories.length - 1 || reordering} onClick={() => move(i, 1)}>
                     ↓
                   </button>
                 </div>

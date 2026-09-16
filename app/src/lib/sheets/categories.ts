@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, deleteRow, readAllRows, updateRow, cell } from "./core";
+import { appendRow, batchUpdateRows, deleteRow, readAllRows, updateRow, cell } from "./core";
 
 const TAB = "Categories";
 const HEADERS = ["id", "slug", "name", "sortOrder"];
@@ -66,6 +66,26 @@ export async function updateCategory(
     sortOrder: cell.int(next.sortOrder),
   });
   return next;
+}
+
+/** Reassigns sortOrder (0, 1, 2, …) for every category to match `orderedIds`, in one Sheets API call. */
+export async function reorderCategories(orderedIds: string[]): Promise<void> {
+  const rows = await readAllRows(TAB);
+  const rowsById = new Map(rows.map((r) => [r.values.id, r]));
+
+  const updates: { rowNumber: number; record: Record<string, string> }[] = [];
+  orderedIds.forEach((id, index) => {
+    const row = rowsById.get(id);
+    if (!row) return;
+    const category = decode(row.values);
+    if (category.sortOrder === index) return;
+    updates.push({
+      rowNumber: row.rowNumber,
+      record: { id: category.id, slug: category.slug, name: category.name, sortOrder: cell.int(index) },
+    });
+  });
+
+  await batchUpdateRows(TAB, HEADERS, updates);
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {

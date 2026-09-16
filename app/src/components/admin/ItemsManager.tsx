@@ -12,6 +12,7 @@ export default function ItemsManager() {
   const [filterCategoryId, setFilterCategoryId] = useState<string>("all");
   const [editing, setEditing] = useState<AdminMenuItemDTO | "new" | null>(null);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
+  const [reordering, setReordering] = useState(false);
 
   async function loadCategories() {
     const res = await fetch("/api/categories");
@@ -70,6 +71,28 @@ export default function ItemsManager() {
     await loadItems();
   }
 
+  // Move `item` to 1-based position `newPos` within the current (single-category) list.
+  async function moveToPosition(item: AdminMenuItemDTO, newPos: number) {
+    if (filterCategoryId === "all") return;
+    const ids = filteredItems.map((it) => it.id);
+    const oldIndex = ids.indexOf(item.id);
+    const newIndex = Math.max(0, Math.min(filteredItems.length - 1, newPos - 1));
+    if (newIndex === oldIndex || Number.isNaN(newIndex)) return;
+    ids.splice(oldIndex, 1);
+    ids.splice(newIndex, 0, item.id);
+    setReordering(true);
+    try {
+      await fetch("/api/menu-items/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryId: filterCategoryId, orderedIds: ids }),
+      });
+      await loadItems();
+    } finally {
+      setReordering(false);
+    }
+  }
+
   if (!categories || !items) return <p className="text-muted">Đang tải...</p>;
 
   if (editing) {
@@ -106,9 +129,16 @@ export default function ItemsManager() {
         </div>
       </div>
 
+      {filterCategoryId === "all" && (
+        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+          Chọn một danh mục cụ thể ở trên để sắp xếp thứ tự món (nhập số thứ tự mong muốn).
+        </p>
+      )}
+
       <table className="table">
         <thead>
           <tr>
+            <th style={{ width: 56 }}>Thứ tự</th>
             <th></th>
             <th>Tên món</th>
             <th>Danh mục</th>
@@ -120,8 +150,32 @@ export default function ItemsManager() {
           </tr>
         </thead>
         <tbody>
-          {filteredItems.map((item) => (
+          {filteredItems.map((item, i) => (
             <tr key={item.id} style={{ opacity: item.available ? 1 : 0.55 }}>
+              <td>
+                {filterCategoryId === "all" ? (
+                  <span className="text-muted">—</span>
+                ) : (
+                  <input
+                    key={`${item.id}-${i}`}
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={filteredItems.length}
+                    defaultValue={i + 1}
+                    disabled={reordering}
+                    style={{ width: 52, padding: "4px 6px", textAlign: "center" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    onBlur={(e) => {
+                      const val = Number(e.target.value);
+                      if (val && val !== i + 1) moveToPosition(item, val);
+                      else e.target.value = String(i + 1);
+                    }}
+                  />
+                )}
+              </td>
               <td>
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt="" style={{ width: 44, height: 33, objectFit: "cover" }} />

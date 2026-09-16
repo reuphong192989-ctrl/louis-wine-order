@@ -154,6 +154,26 @@ export async function updateRow(
   });
 }
 
+/** Updates several rows of a tab in a single API call — use this instead of a loop of updateRow() for reordering, etc. */
+export async function batchUpdateRows(
+  tab: string,
+  headers: string[],
+  updates: { rowNumber: number; record: Record<string, string> }[]
+): Promise<void> {
+  if (updates.length === 0) return;
+  const client = await getClient();
+  await client.spreadsheets.values.batchUpdate({
+    spreadsheetId: spreadsheetId(),
+    requestBody: {
+      valueInputOption: "RAW",
+      data: updates.map(({ rowNumber, record }) => ({
+        range: `${tab}!A${rowNumber}:${colLetter(headers.length)}${rowNumber}`,
+        values: [headers.map((h) => record[h] ?? "")],
+      })),
+    },
+  });
+}
+
 export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
   const client = await getClient();
   const sheetId = await getTabSheetId(tab);
