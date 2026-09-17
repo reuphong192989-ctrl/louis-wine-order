@@ -270,12 +270,6 @@ export default function OrderApp() {
           >
             Món Nổi Bật
           </button>
-          <button
-            className={`order-cat-btn ${activeCat === FEATURED_TAB_ID && !isSearching ? "active" : ""}`}
-            onClick={() => selectCategory(FEATURED_TAB_ID)}
-          >
-            Món Đặc Trưng
-          </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
