@@ -9,10 +9,14 @@ import type { CategoryDTO, MenuItemDTO } from "@/types";
 import CartDrawer, { type CartLine } from "./CartDrawer";
 import MenuItemModal from "./MenuItemModal";
 import OrderSentDialog from "./OrderSentDialog";
+import TableSwitchModal from "./TableSwitchModal";
 import Toast, { type ToastMsg } from "@/components/Toast";
 
 const HIGHLIGHT_TAB_ID = "__highlight__";
 const FEATURED_TAB_ID = "__featured__";
+
+// A tablet permanently assigned to a table (no QR) remembers its table here.
+const ASSIGNED_TABLE_KEY = "lwo-assigned-table";
 
 // Categories whose product photos are tall standing bottles/cans — shown with
 // a portrait image box instead of the default landscape crop.
@@ -22,7 +26,22 @@ type OrderStatus = "idle" | "sending" | "sent" | "error";
 
 export default function OrderApp() {
   const searchParams = useSearchParams();
-  const tableId = searchParams.get("table") || "01";
+  const qrTableId = searchParams.get("table");
+  const [assignedTableId, setAssignedTableId] = useState<string | null>(null);
+  const [overrideTableId, setOverrideTableId] = useState<string | null>(null);
+  // Priority: an explicit in-session switch wins, then the QR code in the URL
+  // (per-visit, a customer's own device), then a tablet's remembered table
+  // assignment, then the historical "01" default.
+  const tableId = overrideTableId || qrTableId || assignedTableId || "01";
+  const [showTableSwitch, setShowTableSwitch] = useState(false);
+
+  useEffect(() => {
+    try {
+      setAssignedTableId(localStorage.getItem(ASSIGNED_TABLE_KEY));
+    } catch {
+      // storage unavailable — fall back to the "01" default
+    }
+  }, []);
 
   const [categories, setCategories] = useState<CategoryDTO[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -221,6 +240,20 @@ export default function OrderApp() {
     }
   }
 
+  function handleTableSwitched(newTableId: string) {
+    try {
+      localStorage.setItem(ASSIGNED_TABLE_KEY, newTableId);
+    } catch {
+      // storage unavailable — the switch still applies for this session via overrideTableId
+    }
+    setAssignedTableId(newTableId);
+    setOverrideTableId(newTableId);
+    setCart(loadCart(newTableId));
+    cartHydrated.current = true;
+    setShowTableSwitch(false);
+    pushToast(`Đã chuyển sang bàn ${newTableId}.`);
+  }
+
   if (loadError) {
     return (
       <div className="order-shell" style={{ alignItems: "center", justifyContent: "center" }}>
@@ -247,6 +280,13 @@ export default function OrderApp() {
           <div className="text-muted" style={{ fontSize: 9 }}>Phát triển bởi Thành IT · 0382821682</div>
         </div>
         <span className="tag tag-outline">Bàn {tableId}</span>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowTableSwitch(true)}
+          style={{ flex: "none", fontSize: 11, padding: "6px 10px" }}
+        >
+          Đổi bàn
+        </button>
         <button className="btn btn-secondary" onClick={callStaff} disabled={callStaffCooldown} style={{ flex: "none" }}>
           Gọi nhân viên
         </button>
@@ -360,6 +400,15 @@ export default function OrderApp() {
             setShowSentDialog(false);
           }}
           callStaffDisabled={callStaffCooldown}
+        />
+      )}
+
+      {showTableSwitch && (
+        <TableSwitchModal
+          currentTableId={tableId}
+          cartHasItems={Object.keys(cart).length > 0}
+          onClose={() => setShowTableSwitch(false)}
+          onSwitched={handleTableSwitched}
         />
       )}
 
