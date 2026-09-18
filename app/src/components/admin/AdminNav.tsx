@@ -10,9 +10,12 @@ const LINKS = [
   { href: "/admin/users", label: "Tài khoản" },
 ];
 
-export default function AdminNav({ username }: { username: string }) {
+const OWNER_LINKS = [{ href: "/admin/orders", label: "Đơn hàng" }];
+
+export default function AdminNav({ username, role }: { username: string; role: "OWNER" | "ADMIN" }) {
   const pathname = usePathname();
   const router = useRouter();
+  const links = role === "OWNER" ? [...LINKS, ...OWNER_LINKS] : LINKS;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -25,7 +28,7 @@ export default function AdminNav({ username }: { username: string }) {
       <div className="order-logo">LOUIS WINE</div>
       <h3 style={{ margin: 0 }}>Quản trị</h3>
       <nav style={{ display: "flex", gap: 4 }}>
-        {LINKS.map((l) => (
+        {links.map((l) => (
           <Link
             key={l.href}
             href={l.href}

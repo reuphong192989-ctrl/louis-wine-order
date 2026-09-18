@@ -6,11 +6,14 @@ import { hashPassword } from "@/lib/auth";
 import { createUser, findUserByUsername, listUsers } from "@/lib/sheets/users";
 
 export const GET = withErrors(async () => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const users = await listUsers();
-  return NextResponse.json({ users: users.map((u) => ({ id: u.id, username: u.username, role: u.role })) });
+  // Hide OWNER accounts from ADMIN viewers — an ADMIN account (e.g. handed to
+  // restaurant staff) should not even see, let alone edit, the owner account.
+  const visible = auth.session.role === "OWNER" ? users : users.filter((u) => u.role !== "OWNER");
+  return NextResponse.json({ users: visible.map((u) => ({ id: u.id, username: u.username, role: u.role })) });
 });
 
 const createSchema = z.object({
@@ -24,7 +27,7 @@ const createSchema = z.object({
 });
 
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));

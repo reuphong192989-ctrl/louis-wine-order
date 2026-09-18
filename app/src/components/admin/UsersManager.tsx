@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type UserRow = { id: string; username: string; role: "ADMIN" | "STAFF" };
+type UserRow = { id: string; username: string; role: "OWNER" | "ADMIN" | "STAFF" };
 
 export default function UsersManager() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
@@ -116,10 +116,14 @@ export default function UsersManager() {
             <tr key={u.id}>
               <td style={{ fontWeight: 700 }}>{u.username}</td>
               <td>
-                <select className="input" style={{ width: 140 }} value={u.role} onChange={(e) => changeRole(u.id, e.target.value as "ADMIN" | "STAFF")}>
-                  <option value="ADMIN">Quản lý</option>
-                  <option value="STAFF">Nhân viên</option>
-                </select>
+                {u.role === "OWNER" ? (
+                  <span className="tag tag-accent">Chủ sở hữu</span>
+                ) : (
+                  <select className="input" style={{ width: 140 }} value={u.role} onChange={(e) => changeRole(u.id, e.target.value as "ADMIN" | "STAFF")}>
+                    <option value="ADMIN">Quản lý</option>
+                    <option value="STAFF">Nhân viên</option>
+                  </select>
+                )}
               </td>
               <td>
                 {editingId === u.id ? (
@@ -158,9 +162,11 @@ export default function UsersManager() {
                 )}
               </td>
               <td>
-                <button className="btn btn-danger" onClick={() => remove(u)}>
-                  Xoá
-                </button>
+                {u.role !== "OWNER" && (
+                  <button className="btn btn-danger" onClick={() => remove(u)}>
+                    Xoá
+                  </button>
+                )}
               </td>
             </tr>
           ))}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
-import { findOrderById, setOrderStatus } from "@/lib/sheets/orders";
+import { deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
 
 const patchSchema = z.object({ status: z.enum(["CONFIRMED", "CANCELLED"]) });
 
@@ -20,7 +20,7 @@ export const GET = withErrors(async (_req: NextRequest, { params }: { params: Pr
 
 /** Staff acknowledges ("đã nhận đơn") or cancels an order. */
 export const PATCH = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
@@ -33,4 +33,16 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   return NextResponse.json({ order });
+});
+
+/** Owner permanently deletes a single order and its line items from history. Irreversible. */
+export const DELETE = withErrors(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireSession(["OWNER"]);
+  if ("error" in auth) return auth.error;
+
+  const { id } = await params;
+  const ok = await deleteOrder(id);
+  if (!ok) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
+
+  return NextResponse.json({ ok: true });
 });

@@ -11,7 +11,7 @@ const updateSchema = z.object({
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
@@ -22,6 +22,10 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
 
   const existing = await findUserById(id);
   if (!existing) return NextResponse.json({ error: "Không tìm thấy tài khoản." }, { status: 404 });
+
+  if (existing.role === "OWNER" && auth.session.role !== "OWNER") {
+    return NextResponse.json({ error: "Bạn không có quyền chỉnh sửa tài khoản này." }, { status: 403 });
+  }
 
   if (existing.role === "ADMIN" && parsed.data.role === "STAFF") {
     const all = await listUsers();
@@ -40,12 +44,16 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
 });
 
 export const DELETE = withErrors(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
   const existing = await findUserById(id);
   if (!existing) return NextResponse.json({ error: "Không tìm thấy tài khoản." }, { status: 404 });
+
+  if (existing.role === "OWNER" && auth.session.role !== "OWNER") {
+    return NextResponse.json({ error: "Bạn không có quyền xoá tài khoản này." }, { status: 403 });
+  }
 
   if (existing.role === "ADMIN") {
     const all = await listUsers();

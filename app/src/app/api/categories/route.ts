@@ -6,7 +6,7 @@ import { listCategories, createCategory, findCategoryBySlug } from "@/lib/sheets
 import { countItemsInCategory } from "@/lib/sheets/menuItems";
 
 export const GET = withErrors(async () => {
-  const auth = await requireSession(["ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
   if ("error" in auth) return auth.error;
 
   const categories = await listCategories();
@@ -26,7 +26,7 @@ const createSchema = z.object({
 });
 
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));

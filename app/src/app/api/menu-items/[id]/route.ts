@@ -5,7 +5,7 @@ import { menuItemInputSchema, resolvePriceFields } from "@/lib/validation";
 import { deleteMenuItem, findMenuItemById, updateMenuItem } from "@/lib/sheets/menuItems";
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
@@ -41,7 +41,7 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
 });
 
 export const DELETE = withErrors(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;

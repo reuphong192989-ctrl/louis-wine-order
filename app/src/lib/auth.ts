@@ -14,7 +14,7 @@ function getSecretKey() {
 export type SessionPayload = {
   sub: string;
   username: string;
-  role: "ADMIN" | "STAFF";
+  role: "OWNER" | "ADMIN" | "STAFF";
 };
 
 export async function hashPassword(password: string) {
@@ -41,7 +41,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
     return {
       sub: payload.sub as string,
       username: payload.username as string,
-      role: payload.role as "ADMIN" | "STAFF",
+      role: payload.role as "OWNER" | "ADMIN" | "STAFF",
     };
   } catch {
     return null;

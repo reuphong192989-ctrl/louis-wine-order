@@ -9,7 +9,7 @@ const schema = z.object({
 });
 
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

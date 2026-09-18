@@ -4,7 +4,7 @@ import { appendRow, deleteRow, readAllRows, updateRow } from "./core";
 const TAB = "Users";
 const HEADERS = ["id", "username", "passwordHash", "role"];
 
-export type Role = "ADMIN" | "STAFF";
+export type Role = "OWNER" | "ADMIN" | "STAFF";
 
 export type SheetUser = {
   id: string;

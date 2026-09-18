@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, readAllRows, updateRow, cell } from "./core";
+import { appendRow, deleteRows, readAllRows, updateRow, cell } from "./core";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -173,6 +173,33 @@ export async function setOrderItemStatus(itemId: string, kitchenStatus: KitchenS
     .filter((it) => it.orderId === orderId);
 
   return { ...decodeOrder(orderRow.values), items };
+}
+
+/** Permanently deletes one order and all of its line items. Irreversible — owner-only. */
+export async function deleteOrder(id: string): Promise<boolean> {
+  const [orderRows, itemRows] = await Promise.all([readAllRows(ORDERS_TAB), readAllRows(ORDER_ITEMS_TAB)]);
+  const orderRow = orderRows.find((r) => r.values.id === id);
+  if (!orderRow) return false;
+
+  const itemRowNumbers = itemRows.filter((r) => r.values.orderId === id).map((r) => r.rowNumber);
+  await Promise.all([deleteRows(ORDERS_TAB, [orderRow.rowNumber]), deleteRows(ORDER_ITEMS_TAB, itemRowNumbers)]);
+  return true;
+}
+
+/** Permanently deletes every order created within [fromIso, toIso] (inclusive) and their line items. Irreversible — owner-only. Returns the number of orders deleted. */
+export async function deleteOrdersInRange(fromIso: string, toIso: string): Promise<number> {
+  const [orderRows, itemRows] = await Promise.all([readAllRows(ORDERS_TAB), readAllRows(ORDER_ITEMS_TAB)]);
+  const toDelete = orderRows.filter((r) => r.values.createdAt >= fromIso && r.values.createdAt <= toIso);
+  if (toDelete.length === 0) return 0;
+
+  const idsToDelete = new Set(toDelete.map((r) => r.values.id));
+  const itemRowNumbers = itemRows.filter((r) => idsToDelete.has(r.values.orderId)).map((r) => r.rowNumber);
+
+  await Promise.all([
+    deleteRows(ORDERS_TAB, toDelete.map((r) => r.rowNumber)),
+    deleteRows(ORDER_ITEMS_TAB, itemRowNumbers),
+  ]);
+  return toDelete.length;
 }
 
 export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLED"): Promise<Order | null> {

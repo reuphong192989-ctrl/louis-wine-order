@@ -10,7 +10,7 @@ import { listAllOrdersRaw } from "@/lib/sheets/orders";
  * the restaurant actually considers today, not the server's timezone.
  */
 export const GET = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const fromParam = req.nextUrl.searchParams.get("from");

@@ -175,18 +175,23 @@ export async function batchUpdateRows(
 }
 
 export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
+  return deleteRows(tab, [rowNumber]);
+}
+
+/** Deletes several rows of a tab in one batchUpdate call. Order-independent — rows are removed highest-index-first internally so earlier deletions never shift the indices of rows still pending deletion. */
+export async function deleteRows(tab: string, rowNumbers: number[]): Promise<void> {
+  if (rowNumbers.length === 0) return;
   const client = await getClient();
   const sheetId = await getTabSheetId(tab);
+  const sorted = [...rowNumbers].sort((a, b) => b - a);
   await client.spreadsheets.batchUpdate({
     spreadsheetId: spreadsheetId(),
     requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: { sheetId, dimension: "ROWS", startIndex: rowNumber - 1, endIndex: rowNumber },
-          },
+      requests: sorted.map((rowNumber) => ({
+        deleteDimension: {
+          range: { sheetId, dimension: "ROWS", startIndex: rowNumber - 1, endIndex: rowNumber },
         },
-      ],
+      })),
     },
   });
 }

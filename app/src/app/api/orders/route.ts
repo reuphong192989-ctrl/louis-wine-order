@@ -61,7 +61,7 @@ export const POST = withErrors(async (req: NextRequest) => {
 
 /** Staff / admin: list recent orders, optionally filtered by status. */
 export const GET = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
   if ("error" in auth) return auth.error;
 
   const status = req.nextUrl.searchParams.get("status") as OrderStatus | null;

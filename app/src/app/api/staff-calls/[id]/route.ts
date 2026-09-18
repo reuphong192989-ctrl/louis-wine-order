@@ -5,7 +5,7 @@ import { acknowledgeStaffCall } from "@/lib/sheets/staffCalls";
 
 /** Staff marks a "gọi nhân viên" request as handled. */
 export const PATCH = withErrors(async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;

@@ -8,7 +8,7 @@ import { usePolling } from "@/lib/use-polling";
 import { playAlertSound } from "@/lib/sound";
 import type { OrderDTO, StaffCallDTO } from "@/types";
 
-export default function StaffDashboard({ username, role }: { username: string; role: "ADMIN" | "STAFF" }) {
+export default function StaffDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" }) {
   const router = useRouter();
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [calls, setCalls] = useState<StaffCallDTO[]>([]);
@@ -69,7 +69,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push(role === "ADMIN" ? "/admin/login" : "/staff/login");
+    router.push(role === "STAFF" ? "/staff/login" : "/admin/login");
     router.refresh();
   }
 
@@ -87,13 +87,13 @@ export default function StaffDashboard({ username, role }: { username: string; r
           <Link href="/kitchen" className="btn btn-secondary">
             Màn hình bếp
           </Link>
-          {role === "ADMIN" && (
+          {role !== "STAFF" && (
             <Link href="/admin/categories" className="btn btn-secondary">
               Quay lại Quản trị
             </Link>
           )}
           <span className="text-muted" style={{ fontSize: 13 }}>
-            {username} ({role === "ADMIN" ? "Quản lý" : "Nhân viên"})
+            {username} ({role === "OWNER" ? "Chủ sở hữu" : role === "ADMIN" ? "Quản lý" : "Nhân viên"})
           </span>
           <button className="btn btn-secondary" onClick={logout}>
             Đăng xuất

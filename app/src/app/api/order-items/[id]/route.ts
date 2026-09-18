@@ -8,7 +8,7 @@ const patchSchema = z.object({ kitchenStatus: z.enum(["PENDING", "COOKING", "DON
 
 /** Kitchen updates a single line item's cooking status. */
 export const PATCH = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const auth = await requireSession(["ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;

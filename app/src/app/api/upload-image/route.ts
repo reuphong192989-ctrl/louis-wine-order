@@ -9,7 +9,7 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/g
 
 /** Admin uploads a menu item photo from their device — stored in Vercel Blob, returns the public URL. */
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["ADMIN"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
 
   const form = await req.formData().catch(() => null);
