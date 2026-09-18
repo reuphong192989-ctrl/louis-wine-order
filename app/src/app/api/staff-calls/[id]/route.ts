@@ -9,7 +9,7 @@ export const PATCH = withErrors(async (_req: NextRequest, { params }: { params: 
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
-  const call = await acknowledgeStaffCall(id);
+  const call = await acknowledgeStaffCall(id, auth.session.username);
   if (!call) return NextResponse.json({ error: "Không tìm thấy yêu cầu." }, { status: 404 });
 
   return NextResponse.json({ call });

@@ -29,7 +29,7 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
     return NextResponse.json({ error: "Trạng thái không hợp lệ." }, { status: 400 });
   }
 
-  const order = await setOrderStatus(id, parsed.data.status);
+  const order = await setOrderStatus(id, parsed.data.status, auth.session.username);
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   return NextResponse.json({ order });

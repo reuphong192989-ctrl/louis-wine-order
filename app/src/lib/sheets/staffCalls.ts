@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { appendRow, readAllRows, updateRow, cell } from "./core";
 
 const TAB = "StaffCalls";
-const HEADERS = ["id", "tableId", "status", "createdAt", "acknowledgedAt"];
+const HEADERS = ["id", "tableId", "status", "createdAt", "acknowledgedAt", "acknowledgedBy"];
 
 export type StaffCallStatus = "PENDING" | "ACKNOWLEDGED";
 
@@ -12,6 +12,7 @@ export type StaffCall = {
   status: StaffCallStatus;
   createdAt: string;
   acknowledgedAt: string | null;
+  acknowledgedBy: string | null;
 };
 
 function decode(values: Record<string, string>): StaffCall {
@@ -21,6 +22,7 @@ function decode(values: Record<string, string>): StaffCall {
     status: values.status as StaffCallStatus,
     createdAt: values.createdAt,
     acknowledgedAt: cell.strOrNull(values.acknowledgedAt),
+    acknowledgedBy: cell.strOrNull(values.acknowledgedBy),
   };
 }
 
@@ -33,29 +35,39 @@ export async function listStaffCalls(status?: StaffCallStatus, limit = 200): Pro
 }
 
 export async function createStaffCall(tableId: string): Promise<StaffCall> {
-  const call: StaffCall = { id: randomUUID(), tableId, status: "PENDING", createdAt: new Date().toISOString(), acknowledgedAt: null };
+  const call: StaffCall = {
+    id: randomUUID(),
+    tableId,
+    status: "PENDING",
+    createdAt: new Date().toISOString(),
+    acknowledgedAt: null,
+    acknowledgedBy: null,
+  };
   await appendRow(TAB, HEADERS, {
     id: call.id,
     tableId: call.tableId,
     status: call.status,
     createdAt: call.createdAt,
     acknowledgedAt: "",
+    acknowledgedBy: "",
   });
   return call;
 }
 
-export async function acknowledgeStaffCall(id: string): Promise<StaffCall | null> {
+/** handledBy is the username of the staff member acknowledging — recorded for the monthly staff KPI review. */
+export async function acknowledgeStaffCall(id: string, handledBy: string): Promise<StaffCall | null> {
   const rows = await readAllRows(TAB);
   const row = rows.find((r) => r.values.id === id);
   if (!row) return null;
   const current = decode(row.values);
-  const next: StaffCall = { ...current, status: "ACKNOWLEDGED", acknowledgedAt: new Date().toISOString() };
+  const next: StaffCall = { ...current, status: "ACKNOWLEDGED", acknowledgedAt: new Date().toISOString(), acknowledgedBy: handledBy };
   await updateRow(TAB, row.rowNumber, HEADERS, {
     id: next.id,
     tableId: next.tableId,
     status: next.status,
     createdAt: next.createdAt,
     acknowledgedAt: cell.str(next.acknowledgedAt),
+    acknowledgedBy: cell.str(next.acknowledgedBy),
   });
   return next;
 }

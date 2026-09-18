@@ -15,6 +15,8 @@ const ORDERS_HEADERS = [
   "confirmedAt",
   "cancelledAt",
   "itemsSummary",
+  "confirmedBy",
+  "cancelledBy",
 ];
 
 function buildItemsSummary(lines: { nameSnapshot: string; qty: number }[]): string {
@@ -48,6 +50,8 @@ export type Order = {
   createdAt: string;
   confirmedAt: string | null;
   cancelledAt: string | null;
+  confirmedBy: string | null;
+  cancelledBy: string | null;
   items: OrderItemLine[];
 };
 
@@ -61,6 +65,8 @@ function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
     createdAt: values.createdAt,
     confirmedAt: cell.strOrNull(values.confirmedAt),
     cancelledAt: cell.strOrNull(values.cancelledAt),
+    confirmedBy: cell.strOrNull(values.confirmedBy),
+    cancelledBy: cell.strOrNull(values.cancelledBy),
   };
 }
 
@@ -129,6 +135,8 @@ export async function createOrder(input: {
     confirmedAt: "",
     cancelledAt: "",
     itemsSummary: buildItemsSummary(input.lines),
+    confirmedBy: "",
+    cancelledBy: "",
   });
 
   const items: OrderItemLine[] = [];
@@ -149,7 +157,19 @@ export async function createOrder(input: {
     });
   }
 
-  return { id, tableId: input.tableId, status: "PENDING", totalAmount, note: null, createdAt, confirmedAt: null, cancelledAt: null, items };
+  return {
+    id,
+    tableId: input.tableId,
+    status: "PENDING",
+    totalAmount,
+    note: null,
+    createdAt,
+    confirmedAt: null,
+    cancelledAt: null,
+    confirmedBy: null,
+    cancelledBy: null,
+    items,
+  };
 }
 
 /** Kitchen marks a single line item as cooking/done (or reverts it). Returns the parent order with all items, or null if the item doesn't exist. */
@@ -202,7 +222,8 @@ export async function deleteOrdersInRange(fromIso: string, toIso: string): Promi
   return toDelete.length;
 }
 
-export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLED"): Promise<Order | null> {
+/** handledBy is the username of the staff member confirming/cancelling — recorded for the monthly staff KPI review. */
+export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLED", handledBy: string): Promise<Order | null> {
   const rows = await readAllRows(ORDERS_TAB);
   const row = rows.find((r) => r.values.id === id);
   if (!row) return null;
@@ -214,6 +235,8 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
     status,
     confirmedAt: status === "CONFIRMED" ? now : current.confirmedAt,
     cancelledAt: status === "CANCELLED" ? now : current.cancelledAt,
+    confirmedBy: status === "CONFIRMED" ? handledBy : current.confirmedBy,
+    cancelledBy: status === "CANCELLED" ? handledBy : current.cancelledBy,
   };
 
   await updateRow(ORDERS_TAB, row.rowNumber, ORDERS_HEADERS, {
@@ -226,6 +249,8 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
     confirmedAt: cell.str(next.confirmedAt),
     cancelledAt: cell.str(next.cancelledAt),
     itemsSummary: row.values.itemsSummary ?? "",
+    confirmedBy: cell.str(next.confirmedBy),
+    cancelledBy: cell.str(next.cancelledBy),
   });
 
   const itemRows = await readAllRows(ORDER_ITEMS_TAB);

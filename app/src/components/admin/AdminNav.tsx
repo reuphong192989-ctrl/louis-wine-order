@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/admin/items", label: "Món ăn" },
   { href: "/admin/reports", label: "Doanh thu" },
   { href: "/admin/table-log", label: "Nhật ký bàn" },
+  { href: "/admin/staff-review", label: "Đánh giá nhân viên" },
   { href: "/admin/users", label: "Tài khoản" },
 ];
 
