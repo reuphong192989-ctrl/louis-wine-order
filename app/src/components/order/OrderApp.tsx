@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { loadCart, saveCart, clearCart, type CartMap } from "@/lib/cart-storage";
+import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { CategoryDTO, MenuItemDTO } from "@/types";
 import CartDrawer, { type CartLine } from "./CartDrawer";
 import MenuItemModal from "./MenuItemModal";
@@ -34,6 +35,7 @@ export default function OrderApp() {
   // assignment, then the historical "01" default.
   const tableId = overrideTableId || qrTableId || assignedTableId || "01";
   const [showTableSwitch, setShowTableSwitch] = useState(false);
+  const tableNames = useTableNames();
 
   useEffect(() => {
     try {
@@ -279,7 +281,7 @@ export default function OrderApp() {
           <div className="order-logo" style={{ lineHeight: 1.1 }}>LOUIS WINE</div>
           <div className="text-muted" style={{ fontSize: 9 }}>Phát triển bởi Thành IT · 0382821682</div>
         </div>
-        <span className="tag tag-outline">Bàn {tableId}</span>
+        <span className="tag tag-outline">Bàn {tableLabel(tableNames, tableId)}</span>
         <button
           className="btn btn-secondary"
           onClick={() => setShowTableSwitch(true)}
@@ -406,6 +408,7 @@ export default function OrderApp() {
       {showTableSwitch && (
         <TableSwitchModal
           currentTableId={tableId}
+          currentTableLabel={tableLabel(tableNames, tableId)}
           cartHasItems={Object.keys(cart).length > 0}
           onClose={() => setShowTableSwitch(false)}
           onSwitched={handleTableSwitched}

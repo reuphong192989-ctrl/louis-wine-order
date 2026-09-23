@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatVnd } from "@/lib/format";
+import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO } from "@/types";
 
 const STATUS_LABEL: Record<OrderDTO["status"], string> = {
@@ -21,6 +22,7 @@ function formatDateTime(iso: string): string {
 }
 
 export default function OrdersManager() {
+  const tableNames = useTableNames();
   const [orders, setOrders] = useState<OrderDTO[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -50,7 +52,7 @@ export default function OrdersManager() {
   }, [orders, bulkFrom, bulkTo]);
 
   async function removeOrder(order: OrderDTO) {
-    if (!confirm(`Xoá vĩnh viễn đơn hàng bàn ${order.tableId} (${formatDateTime(order.createdAt)}, ${formatVnd(order.totalAmount)})?\n\nKhông thể hoàn tác — đơn sẽ bị loại khỏi báo cáo doanh thu.`)) return;
+    if (!confirm(`Xoá vĩnh viễn đơn hàng bàn ${tableLabel(tableNames, order.tableId)} (${formatDateTime(order.createdAt)}, ${formatVnd(order.totalAmount)})?\n\nKhông thể hoàn tác — đơn sẽ bị loại khỏi báo cáo doanh thu.`)) return;
     setBusyIds((s) => new Set(s).add(order.id));
     setError(null);
     try {
@@ -157,7 +159,7 @@ export default function OrdersManager() {
         <tbody>
           {sorted.map((o) => (
             <tr key={o.id}>
-              <td style={{ fontWeight: 700 }}>{o.tableId}</td>
+              <td style={{ fontWeight: 700 }}>{tableLabel(tableNames, o.tableId)}</td>
               <td className="text-muted">{formatDateTime(o.createdAt)}</td>
               <td>{STATUS_LABEL[o.status]}</td>
               <td style={{ fontSize: 12 }}>{o.items.map((it) => `${it.nameSnapshot} x${it.qty}`).join(", ")}</td>

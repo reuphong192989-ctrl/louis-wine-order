@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { playAlertSound } from "@/lib/sound";
+import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO, StaffCallDTO } from "@/types";
 
 export default function StaffDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" }) {
   const router = useRouter();
+  const tableNames = useTableNames();
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [calls, setCalls] = useState<StaffCallDTO[]>([]);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -117,7 +119,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                   gap: 8,
                 }}
               >
-                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {c.tableId}</div>
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {tableLabel(tableNames, c.tableId)}</div>
                 <div className="text-muted" style={{ fontSize: 12 }}>Gọi lúc {formatTime(c.createdAt)}</div>
                 <button className="btn btn-primary" disabled={busyIds.has(c.id)} onClick={() => ackCall(c.id)}>
                   Đã xử lý
@@ -143,7 +145,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 <tbody>
                   {doneCalls.map((c) => (
                     <tr key={c.id}>
-                      <td>{c.tableId}</td>
+                      <td>{tableLabel(tableNames, c.tableId)}</td>
                       <td>{formatTime(c.createdAt)}</td>
                       <td>{c.acknowledgedAt ? formatTime(c.acknowledgedAt) : "—"}</td>
                     </tr>
@@ -172,7 +174,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {o.tableId}</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {tableLabel(tableNames, o.tableId)}</span>
                   <span className="text-muted" style={{ fontSize: 12 }}>{formatTime(o.createdAt)}</span>
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
@@ -219,7 +221,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 <tbody>
                   {doneOrders.map((o) => (
                     <tr key={o.id}>
-                      <td>{o.tableId}</td>
+                      <td>{tableLabel(tableNames, o.tableId)}</td>
                       <td>{formatTime(o.createdAt)}</td>
                       <td>{formatVnd(o.totalAmount)}</td>
                       <td>{o.status === "CONFIRMED" ? "Đã xác nhận" : "Đã huỷ"}</td>

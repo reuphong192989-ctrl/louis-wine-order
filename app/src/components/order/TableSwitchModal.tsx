@@ -4,11 +4,13 @@ import { useState } from "react";
 
 export default function TableSwitchModal({
   currentTableId,
+  currentTableLabel,
   cartHasItems,
   onClose,
   onSwitched,
 }: {
   currentTableId: string;
+  currentTableLabel?: string;
   cartHasItems: boolean;
   onClose: () => void;
   onSwitched: (newTableId: string) => void;
@@ -64,7 +66,7 @@ export default function TableSwitchModal({
           Gán / đổi bàn cho thiết bị này
         </div>
         <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
-          Đang ở bàn <strong>{currentTableId}</strong>. Chỉ nhân viên mới đổi được — cần đăng nhập bằng tài khoản của
+          Đang ở bàn <strong>{currentTableLabel || currentTableId}</strong>. Chỉ nhân viên mới đổi được — cần đăng nhập bằng tài khoản của
           bạn, mỗi lần đổi đều được ghi lại để đối chiếu nếu có nhầm lẫn.
         </p>
 

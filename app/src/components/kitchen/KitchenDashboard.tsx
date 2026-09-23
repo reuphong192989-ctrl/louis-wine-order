@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { playAlertSound } from "@/lib/sound";
+import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO } from "@/types";
 
 const LATE_MS = 15 * 60 * 1000;
@@ -16,6 +17,7 @@ type ViewMode = "byTable" | "grouped";
 
 export default function KitchenDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" }) {
   const router = useRouter();
+  const tableNames = useTableNames();
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<ViewMode>("byTable");
@@ -131,7 +133,7 @@ export default function KitchenDashboard({ username, role }: { username: string;
                 <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>{g.name}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: "var(--color-accent)" }}>× {g.qty}</div>
                 <div className="text-muted" style={{ fontSize: 12 }}>
-                  {[...g.tables.entries()].map(([table, qty]) => `Bàn ${table} (${qty})`).join(", ")}
+                  {[...g.tables.entries()].map(([table, qty]) => `Bàn ${tableLabel(tableNames, table)} (${qty})`).join(", ")}
                 </div>
               </div>
             ))}
@@ -155,7 +157,7 @@ export default function KitchenDashboard({ username, role }: { username: string;
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {o.tableId}</span>
+                    <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {tableLabel(tableNames, o.tableId)}</span>
                     <span style={{ fontSize: 12, color: late ? "var(--color-accent)" : undefined }} className={late ? undefined : "text-muted"}>
                       {formatTime(o.createdAt)} {late && "· TRỄ GIỜ"}
                     </span>
