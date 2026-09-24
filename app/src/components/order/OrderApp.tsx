@@ -281,7 +281,14 @@ export default function OrderApp() {
           <div className="order-logo" style={{ lineHeight: 1.1 }}>LOUIS WINE</div>
           <div className="text-muted" style={{ fontSize: 9 }}>Phát triển bởi Thành IT · 0382821682</div>
         </div>
-        <span className="tag tag-outline">Bàn {tableLabel(tableNames, tableId)}</span>
+        <button
+          type="button"
+          className="tag tag-outline"
+          onClick={() => setShowTableSwitch(true)}
+          style={{ cursor: "pointer" }}
+        >
+          Bàn {tableLabel(tableNames, tableId)}
+        </button>
         <button
           className="btn btn-secondary"
           onClick={() => setShowTableSwitch(true)}

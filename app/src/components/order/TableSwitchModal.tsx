@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type SwitchOption = { tableId: string; label: string };
 
 export default function TableSwitchModal({
   currentTableId,
@@ -15,6 +17,9 @@ export default function TableSwitchModal({
   onClose: () => void;
   onSwitched: (newTableId: string) => void;
 }) {
+  const [options, setOptions] = useState<SwitchOption[] | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
   const [floor, setFloor] = useState("");
   const [table, setTable] = useState("");
   const [username, setUsername] = useState("");
@@ -22,16 +27,23 @@ export default function TableSwitchModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/table-switch/options")
+      .then((res) => res.json())
+      .then((data) => setOptions(data.options ?? []))
+      .catch(() => setOptions([]));
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
     const tableNum = table.trim();
-    if (!tableNum) {
-      setError("Vui lòng nhập số bàn.");
+    const newTableId = selectedTableId || (floor.trim() ? `${floor.trim()}-${tableNum}` : tableNum);
+    if (!newTableId) {
+      setError("Vui lòng chọn bàn hoặc nhập mã bàn.");
       return;
     }
-    const newTableId = floor.trim() ? `${floor.trim()}-${tableNum}` : tableNum;
 
     if (cartHasItems && !confirm("Giỏ hàng hiện tại sẽ bị xoá khi đổi sang bàn khác. Tiếp tục?")) {
       return;
@@ -70,16 +82,57 @@ export default function TableSwitchModal({
           bạn, mỗi lần đổi đều được ghi lại để đối chiếu nếu có nhầm lẫn.
         </p>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <div className="field" style={{ flex: 1 }}>
-            <label>Tầng (tuỳ chọn)</label>
-            <input className="input" value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="VD: 2" />
-          </div>
-          <div className="field" style={{ flex: 1 }}>
-            <label>Số bàn</label>
-            <input className="input" value={table} onChange={(e) => setTable(e.target.value)} placeholder="VD: 05" required />
-          </div>
+        <div className="field">
+          <label>Chọn bàn</label>
+          {options === null && <p className="text-muted" style={{ fontSize: 13, margin: 0 }}>Đang tải danh sách bàn...</p>}
+          {options && options.length === 0 && !showManual && (
+            <p className="text-muted" style={{ fontSize: 13, margin: 0 }}>Chưa có bàn nào — nhập mã bàn bên dưới.</p>
+          )}
+          {options && options.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {options
+                .filter((o) => o.tableId !== currentTableId)
+                .map((o) => (
+                  <button
+                    key={o.tableId}
+                    type="button"
+                    className={`tag ${selectedTableId === o.tableId ? "tag-accent" : "tag-outline"}`}
+                    onClick={() => {
+                      setSelectedTableId(o.tableId);
+                      setShowManual(false);
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ fontSize: 12, alignSelf: "flex-start" }}
+          onClick={() => {
+            setShowManual((s) => !s);
+            setSelectedTableId(null);
+          }}
+        >
+          {showManual ? "Ẩn nhập mã khác" : "Không thấy bàn cần đổi? Nhập mã khác..."}
+        </button>
+
+        {showManual && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Tầng (tuỳ chọn)</label>
+              <input className="input" value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="VD: 2" />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Số bàn</label>
+              <input className="input" value={table} onChange={(e) => setTable(e.target.value)} placeholder="VD: 05" />
+            </div>
+          </div>
+        )}
 
         <div className="field">
           <label>Tên đăng nhập nhân viên</label>

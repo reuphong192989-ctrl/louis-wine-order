@@ -81,5 +81,15 @@ export async function listKnownTableIds(): Promise<string[]> {
   return [...set].sort();
 }
 
+/** Every table a staff device could switch to, with a friendly label where one is set — powers the quick-pick list in the table-switch modal so staff tap a room instead of typing a raw code. */
+export async function listSwitchOptions(): Promise<{ tableId: string; label: string }[]> {
+  const [names, knownIds] = await Promise.all([listTableNames(), listKnownTableIds()]);
+  const nameMap = new Map(names.map((n) => [n.tableId, n.displayName]));
+  const ids = new Set([...knownIds, ...names.map((n) => n.tableId)]);
+  return [...ids]
+    .map((tableId) => ({ tableId, label: nameMap.get(tableId) || tableId }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 export const TABLE_NAMES_TAB = TAB;
 export const TABLE_NAMES_HEADERS = HEADERS;
