@@ -12,6 +12,9 @@ import MenuItemModal from "./MenuItemModal";
 import OrderSentDialog from "./OrderSentDialog";
 import TableSwitchModal from "./TableSwitchModal";
 import Toast, { type ToastMsg } from "@/components/Toast";
+import { LANG_COOKIE, LANG_LABEL, fmt, priceLabel, type Lang } from "@/lib/site/i18n";
+import { categoryName, dishText, searchKey } from "@/lib/site/menu-i18n";
+import { ORDER_LANGS, orderDict } from "@/lib/order-i18n";
 
 const HIGHLIGHT_TAB_ID = "__highlight__";
 const FEATURED_TAB_ID = "__featured__";
@@ -25,8 +28,15 @@ const BOTTLE_CATEGORY_SLUGS = new Set(["vang-do", "ruou-manh", "ruou-ngam-duong-
 
 type OrderStatus = "idle" | "sending" | "sent" | "error";
 
-export default function OrderApp() {
+export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang }) {
   const searchParams = useSearchParams();
+  const [lang, setLangState] = useState<Lang>(initialLang);
+  const t = orderDict(lang);
+  function setLang(l: Lang) {
+    setLangState(l);
+    // Shared with the public website so the guest's choice follows them.
+    document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  }
   const qrTableId = searchParams.get("table");
   const [assignedTableId, setAssignedTableId] = useState<string | null>(null);
   const [overrideTableId, setOverrideTableId] = useState<string | null>(null);
@@ -59,6 +69,8 @@ export default function OrderApp() {
   const [callStaffCooldown, setCallStaffCooldown] = useState(false);
   const lastOrderIdRef = useRef<string | null>(null);
   const cartHydrated = useRef(false);
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const pushToast = useCallback((text: string, tone: "default" | "error" = "default") => {
     const id = Date.now() + Math.random();
@@ -69,12 +81,12 @@ export default function OrderApp() {
   const fetchMenu = useCallback(async () => {
     try {
       const res = await fetch("/api/menu", { cache: "no-store" });
-      if (!res.ok) throw new Error("Không tải được menu");
+      if (!res.ok) throw new Error("menu");
       const data = await res.json();
       setCategories(data.categories);
       setLoadError(null);
     } catch {
-      setLoadError("Không tải được menu. Vui lòng kiểm tra kết nối và thử lại.");
+      setLoadError("load");
     }
   }, []);
 
@@ -106,10 +118,10 @@ export default function OrderApp() {
         setOrderStatus("idle");
         setCart({});
         clearCart(tableId);
-        pushToast("Nhân viên đã xác nhận đơn của bạn. Cảm ơn quý khách!");
+        pushToast(tRef.current.confirmed);
       } else if (data.order.status === "CANCELLED") {
         setOrderStatus("error");
-        setOrderError("Đơn hàng đã bị huỷ bởi nhân viên. Vui lòng kiểm tra lại giỏ hàng và gửi lại.");
+        setOrderError(tRef.current.cancelled);
       }
     } catch {
       // transient network error — next poll will retry
@@ -133,19 +145,33 @@ export default function OrderApp() {
   }, [categories]);
 
   const isSearching = searchText.trim().length > 0;
-  const q = searchText.trim().toLowerCase();
+  const q = searchKey(searchText.trim());
+
+  // Search matches the Vietnamese name and its English/Russian translation.
+  const searchKeys = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cat of categories ?? []) {
+      for (const it of cat.items) {
+        const en = dishText(it.name, null, "en").name;
+        const ru = dishText(it.name, null, "ru").name;
+        m.set(it.id, searchKey(it.name, en, ru));
+      }
+    }
+    return m;
+  }, [categories]);
 
   const activeCatName = useMemo(() => {
-    if (activeCat === HIGHLIGHT_TAB_ID) return "Món Nổi Bật";
-    if (activeCat === FEATURED_TAB_ID) return "Món Đặc Trưng";
-    return categories?.find((c) => c.id === activeCat)?.name ?? "";
-  }, [activeCat, categories]);
+    if (activeCat === HIGHLIGHT_TAB_ID) return t.highlight;
+    if (activeCat === FEATURED_TAB_ID) return t.featured;
+    const name = categories?.find((c) => c.id === activeCat)?.name ?? "";
+    return categoryName(name, lang);
+  }, [activeCat, categories, t, lang]);
 
   const displayItems: MenuItemDTO[] = useMemo(() => {
     if (!categories) return [];
     if (isSearching) {
       const all = categories.flatMap((c) => c.items);
-      return all.filter((it) => it.name.toLowerCase().includes(q));
+      return all.filter((it) => (searchKeys.get(it.id) ?? "").includes(q));
     }
     if (activeCat === HIGHLIGHT_TAB_ID) {
       return categories.flatMap((c) => c.items).filter((it) => it.isHighlight);
@@ -154,7 +180,7 @@ export default function OrderApp() {
       return categories.flatMap((c) => c.items).filter((it) => it.isFeaturedSpecial);
     }
     return categories.find((c) => c.id === activeCat)?.items ?? [];
-  }, [categories, isSearching, q, activeCat]);
+  }, [categories, isSearching, q, activeCat, searchKeys]);
 
   function selectCategory(id: string) {
     setActiveCat(id);
@@ -187,7 +213,7 @@ export default function OrderApp() {
         if (!item || item.priceValue == null) return null;
         return {
           itemId,
-          name: item.name,
+          name: dishText(item.name, null, lang).name,
           unitPrice: item.priceValue,
           qty: line.qty,
           lineTotal: item.priceValue * line.qty,
@@ -195,7 +221,7 @@ export default function OrderApp() {
         };
       })
       .filter((l): l is CartLine => l !== null);
-  }, [cart, itemsById]);
+  }, [cart, itemsById, lang]);
 
   const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
   const cartTotal = cartLines.reduce((s, l) => s + l.lineTotal, 0);
@@ -214,7 +240,7 @@ export default function OrderApp() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Không gửi được yêu cầu.");
+      if (!res.ok) throw new Error(lang === "vi" ? data.error || t.sendFailed : t.sendFailed);
       lastOrderIdRef.current = data.order.id;
       setOrderStatus("sent");
       setCartOpen(false);
@@ -236,9 +262,9 @@ export default function OrderApp() {
         body: JSON.stringify({ tableId }),
       });
       if (!res.ok) throw new Error();
-      pushToast("Đã gửi yêu cầu, nhân viên sẽ tới ngay.");
+      pushToast(t.staffCalled);
     } catch {
-      pushToast("Không gửi được yêu cầu gọi nhân viên. Vui lòng thử lại.", "error");
+      pushToast(t.staffCallFailed, "error");
     }
   }
 
@@ -253,13 +279,13 @@ export default function OrderApp() {
     setCart(loadCart(newTableId));
     cartHydrated.current = true;
     setShowTableSwitch(false);
-    pushToast(`Đã chuyển sang bàn ${newTableId}.`);
+    pushToast(fmt(t.switched, { n: newTableId }));
   }
 
   if (loadError) {
     return (
       <div className="order-shell" style={{ alignItems: "center", justifyContent: "center" }}>
-        <p style={{ padding: 24, textAlign: "center" }}>{loadError}</p>
+        <p style={{ padding: 24, textAlign: "center" }}>{t.loadError}</p>
       </div>
     );
   }
@@ -268,7 +294,7 @@ export default function OrderApp() {
     return (
       <div className="order-shell" style={{ alignItems: "center", justifyContent: "center" }}>
         <p className="text-muted" style={{ padding: 24 }}>
-          Đang tải menu...
+          {t.loading}
         </p>
       </div>
     );
@@ -287,26 +313,33 @@ export default function OrderApp() {
           onClick={() => setShowTableSwitch(true)}
           style={{ cursor: "pointer" }}
         >
-          Bàn {tableLabel(tableNames, tableId)}
+          {fmt(t.table, { n: tableLabel(tableNames, tableId) })}
         </button>
         <button
           className="btn btn-secondary"
           onClick={() => setShowTableSwitch(true)}
           style={{ flex: "none", fontSize: 11, padding: "6px 10px" }}
         >
-          Đổi bàn
+          {t.switchTable}
         </button>
         <button className="btn btn-secondary" onClick={callStaff} disabled={callStaffCooldown} style={{ flex: "none" }}>
-          Gọi nhân viên
+          {t.callStaff}
         </button>
+        <div className="lang-switch" role="group" aria-label={t.language}>
+          {ORDER_LANGS.map((l) => (
+            <button key={l} type="button" aria-pressed={l === lang} className={l === lang ? "active" : ""} onClick={() => setLang(l)}>
+              {LANG_LABEL[l]}
+            </button>
+          ))}
+        </div>
         <input
           className="input order-search"
-          placeholder="Nhập tên món..."
+          placeholder={t.search}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
         <button className="btn btn-primary order-cart-btn" onClick={() => setCartOpen(true)}>
-          Giỏ hàng
+          {t.cart}
           {cartCount > 0 && <span className="order-cart-badge">{cartCount}</span>}
         </button>
       </header>
@@ -317,7 +350,7 @@ export default function OrderApp() {
             className={`order-cat-btn ${activeCat === HIGHLIGHT_TAB_ID && !isSearching ? "active" : ""}`}
             onClick={() => selectCategory(HIGHLIGHT_TAB_ID)}
           >
-            Món Nổi Bật
+            {t.highlight}
           </button>
           {categories.map((cat) => (
             <button
@@ -325,56 +358,60 @@ export default function OrderApp() {
               className={`order-cat-btn ${activeCat === cat.id && !isSearching ? "active" : ""}`}
               onClick={() => selectCategory(cat.id)}
             >
-              {cat.name}
+              {categoryName(cat.name, lang)}
             </button>
           ))}
         </aside>
 
         <main className="order-main scroll-y">
-          <h3 style={{ marginTop: 0 }}>{isSearching ? `Kết quả cho "${searchText}"` : activeCatName}</h3>
-          {displayItems.length === 0 && <p className="text-muted">Không có món nào.</p>}
+          <h3 style={{ marginTop: 0 }}>{isSearching ? fmt(t.resultsFor, { q: searchText }) : activeCatName}</h3>
+          {displayItems.length === 0 && <p className="text-muted">{t.noItems}</p>}
           <div className="order-grid">
-            {displayItems.map((item) => (
+            {displayItems.map((item) => {
+              const tr = dishText(item.name, item.note, lang);
+              return (
               <div className="item-card" key={item.id}>
                 {item.imageUrl && (
                   <img
                     className={`item-img ${bottleCategoryIds.has(item.categoryId) ? "item-img--bottle" : ""}`}
                     src={item.imageUrl}
-                    alt={item.name}
+                    alt={tr.name}
                     style={{ cursor: "pointer" }}
                     onClick={() => setDetailItem(item)}
                   />
                 )}
                 <div className="item-body">
                   <div className="item-name" style={{ cursor: "pointer" }} onClick={() => setDetailItem(item)}>
-                    {item.name}
+                    {tr.name}
                   </div>
-                  {item.note && (
-                    <div className="item-note text-muted">{item.note}</div>
+                  {lang !== "vi" && tr.name !== item.name && <div className="item-note text-muted">{item.name}</div>}
+                  {tr.note && (
+                    <div className="item-note text-muted">{tr.note}</div>
                   )}
                   <div className="item-row">
-                    <span className="item-price">{item.priceText}</span>
+                    <span className="item-price">{priceLabel(item.priceText, lang)}</span>
                     {item.priceValue != null && (
-                      <button className="item-add-btn" onClick={() => addToCart(item.id)} aria-label={`Thêm ${item.name}`}>
+                      <button className="item-add-btn" onClick={() => addToCart(item.id)} aria-label={fmt(t.add, { name: tr.name })}>
                         +
                       </button>
                     )}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </main>
       </div>
 
       <footer className="order-footer">
         <span className="text-muted" style={{ fontSize: 12 }}>
-          Giá chưa bao gồm VAT. Hải sản tươi sống theo thời giá.
+          {t.footerNote}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span className="order-total">{formatVnd(cartTotal)}</span>
           <button className="btn btn-primary" onClick={() => setCartOpen(true)}>
-            Xem giỏ hàng ({cartCount})
+            {fmt(t.viewCart, { n: cartCount })}
           </button>
         </div>
       </footer>
@@ -390,11 +427,14 @@ export default function OrderApp() {
         onDec={(id) => changeQty(id, -1)}
         onNoteChange={setItemNote}
         onSubmit={submitOrder}
+        t={t.drawer}
       />
 
       {detailItem && (
         <MenuItemModal
           item={detailItem}
+          lang={lang}
+          t={t.item}
           isBottle={bottleCategoryIds.has(detailItem.categoryId)}
           onClose={() => setDetailItem(null)}
           onAdd={(qty) => addToCart(detailItem.id, qty)}
@@ -409,6 +449,7 @@ export default function OrderApp() {
             setShowSentDialog(false);
           }}
           callStaffDisabled={callStaffCooldown}
+          t={t.sent}
         />
       )}
 
