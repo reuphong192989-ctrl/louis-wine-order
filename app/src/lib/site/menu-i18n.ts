@@ -439,12 +439,44 @@ export function categoryName(name: string, lang: Lang): string {
   return CATEGORY_INDEX.get(norm(name))?.[lang] ?? name;
 }
 
-/** Translated dish name + note; falls back to the Vietnamese text when no translation exists yet. */
-export function dishText(name: string, note: string | null, lang: Lang): { name: string; note: string | null } {
+/** Translations typed in Quản trị → Món ăn (stored on the menu item). */
+export type StoredTranslations = {
+  nameEn?: string | null;
+  noteEn?: string | null;
+  nameRu?: string | null;
+  noteRu?: string | null;
+};
+
+/**
+ * Translated dish name + note. Priority: translation saved on the item in admin,
+ * then the built-in dictionary below, then the Vietnamese text.
+ */
+export function dishText(
+  name: string,
+  note: string | null,
+  lang: Lang,
+  stored?: StoredTranslations,
+): { name: string; note: string | null } {
   if (lang === "vi") return { name, note };
   const t = ITEM_INDEX.get(norm(name));
-  if (!t) return { name, note };
-  return { name: t.n[lang], note: note ? (t.d?.[lang] ?? note) : null };
+  const storedName = lang === "en" ? stored?.nameEn : stored?.nameRu;
+  const storedNote = lang === "en" ? stored?.noteEn : stored?.noteRu;
+  return {
+    name: storedName || t?.n[lang] || name,
+    note: note ? storedNote || t?.d?.[lang] || note : storedNote || null,
+  };
+}
+
+/** Built-in translation for a Vietnamese dish name/note — used to pre-fill the admin form. */
+export function builtInDishText(name: string, note: string | null): StoredTranslations {
+  const t = ITEM_INDEX.get(norm(name));
+  if (!t) return {};
+  return {
+    nameEn: t.n.en,
+    nameRu: t.n.ru,
+    noteEn: note ? (t.d?.en ?? null) : null,
+    noteRu: note ? (t.d?.ru ?? null) : null,
+  };
 }
 
 /** Accent-free lowercase text used for menu search in any language. */

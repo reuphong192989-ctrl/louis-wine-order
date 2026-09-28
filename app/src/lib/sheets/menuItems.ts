@@ -14,6 +14,12 @@ const HEADERS = [
   "isFeaturedSpecial",
   "available",
   "sortOrder",
+  // Optional translations for foreign guests (website + table menu). Empty = use the
+  // built-in dictionary (src/lib/site/menu-i18n.ts), then Vietnamese.
+  "nameEn",
+  "noteEn",
+  "nameRu",
+  "noteRu",
 ];
 
 export type MenuItem = {
@@ -28,6 +34,10 @@ export type MenuItem = {
   isFeaturedSpecial: boolean;
   available: boolean;
   sortOrder: number;
+  nameEn: string | null;
+  noteEn: string | null;
+  nameRu: string | null;
+  noteRu: string | null;
 };
 
 function decode(values: Record<string, string>): MenuItem {
@@ -43,6 +53,10 @@ function decode(values: Record<string, string>): MenuItem {
     isFeaturedSpecial: cell.toBool(values.isFeaturedSpecial),
     available: values.available === "" ? true : cell.toBool(values.available),
     sortOrder: cell.toInt(values.sortOrder),
+    nameEn: cell.strOrNull(values.nameEn ?? ""),
+    noteEn: cell.strOrNull(values.noteEn ?? ""),
+    nameRu: cell.strOrNull(values.nameRu ?? ""),
+    noteRu: cell.strOrNull(values.noteRu ?? ""),
   };
 }
 
@@ -59,6 +73,10 @@ function encode(item: MenuItem): Record<string, string> {
     isFeaturedSpecial: cell.bool(item.isFeaturedSpecial),
     available: cell.bool(item.available),
     sortOrder: cell.int(item.sortOrder),
+    nameEn: cell.str(item.nameEn),
+    noteEn: cell.str(item.noteEn),
+    nameRu: cell.str(item.nameRu),
+    noteRu: cell.str(item.noteRu),
   };
 }
 

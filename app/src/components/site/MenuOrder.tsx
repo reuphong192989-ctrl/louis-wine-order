@@ -61,8 +61,10 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
         ...c,
         label: categoryName(c.name, lang),
         items: c.items.map((it) => {
-          const tr = dishText(it.name, it.note, lang);
-          return { ...it, label: tr.name, desc: tr.note, key: searchKey(it.name, it.note, tr.name, tr.note) };
+          const tr = dishText(it.name, it.note, lang, it);
+          const en = dishText(it.name, null, "en", it).name;
+          const ru = dishText(it.name, null, "ru", it).name;
+          return { ...it, label: tr.name, desc: tr.note, key: searchKey(it.name, it.note, tr.name, tr.note, en, ru) };
         }),
       })),
     [menu, lang],
@@ -80,6 +82,9 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
     setDrawer(false);
     if (window.location.hash === "#gio-hang") history.replaceState(null, "", window.location.pathname + window.location.search);
   }
+
+  // Stored translations for cart lines (the cart itself keeps the Vietnamese name).
+  const itemsById = useMemo(() => new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i])), [menu]);
 
   const totals = computeTotals(cartSubtotal, orderType);
   const locked = !!(lumia?.verified && orderType === "LUMIA_ROOM" && floor === lumia.floor && room === lumia.room);
@@ -146,7 +151,7 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
                   <div className="h-14 w-14 rounded-lg bg-wood-800 shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-snug">{dishText(l.name, null, lang).name}</p>
+                  <p className="text-sm font-medium leading-snug">{dishText(l.name, null, lang, itemsById.get(l.itemId)).name}</p>
                   <p className="text-xs text-gold-300 mt-0.5">{formatVnd(l.price)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <button className="h-7 w-7 rounded-full border border-gold-500/40" onClick={() => setQty(l.itemId, l.qty - 1)}>

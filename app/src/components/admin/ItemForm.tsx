@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AdminMenuItemDTO } from "@/types";
+import { builtInDishText } from "@/lib/site/menu-i18n";
 
 type CategoryOption = { id: string; name: string };
 
@@ -16,6 +17,10 @@ export type ItemFormValues = {
   available: boolean;
   isHighlight: boolean;
   isFeaturedSpecial: boolean;
+  nameEn: string;
+  noteEn: string;
+  nameRu: string;
+  noteRu: string;
 };
 
 function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string): ItemFormValues {
@@ -31,8 +36,14 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
       available: true,
       isHighlight: false,
       isFeaturedSpecial: false,
+      nameEn: "",
+      noteEn: "",
+      nameRu: "",
+      noteRu: "",
     };
   }
+  // Pre-fill with the saved translation, or the built-in one so it can be reviewed and saved.
+  const builtIn = builtInDishText(item.name, item.note);
   return {
     categoryId: item.categoryId,
     name: item.name,
@@ -44,6 +55,10 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
     available: item.available,
     isHighlight: item.isHighlight,
     isFeaturedSpecial: item.isFeaturedSpecial,
+    nameEn: item.nameEn || builtIn.nameEn || "",
+    noteEn: item.noteEn || builtIn.noteEn || "",
+    nameRu: item.nameRu || builtIn.nameRu || "",
+    noteRu: item.noteRu || builtIn.noteRu || "",
   };
 }
 
@@ -107,6 +122,10 @@ export default function ItemForm({
       available: values.available,
       isHighlight: values.isHighlight,
       isFeaturedSpecial: values.isFeaturedSpecial,
+      nameEn: values.nameEn.trim() || null,
+      noteEn: values.noteEn.trim() || null,
+      nameRu: values.nameRu.trim() || null,
+      noteRu: values.noteRu.trim() || null,
     };
 
     setSaving(true);
@@ -162,6 +181,51 @@ export default function ItemForm({
         <label>Ghi chú / cách chế biến (tuỳ chọn)</label>
         <input className="input" value={values.note} onChange={(e) => set("note", e.target.value)} />
       </div>
+
+      <fieldset style={{ border: "1px solid var(--color-divider)", padding: "var(--space-3)", margin: 0, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <legend style={{ fontWeight: 700, padding: "0 6px" }}>Bản dịch cho khách nước ngoài (website + menu bàn)</legend>
+        <span className="text-muted" style={{ fontSize: 11 }}>
+          Hiện khi khách chọn EN / RU. Để trống = hiện tên tiếng Việt. Nhân viên và bếp vẫn luôn thấy tên tiếng Việt.
+        </span>
+        <div className="field">
+          <label>Tên tiếng Anh (EN)</label>
+          <input className="input" value={values.nameEn} onChange={(e) => set("nameEn", e.target.value)} placeholder="VD: Grilled Japanese Fuji beef" />
+        </div>
+        <div className="field">
+          <label>Mô tả / cách chế biến tiếng Anh (EN, tuỳ chọn)</label>
+          <input className="input" value={values.noteEn} onChange={(e) => set("noteEn", e.target.value)} placeholder="VD: green pepper sauce / mushroom sauce" />
+        </div>
+        <div className="field">
+          <label>Tên tiếng Nga (RU)</label>
+          <input className="input" value={values.nameRu} onChange={(e) => set("nameRu", e.target.value)} placeholder="VD: Японская говядина Фудзи на гриле" />
+        </div>
+        <div className="field">
+          <label>Mô tả / cách chế biến tiếng Nga (RU, tuỳ chọn)</label>
+          <input className="input" value={values.noteRu} onChange={(e) => set("noteRu", e.target.value)} placeholder="VD: соус из зелёного перца / грибной соус" />
+        </div>
+        {values.name.trim() && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a
+              className="btn btn-secondary"
+              style={{ fontSize: 12 }}
+              href={`https://translate.google.com/?sl=vi&tl=en&text=${encodeURIComponent([values.name, values.note].filter(Boolean).join("\n"))}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Gợi ý dịch EN (Google)
+            </a>
+            <a
+              className="btn btn-secondary"
+              style={{ fontSize: 12 }}
+              href={`https://translate.google.com/?sl=vi&tl=ru&text=${encodeURIComponent([values.name, values.note].filter(Boolean).join("\n"))}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Gợi ý dịch RU (Google)
+            </a>
+          </div>
+        )}
+      </fieldset>
 
       <div className="field">
         <label>Giá</label>

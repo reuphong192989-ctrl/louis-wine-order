@@ -25,7 +25,7 @@ export default function MenuItemModal({
 }) {
   const [qty, setQty] = useState(1);
   const canOrder = item.priceValue != null;
-  const tr = dishText(item.name, item.note, lang);
+  const tr = dishText(item.name, item.note, lang, item);
   const parsedNote = tr.note ? parseCookingNote(tr.note) : null;
 
   return (

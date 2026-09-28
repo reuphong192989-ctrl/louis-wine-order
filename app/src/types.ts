@@ -10,6 +10,10 @@ export type MenuItemDTO = {
   isFeaturedSpecial: boolean;
   available: boolean;
   sortOrder: number;
+  nameEn?: string | null;
+  noteEn?: string | null;
+  nameRu?: string | null;
+  noteRu?: string | null;
 };
 
 export type AdminMenuItemDTO = MenuItemDTO & {

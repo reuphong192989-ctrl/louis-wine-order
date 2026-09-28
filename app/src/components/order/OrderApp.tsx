@@ -152,8 +152,8 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
     const m = new Map<string, string>();
     for (const cat of categories ?? []) {
       for (const it of cat.items) {
-        const en = dishText(it.name, null, "en").name;
-        const ru = dishText(it.name, null, "ru").name;
+        const en = dishText(it.name, null, "en", it).name;
+        const ru = dishText(it.name, null, "ru", it).name;
         m.set(it.id, searchKey(it.name, en, ru));
       }
     }
@@ -213,7 +213,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
         if (!item || item.priceValue == null) return null;
         return {
           itemId,
-          name: dishText(item.name, null, lang).name,
+          name: dishText(item.name, null, lang, item).name,
           unitPrice: item.priceValue,
           qty: line.qty,
           lineTotal: item.priceValue * line.qty,
@@ -368,7 +368,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
           {displayItems.length === 0 && <p className="text-muted">{t.noItems}</p>}
           <div className="order-grid">
             {displayItems.map((item) => {
-              const tr = dishText(item.name, item.note, lang);
+              const tr = dishText(item.name, item.note, lang, item);
               return (
               <div className="item-card" key={item.id}>
                 {item.imageUrl && (

@@ -199,7 +199,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             <SectionTitle kicker={h.menuKicker} title={h.menuTitle} sub={h.menuSub} />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {featured.map((it) => {
-                const tr = dishText(it.name, it.note, lang);
+                const tr = dishText(it.name, it.note, lang, it);
                 return (
                   <article key={it.id} className="group rounded-2xl overflow-hidden border border-gold-500/15 bg-wood-900/70 flex flex-col">
                     <div className="relative aspect-[4/3] overflow-hidden">

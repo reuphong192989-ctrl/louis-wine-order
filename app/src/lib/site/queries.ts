@@ -13,6 +13,10 @@ export type MenuItemDTO = {
   isHighlight: boolean;
   isSpecial: boolean;
   available: boolean;
+  nameEn: string | null;
+  noteEn: string | null;
+  nameRu: string | null;
+  noteRu: string | null;
 };
 
 export type MenuCategoryDTO = {
@@ -33,6 +37,10 @@ function toDTO(i: MenuItem): MenuItemDTO {
     isHighlight: i.isHighlight,
     isSpecial: i.isFeaturedSpecial,
     available: i.available,
+    nameEn: i.nameEn,
+    noteEn: i.noteEn,
+    nameRu: i.nameRu,
+    noteRu: i.noteRu,
   };
 }
 
