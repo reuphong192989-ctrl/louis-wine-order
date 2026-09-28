@@ -173,7 +173,8 @@ export async function batchUpdateRows(
   await withTx(async (c) => {
     await rememberHeaders(tab, headers, c);
     for (const { rowNumber, record } of updates) {
-      await c.query("UPDATE app_rows SET data = $3::jsonb, updated_at = now() WHERE tab = $1 AND id = $2", [
+      // Merge like a Sheets range write: columns outside `headers` keep their current values.
+      await c.query("UPDATE app_rows SET data = data || $3::jsonb, updated_at = now() WHERE tab = $1 AND id = $2", [
         tab,
         rowNumber,
         JSON.stringify(rowRecord(headers, record)),

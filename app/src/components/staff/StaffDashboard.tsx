@@ -174,9 +174,12 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {tableLabel(tableNames, o.tableId)}</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>
+                    {o.online ? o.tableId : `Bàn ${tableLabel(tableNames, o.tableId)}`}
+                  </span>
                   <span className="text-muted" style={{ fontSize: 12 }}>{formatTime(o.createdAt)}</span>
                 </div>
+                {o.online && <OnlineOrderInfo online={o.online} note={o.note} />}
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
                   {o.items.map((it) => (
                     <li key={it.id}>
@@ -221,7 +224,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 <tbody>
                   {doneOrders.map((o) => (
                     <tr key={o.id}>
-                      <td>{tableLabel(tableNames, o.tableId)}</td>
+                      <td>{o.online ? `${o.tableId} · ${o.online.code}` : tableLabel(tableNames, o.tableId)}</td>
                       <td>{formatTime(o.createdAt)}</td>
                       <td>{formatVnd(o.totalAmount)}</td>
                       <td>{o.status === "CONFIRMED" ? "Đã xác nhận" : "Đã huỷ"}</td>
@@ -233,6 +236,35 @@ export default function StaffDashboard({ username, role }: { username: string; r
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+const CHANNEL_LABEL = { PICKUP: "Khách đến lấy", DELIVERY: "Giao tận nơi", LUMIA_ROOM: "Giao về phòng Lumia" } as const;
+
+/** Customer / delivery details for website orders — staff call to confirm before sending to the kitchen. */
+function OnlineOrderInfo({ online, note }: { online: NonNullable<OrderDTO["online"]>; note: string | null }) {
+  return (
+    <div style={{ fontSize: 13, background: "var(--color-accent-2-100)", border: "1px solid var(--color-accent-2-300)", padding: "6px 8px" }}>
+      <div style={{ fontWeight: 700 }}>
+        {CHANNEL_LABEL[online.channel]} · Mã {online.code}
+      </div>
+      <div>
+        {online.customerName} ·{" "}
+        <a href={`tel:${online.phone}`} style={{ color: "var(--color-accent)", fontWeight: 700 }}>
+          {online.phone}
+        </a>
+      </div>
+      {online.address && <div>📍 {online.address}</div>}
+      {online.channel === "LUMIA_ROOM" && (
+        <div style={{ color: online.roomVerified ? "var(--color-accent-2-700)" : "var(--color-accent)", fontWeight: 700 }}>
+          {online.roomVerified ? "✓ Phòng đã xác thực qua QR" : "⚠ Khách nhập tay — gọi xác minh số phòng"}
+        </div>
+      )}
+      {online.scheduledTime && <div>⏰ {online.scheduledTime}</div>}
+      {note && <div>📝 {note}</div>}
+      {online.discount > 0 && <div>Đã trừ ưu đãi Lumia: -{formatVnd(online.discount)}</div>}
+      {online.shippingFee > 0 && <div>Phí giao: {formatVnd(online.shippingFee)}</div>}
     </div>
   );
 }

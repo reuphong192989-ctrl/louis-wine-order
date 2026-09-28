@@ -16,6 +16,18 @@
 > 3. Trên Vercel đặt `DATA_BACKEND=postgres` + `DATABASE_URL`, deploy lại. Quay về Sheets: xoá `DATA_BACKEND`, deploy lại.
 >
 > Chạy thử cục bộ không cần Google: `DATA_BACKEND=postgres` + một PostgreSQL bất kỳ, rồi `npm run seed` (seed ghi vào PostgreSQL).
+>
+> **Website khách (gộp từ trang Louis Wine Đà Nẵng):** `src/app/(site)` — trang chủ `/`, thực đơn & đặt món online `/menu`
+> (mang về · giao tận nơi · giao về phòng Lumia -10%), khách Lumia `/lumia`, theo dõi đơn `/don-hang/[mã]`, phiếu đặt bàn
+> `/dat-ban/[mã]`. Khu nội bộ giữ nguyên giao diện: `src/app/(noi-bo)` — `/order`, `/staff`, `/kitchen`, `/admin`, `/he-thong`.
+> Đơn online ghi vào cùng bảng Orders nên hiện trên màn hình nhân viên/bếp. Quản trị có thêm: Đặt bàn, Đánh giá khách, QR phòng Lumia.
+>
+> | Biến môi trường (website) | Ý nghĩa |
+> |---|---|
+> | `LUMIA_QR_SECRET` | Khoá ký mã QR phòng Lumia — chuỗi ngẫu nhiên dài, đặt **trước khi in**, không đổi sau khi in |
+> | `PUBLIC_SITE_URL` | Tên miền công khai (mặc định `https://louis-wine-order.vercel.app`) cho QR, SEO, sitemap |
+> | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Tuỳ chọn — báo đơn online / đặt bàn / đánh giá về nhóm nhà hàng |
+> | `TELEGRAM_LUMIA_CHAT_ID` | Tuỳ chọn — thêm bản sao đơn phòng Lumia & đặt bàn khách Lumia cho nhóm lễ tân |
 
 Ứng dụng order tại bàn cho Louis Wine (hầm rượu vang, Đà Nẵng): khách quét QR ở
 bàn → xem menu → thêm vào giỏ → gửi yêu cầu tới nhân viên theo thời gian thực.
