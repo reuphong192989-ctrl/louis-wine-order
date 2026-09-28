@@ -15,7 +15,7 @@ export function dataBackend(): "postgres" | "sheets" {
   return process.env.DATA_BACKEND === "postgres" ? "postgres" : "sheets";
 }
 
-type Backend = Omit<typeof postgres, "closePool">;
+type Backend = Omit<typeof postgres, "closePool" | "ping">;
 
 function b(): Backend {
   return dataBackend() === "postgres" ? postgres : sheets;

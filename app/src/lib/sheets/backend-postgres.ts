@@ -192,6 +192,12 @@ export async function deleteRows(tab: string, rowNumbers: number[]): Promise<voi
   await pool().query("DELETE FROM app_rows WHERE tab = $1 AND id = ANY($2::bigint[])", [tab, rowNumbers]);
 }
 
+/** Connectivity check for /api/health — also creates the tables if they don't exist yet. */
+export async function ping(): Promise<void> {
+  await ready();
+  await pool().query("SELECT 1");
+}
+
 /** Closes the pool — for standalone scripts only. */
 export async function closePool(): Promise<void> {
   await g.__louisPgPool?.end();

@@ -13,7 +13,10 @@ const LINKS = [
   { href: "/admin/users", label: "Tài khoản" },
 ];
 
-const OWNER_LINKS = [{ href: "/admin/orders", label: "Đơn hàng" }];
+const OWNER_LINKS = [
+  { href: "/admin/orders", label: "Đơn hàng" },
+  { href: "/admin/data", label: "Dữ liệu" },
+];
 
 export default function AdminNav({ username, role }: { username: string; role: "OWNER" | "ADMIN" }) {
   const pathname = usePathname();
