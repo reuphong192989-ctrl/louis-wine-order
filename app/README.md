@@ -1,5 +1,22 @@
 # Louis Wine — Menu Tự Order
 
+> **Lưu trữ dữ liệu (cập nhật):** app hiện chạy trên **Google Sheets** (`src/lib/sheets/backend-sheets.ts`) và
+> có sẵn **PostgreSQL** (`backend-postgres.ts`) dùng chung một giao diện `src/lib/sheets/core.ts`. Mục "Stack" bên dưới
+> (Prisma/WebSocket) là mô tả cũ.
+>
+> | Biến môi trường | Ý nghĩa |
+> |---|---|
+> | `DATA_BACKEND` | `postgres` → dùng PostgreSQL; bỏ trống → Google Sheets (mặc định) |
+> | `DATABASE_URL` | Chuỗi kết nối PostgreSQL (Neon: dùng URL *pooled*) |
+> | `DATABASE_POOL_MAX` | Tuỳ chọn, số kết nối tối đa mỗi instance (mặc định 5) |
+>
+> **Chuyển từ Google Sheets sang PostgreSQL** (Google Sheet chỉ được đọc, không bị sửa):
+> 1. Tạo database PostgreSQL (ví dụ Neon), đặt `DATABASE_URL` cùng các biến Google Sheets trong `.env.local`.
+> 2. `npm run migrate:pg` — chép toàn bộ tab (thực đơn, đơn hàng, nhân viên, nhật ký) sang PostgreSQL và kiểm đếm từng tab.
+> 3. Trên Vercel đặt `DATA_BACKEND=postgres` + `DATABASE_URL`, deploy lại. Quay về Sheets: xoá `DATA_BACKEND`, deploy lại.
+>
+> Chạy thử cục bộ không cần Google: `DATA_BACKEND=postgres` + một PostgreSQL bất kỳ, rồi `npm run seed` (seed ghi vào PostgreSQL).
+
 Ứng dụng order tại bàn cho Louis Wine (hầm rượu vang, Đà Nẵng): khách quét QR ở
 bàn → xem menu → thêm vào giỏ → gửi yêu cầu tới nhân viên theo thời gian thực.
 Có trang quản trị để tự cập nhật danh mục / món / giá / ảnh / trạng thái còn-hết

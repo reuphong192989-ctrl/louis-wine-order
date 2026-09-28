@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, readAllRows, updateRow, cell } from "./core";
+import { appendRow, readAllRows, readAllRowsCached, updateRow, cell } from "./core";
 
 const TAB = "StaffCalls";
 const HEADERS = ["id", "tableId", "status", "createdAt", "acknowledgedAt", "acknowledgedBy"];
@@ -26,8 +26,11 @@ function decode(values: Record<string, string>): StaffCall {
   };
 }
 
+// Staff screen polls every 4s; share one read across pollers for 2s.
+const LIST_TTL_MS = 2_000;
+
 export async function listStaffCalls(status?: StaffCallStatus, limit = 200): Promise<StaffCall[]> {
-  const rows = await readAllRows(TAB);
+  const rows = await readAllRowsCached(TAB, LIST_TTL_MS);
   let calls = rows.map((r) => decode(r.values));
   if (status) calls = calls.filter((c) => c.status === status);
   calls.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -71,3 +74,6 @@ export async function acknowledgeStaffCall(id: string, handledBy: string): Promi
   });
   return next;
 }
+
+export const STAFF_CALLS_TAB = TAB;
+export const STAFF_CALLS_HEADERS = HEADERS;

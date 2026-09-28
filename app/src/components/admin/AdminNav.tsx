@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/admin/table-names", label: "Đổi tên bàn" },
   { href: "/admin/staff-review", label: "Đánh giá nhân viên" },
   { href: "/admin/users", label: "Tài khoản" },
+  { href: "/admin/data", label: "Dữ liệu" },
 ];
 
 const OWNER_LINKS = [{ href: "/admin/orders", label: "Đơn hàng" }];
