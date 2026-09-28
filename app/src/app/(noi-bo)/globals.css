@@ -261,3 +261,17 @@ select.input { cursor: pointer; }
   .order-main { padding: 14px; }
   .cart-panel { width: 100%; }
 }
+
+/* Printing (e.g. Quản trị → QR phòng Lumia): only the page content, no nav/buttons. */
+@media print {
+  .no-print,
+  .order-header {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .scroll-y {
+    overflow: visible !important;
+  }
+}

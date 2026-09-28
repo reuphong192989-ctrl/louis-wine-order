@@ -10,6 +10,9 @@ const LINKS = [
   { href: "/admin/table-log", label: "Nhật ký bàn" },
   { href: "/admin/table-names", label: "Đổi tên bàn" },
   { href: "/admin/staff-review", label: "Đánh giá nhân viên" },
+  { href: "/admin/reservations", label: "Đặt bàn" },
+  { href: "/admin/reviews", label: "Đánh giá khách" },
+  { href: "/admin/lumia-qr", label: "QR phòng Lumia" },
   { href: "/admin/users", label: "Tài khoản" },
   { href: "/admin/data", label: "Dữ liệu" },
 ];

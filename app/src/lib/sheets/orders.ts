@@ -17,7 +17,36 @@ const ORDERS_HEADERS = [
   "itemsSummary",
   "confirmedBy",
   "cancelledBy",
+  // Website channels (pickup / delivery / Lumia room). Empty on table orders.
+  "channel",
+  "code",
+  "customerName",
+  "phone",
+  "address",
+  "hotelRoom",
+  "roomVerified",
+  "scheduledTime",
+  "subtotal",
+  "discount",
+  "shippingFee",
 ];
+
+/** TABLE = QR at a restaurant table; the rest come from the public website. */
+export type OrderChannel = "TABLE" | "PICKUP" | "DELIVERY" | "LUMIA_ROOM";
+
+export type OnlineOrderInfo = {
+  channel: Exclude<OrderChannel, "TABLE">;
+  code: string;
+  customerName: string;
+  phone: string;
+  address: string | null;
+  hotelRoom: string | null;
+  roomVerified: boolean;
+  scheduledTime: string | null;
+  subtotal: number;
+  discount: number;
+  shippingFee: number;
+};
 
 function buildItemsSummary(lines: { nameSnapshot: string; qty: number }[]): string {
   return lines.map((l) => `${l.nameSnapshot} x${l.qty}`).join(", ");
@@ -52,8 +81,45 @@ export type Order = {
   cancelledAt: string | null;
   confirmedBy: string | null;
   cancelledBy: string | null;
+  /** Present only for website orders (pickup / delivery / Lumia room). */
+  online: OnlineOrderInfo | null;
   items: OrderItemLine[];
 };
+
+function decodeOnline(values: Record<string, string>): OnlineOrderInfo | null {
+  const channel = values.channel as OrderChannel | undefined;
+  if (!channel || channel === "TABLE") return null;
+  return {
+    channel,
+    code: values.code ?? "",
+    customerName: values.customerName ?? "",
+    phone: values.phone ?? "",
+    address: cell.strOrNull(values.address ?? ""),
+    hotelRoom: cell.strOrNull(values.hotelRoom ?? ""),
+    roomVerified: cell.toBool(values.roomVerified ?? ""),
+    scheduledTime: cell.strOrNull(values.scheduledTime ?? ""),
+    subtotal: cell.toInt(values.subtotal ?? ""),
+    discount: cell.toInt(values.discount ?? ""),
+    shippingFee: cell.toInt(values.shippingFee ?? ""),
+  };
+}
+
+function encodeOnline(online: OnlineOrderInfo | null): Record<string, string> {
+  if (!online) return { channel: "TABLE" };
+  return {
+    channel: online.channel,
+    code: online.code,
+    customerName: online.customerName,
+    phone: online.phone,
+    address: cell.str(online.address),
+    hotelRoom: cell.str(online.hotelRoom),
+    roomVerified: cell.bool(online.roomVerified),
+    scheduledTime: cell.str(online.scheduledTime),
+    subtotal: cell.int(online.subtotal),
+    discount: cell.int(online.discount),
+    shippingFee: cell.int(online.shippingFee),
+  };
+}
 
 function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
   return {
@@ -67,6 +133,7 @@ function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
     cancelledAt: cell.strOrNull(values.cancelledAt),
     confirmedBy: cell.strOrNull(values.confirmedBy),
     cancelledBy: cell.strOrNull(values.cancelledBy),
+    online: decodeOnline(values),
   };
 }
 
@@ -121,26 +188,38 @@ export async function findOrderById(id: string): Promise<Order | null> {
   return all.find((o) => o.id === id) ?? null;
 }
 
+/** Website order lookup by its short public code (e.g. LWK3F9A2). */
+export async function findOrderByCode(code: string): Promise<Order | null> {
+  const all = await listOrders(undefined, 100000);
+  return all.find((o) => o.online?.code === code) ?? null;
+}
+
 export async function createOrder(input: {
   tableId: string;
   lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null }[];
+  /** Website orders: customer/delivery details and the final total after discount + shipping. */
+  online?: OnlineOrderInfo;
+  note?: string | null;
 }): Promise<Order> {
   const id = randomUUID();
   const createdAt = new Date().toISOString();
-  const totalAmount = input.lines.reduce((s, l) => s + l.lineTotal, 0);
+  const online = input.online ?? null;
+  const itemsTotal = input.lines.reduce((s, l) => s + l.lineTotal, 0);
+  const totalAmount = online ? online.subtotal - online.discount + online.shippingFee : itemsTotal;
 
   await appendRow(ORDERS_TAB, ORDERS_HEADERS, {
     id,
     tableId: input.tableId,
     status: "PENDING",
     totalAmount: cell.int(totalAmount),
-    note: "",
+    note: cell.str(input.note),
     createdAt,
     confirmedAt: "",
     cancelledAt: "",
     itemsSummary: buildItemsSummary(input.lines),
     confirmedBy: "",
     cancelledBy: "",
+    ...encodeOnline(online),
   });
 
   const items: OrderItemLine[] = input.lines.map((line) => ({
@@ -172,12 +251,13 @@ export async function createOrder(input: {
     tableId: input.tableId,
     status: "PENDING",
     totalAmount,
-    note: null,
+    note: input.note ?? null,
     createdAt,
     confirmedAt: null,
     cancelledAt: null,
     confirmedBy: null,
     cancelledBy: null,
+    online,
     items,
   };
 }
@@ -250,6 +330,7 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
   };
 
   await updateRow(ORDERS_TAB, row.rowNumber, ORDERS_HEADERS, {
+    ...row.values,
     id: next.id,
     tableId: next.tableId,
     status: next.status,

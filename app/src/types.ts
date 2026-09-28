@@ -44,6 +44,20 @@ export type OrderDTO = {
   createdAt: string;
   confirmedAt: string | null;
   cancelledAt: string | null;
+  /** Website orders only (pickup / delivery / Lumia room). */
+  online?: {
+    channel: "PICKUP" | "DELIVERY" | "LUMIA_ROOM";
+    code: string;
+    customerName: string;
+    phone: string;
+    address: string | null;
+    hotelRoom: string | null;
+    roomVerified: boolean;
+    scheduledTime: string | null;
+    subtotal: number;
+    discount: number;
+    shippingFee: number;
+  } | null;
   items: OrderItemDTO[];
 };
 
