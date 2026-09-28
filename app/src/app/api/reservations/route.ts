@@ -1,4 +1,6 @@
 import { after, NextResponse } from "next/server";
+import { langFromRequest } from "@/lib/site/lang-server";
+import { dict } from "@/lib/site/i18n";
 import { createReservation, listReservations } from "@/lib/sheets/reservations";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
@@ -19,24 +21,25 @@ export const GET = withErrors(async () => {
 
 /** Public: book a table from the website. */
 export async function POST(req: Request) {
-  if (!rateLimit(req, "reservations", 5, 10 * 60 * 1000)) return tooMany();
+  const msg = dict(langFromRequest(req)).errors;
+  if (!rateLimit(req, "reservations", 5, 10 * 60 * 1000)) return tooMany(msg.tooMany);
   try {
     const b = await req.json().catch(() => null);
-    if (!b || typeof b !== "object") return bad("Dữ liệu không hợp lệ.");
+    if (!b || typeof b !== "object") return bad(msg.invalid);
 
     const customerName = cleanText(b.customerName, 80);
-    if (!customerName) return bad("Vui lòng nhập họ tên.");
+    if (!customerName) return bad(msg.name);
     const phone = cleanPhone(b.phone);
-    if (!phone) return bad("Số điện thoại không hợp lệ.");
+    if (!phone) return bad(msg.phone);
 
     const date = String(b.date ?? "");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad("Vui lòng chọn ngày.");
-    if (date < todayVN()) return bad("Ngày đặt bàn không được ở quá khứ.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad(msg.date);
+    if (date < todayVN()) return bad(msg.datePast);
     const time = String(b.time ?? "");
-    if (!/^\d{2}:\d{2}$/.test(time)) return bad("Vui lòng chọn giờ.");
-    if (date === todayVN() && time <= nowTimeVN()) return bad("Giờ đặt bàn hôm nay đã qua, vui lòng chọn giờ khác.");
+    if (!/^\d{2}:\d{2}$/.test(time)) return bad(msg.time);
+    if (date === todayVN() && time <= nowTimeVN()) return bad(msg.timePast);
     const guests = Math.floor(Number(b.guests));
-    if (!Number.isInteger(guests) || guests < 1 || guests > 100) return bad("Số khách không hợp lệ.");
+    if (!Number.isInteger(guests) || guests < 1 || guests > 100) return bad(msg.guests);
 
     const isLumiaGuest = !!b.isLumiaGuest;
     let hotelRoom: string | null = null;
@@ -47,13 +50,13 @@ export async function POST(req: Request) {
     if (isLumiaGuest) {
       const floor = Number(b.floor);
       const room = String(b.room ?? "");
-      if (!isValidRoom(floor, room)) return bad("Số tầng / số phòng Lumia Apartment không hợp lệ.");
+      if (!isValidRoom(floor, room)) return bad(msg.room);
       hotelRoom = room;
       roomVerified = verifyRoomKey(room, b.lumiaKey);
       needShuttle = !!b.needShuttle;
       if (needShuttle) {
         pickupTime = String(b.pickupTime ?? "");
-        if (!/^\d{2}:\d{2}$/.test(pickupTime)) return bad("Vui lòng chọn giờ xe đón.");
+        if (!/^\d{2}:\d{2}$/.test(pickupTime)) return bad(msg.shuttleTime);
       }
     }
 
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, code: r.code });
   } catch (e) {
     console.error(e);
-    return Response.json({ ok: false, error: "Lỗi máy chủ, vui lòng thử lại." }, { status: 500 });
+    return Response.json({ ok: false, error: msg.server }, { status: 500 });
   }
 }
 

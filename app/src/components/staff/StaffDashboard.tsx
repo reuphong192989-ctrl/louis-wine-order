@@ -17,19 +17,35 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const [reservations, setReservations] = useState<ReservationDTO[]>([]);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const knownPendingIds = useRef<Set<string> | null>(null);
+  const [connError, setConnError] = useState(false);
 
   // Poll every few seconds — the realtime substitute for WebSocket push on
   // serverless hosting. Plays a chime only for genuinely new PENDING
   // orders/calls/website bookings (not on every poll), so it works unattended.
   usePolling(async () => {
-    const [ordersRes, callsRes, resRes] = await Promise.all([
-      fetch("/api/orders"),
-      fetch("/api/staff-calls"),
-      fetch("/api/reservations"),
-    ]);
-    const nextOrders: OrderDTO[] = ordersRes.ok ? (await ordersRes.json()).orders : [];
-    const nextCalls: StaffCallDTO[] = callsRes.ok ? (await callsRes.json()).calls : [];
-    const nextRes: ReservationDTO[] = resRes.ok ? (await resRes.json()).reservations : [];
+    let responses: Response[];
+    try {
+      responses = await Promise.all([fetch("/api/orders"), fetch("/api/staff-calls"), fetch("/api/reservations?scope=staff")]);
+    } catch {
+      setConnError(true); // offline — keep showing the last known lists
+      return;
+    }
+    if (responses.some((r) => r.status === 401)) {
+      // Session expired (12h shift): never leave a silently empty screen.
+      router.push(role === "STAFF" ? "/staff/login" : "/admin/login");
+      return;
+    }
+    if (responses.some((r) => !r.ok)) {
+      // Server hiccup: keep the last lists and don't touch the chime baseline,
+      // otherwise cards would vanish and every pending item would re-chime.
+      setConnError(true);
+      return;
+    }
+    const [ordersRes, callsRes, resRes] = responses;
+    const nextOrders: OrderDTO[] = (await ordersRes.json()).orders;
+    const nextCalls: StaffCallDTO[] = (await callsRes.json()).calls;
+    const nextRes: ReservationDTO[] = (await resRes.json()).reservations;
+    setConnError(false);
 
     const nowPendingIds = new Set([
       ...nextOrders.filter((o) => o.status === "PENDING").map((o) => o.id),
@@ -58,7 +74,12 @@ export default function StaffDashboard({ username, role }: { username: string; r
       if (res.ok) {
         const { reservation } = await res.json();
         setReservations((list) => list.map((r) => (r.id === id ? reservation : r)));
+      } else {
+        const data = await res.json().catch(() => null);
+        window.alert(data?.error ?? "Không cập nhật được lượt đặt bàn — vui lòng thử lại.");
       }
+    } catch {
+      window.alert("Mất kết nối — chưa cập nhật được lượt đặt bàn, vui lòng thử lại.");
     } finally {
       setBusyIds((s) => {
         const next = new Set(s);
@@ -140,6 +161,15 @@ export default function StaffDashboard({ username, role }: { username: string; r
       </header>
 
       <main className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        {connError && (
+          <div
+            role="alert"
+            style={{ background: "var(--color-accent)", color: "#fff", padding: "var(--space-2) var(--space-3)", fontWeight: 700 }}
+          >
+            ⚠ Mất kết nối tới máy chủ — đang thử lại. Danh sách bên dưới có thể chưa cập nhật; gọi Hotline nếu kéo dài.
+          </div>
+        )}
+
         <section>
           <h3>Gọi nhân viên {pendingCalls.length > 0 && <span className="tag tag-accent">{pendingCalls.length} đang chờ</span>}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 }}>

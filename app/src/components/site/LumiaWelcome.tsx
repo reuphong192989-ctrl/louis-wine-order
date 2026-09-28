@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useApp } from "./AppProviders";
 import { RoomPicker } from "./RoomPicker";
 import { RESTAURANT } from "@/lib/site/constants";
+import { fmt } from "@/lib/site/i18n";
 
 type Props = {
   qr: { floor: number; room: string; key: string; verified: boolean } | null;
@@ -12,7 +13,7 @@ type Props = {
 };
 
 export function LumiaWelcome({ qr, invalidQr }: Props) {
-  const { lumia, setLumia, ready } = useApp();
+  const { lumia, setLumia, ready, t } = useApp();
   const [floor, setFloor] = useState<number | "">("");
   const [room, setRoom] = useState("");
   const [editing, setEditing] = useState(false);
@@ -25,53 +26,50 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
 
   const active = ready ? lumia : null;
   const showPicker = ready && (!active || editing);
+  const p = t.lumiaPage;
 
   return (
     <div className="max-w-2xl mx-auto">
       {invalidQr && (
-        <p className="mb-6 rounded-xl border border-wine-500 bg-wine-900/50 px-4 py-3 text-sm">
-          Mã QR không hợp lệ hoặc đã bị thay đổi. Vui lòng chọn lại số phòng bên dưới hoặc gọi {RESTAURANT.hotline}.
-        </p>
+        <p className="mb-6 rounded-xl border border-wine-500 bg-wine-900/50 px-4 py-3 text-sm">{fmt(p.invalidQr, { hotline: RESTAURANT.hotline })}</p>
       )}
 
       {active && !editing && (
         <div className="rounded-3xl border border-gold-500/40 bg-wood-900/80 p-6 sm:p-8 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-gold-500">Kính chào quý khách</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-gold-500">{p.welcome}</p>
           <p className="font-serif text-4xl sm:text-5xl mt-3">
-            Phòng <span className="gold-text">{active.room}</span>
+            {p.roomTitle} <span className="gold-text">{active.room}</span>
           </p>
-          <p className="text-cream/70 mt-1">Tầng {active.floor} · Lumia Apartment</p>
+          <p className="text-cream/70 mt-1">Lumia Apartment</p>
           {active.verified ? (
-            <p className="mt-3 inline-block text-xs rounded-full border border-gold-500/50 px-3 py-1 text-gold-300">🔑 Đã xác thực qua mã QR trong phòng</p>
+            <p className="mt-3 inline-block text-xs rounded-full border border-gold-500/50 px-3 py-1 text-gold-300">{p.verified}</p>
           ) : (
-            <p className="mt-3 inline-block text-xs rounded-full border border-cream/20 px-3 py-1 text-cream/60">
-              Nhân viên sẽ gọi xác minh số phòng khi nhận đơn
-            </p>
+            <p className="mt-3 inline-block text-xs rounded-full border border-cream/20 px-3 py-1 text-cream/60">{p.unverified}</p>
           )}
 
           <div className="mt-8 grid sm:grid-cols-2 gap-4 text-left">
             <Link href="/menu" className="group rounded-2xl border border-gold-500/30 bg-wood-950/70 p-5 hover:border-gold-500 transition">
               <p className="text-3xl">🛎</p>
-              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">Đặt món về phòng</p>
-              <p className="text-sm text-cream/70 mt-1">
-                <b className="text-gold-300">-10% hoá đơn</b> · <b className="text-gold-300">Free ship</b> · giao tận cửa phòng {active.room}
-              </p>
-              <p className="mt-4 text-sm text-gold-400">Xem thực đơn →</p>
+              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">{p.orderTitle}</p>
+              <p className="text-sm text-cream/70 mt-1">{fmt(p.orderText, { room: active.room })}</p>
+              <p className="mt-4 text-sm text-gold-400">{p.orderCta}</p>
             </Link>
             <Link href="/#dat-ban" className="group rounded-2xl border border-gold-500/30 bg-wood-950/70 p-5 hover:border-gold-500 transition">
               <p className="text-3xl">🚐</p>
-              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">Đặt bàn tại nhà hàng</p>
-              <p className="text-sm text-cream/70 mt-1">
-                <b className="text-gold-300">-10% hoá đơn</b> · <b className="text-gold-300">Xe đưa đón miễn phí</b> tại sảnh Lumia
-              </p>
-              <p className="mt-4 text-sm text-gold-400">Đặt bàn ngay →</p>
+              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">{p.bookTitle}</p>
+              <p className="text-sm text-cream/70 mt-1">{p.bookText}</p>
+              <p className="mt-4 text-sm text-gold-400">{p.bookCta}</p>
             </Link>
           </div>
 
           <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm">
-            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-outline !py-2">☎ Gọi {RESTAURANT.hotline}</a>
+            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-outline !py-2">
+              {fmt(p.call, { hotline: RESTAURANT.hotline })}
+            </a>
             {!active.verified && (
-              <button className="btn-outline !py-2" onClick={() => setEditing(true)}>Đổi số phòng</button>
+              <button className="btn-outline !py-2" onClick={() => setEditing(true)}>
+                {p.changeRoom}
+              </button>
             )}
             <button
               className="text-cream/40 hover:text-cream/70 underline underline-offset-4"
@@ -80,7 +78,7 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
                 setEditing(false);
               }}
             >
-              Tôi đã trả phòng
+              {p.checkedOut}
             </button>
           </div>
         </div>
@@ -88,11 +86,8 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
 
       {showPicker && (
         <div className="rounded-3xl border border-gold-500/30 bg-wood-900/80 p-6 sm:p-8">
-          <p className="font-serif text-3xl">Xác nhận phòng của bạn</p>
-          <p className="text-cream/60 text-sm mt-2">
-            Cách nhanh nhất là <b className="text-gold-300">quét mã QR dán trong phòng</b>. Nếu không quét được, vui lòng chọn chính xác
-            tầng và số phòng để nhân viên phục vụ tận nơi.
-          </p>
+          <p className="font-serif text-3xl">{p.pickTitle}</p>
+          <p className="text-cream/60 text-sm mt-2">{p.pickText}</p>
           <div className="mt-6">
             <RoomPicker
               floor={floor}
@@ -112,7 +107,7 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
               setEditing(false);
             }}
           >
-            Xác nhận Tầng {floor || "?"} · Phòng {room || "???"}
+            {fmt(p.confirm, { room: room || "???" })}
           </button>
         </div>
       )}

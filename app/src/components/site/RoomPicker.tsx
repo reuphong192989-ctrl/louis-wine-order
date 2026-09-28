@@ -2,6 +2,8 @@
 
 import { LUMIA } from "@/lib/site/constants";
 import { roomCode } from "@/lib/site/lumia";
+import { fmt } from "@/lib/site/i18n";
+import { useApp } from "./AppProviders";
 
 type Props = {
   floor: number | "";
@@ -12,14 +14,13 @@ type Props = {
 
 /** Floor + room selector that only allows existing Lumia rooms (5 floors x 6 rooms). */
 export function RoomPicker({ floor, room, onChange, locked }: Props) {
+  const { t } = useApp();
   if (locked && floor && room) {
     return (
       <div className="rounded-xl border border-gold-500/40 bg-gold-500/10 p-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest text-gold-400">Lumia Apartment · đã xác thực QR</p>
-          <p className="font-serif text-2xl mt-1">
-            Tầng {floor} · Phòng <span className="text-gold-300">{room}</span>
-          </p>
+          <p className="text-xs uppercase tracking-widest text-gold-400">{t.room.verified}</p>
+          <p className="font-serif text-2xl mt-1">{fmt(t.room.floorRoom, { floor, room })}</p>
         </div>
         <span className="text-3xl">🔑</span>
       </div>
@@ -29,34 +30,23 @@ export function RoomPicker({ floor, room, onChange, locked }: Props) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <div>
-        <label className="label">Tầng *</label>
-        <select
-          className="input"
-          value={floor}
-          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : "", "")}
-          required
-        >
-          <option value="">-- Chọn tầng --</option>
+        <label className="label">{t.room.floor}</label>
+        <select className="input" value={floor} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : "", "")} required>
+          <option value="">{t.room.chooseFloor}</option>
           {Array.from({ length: LUMIA.floors }, (_, i) => i + 1).map((f) => (
             <option key={f} value={f}>
-              Tầng {f}
+              {fmt(t.room.floorN, { n: f })}
             </option>
           ))}
         </select>
       </div>
       <div>
-        <label className="label">Số phòng *</label>
-        <select
-          className="input"
-          value={room}
-          disabled={!floor}
-          onChange={(e) => onChange(floor, e.target.value)}
-          required
-        >
-          <option value="">{floor ? "-- Chọn phòng --" : "Chọn tầng trước"}</option>
+        <label className="label">{t.room.room}</label>
+        <select className="input" value={room} disabled={!floor} onChange={(e) => onChange(floor, e.target.value)} required>
+          <option value="">{floor ? t.room.chooseRoom : t.room.floorFirst}</option>
           {rooms.map((r) => (
             <option key={r} value={r}>
-              Phòng {r}
+              {fmt(t.room.roomN, { n: r })}
             </option>
           ))}
         </select>

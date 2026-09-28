@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { LANG_COOKIE, dict, type Dict, type Lang } from "@/lib/site/i18n";
 
 export type CartLine = {
   itemId: string;
@@ -28,6 +30,10 @@ type Ctx = {
   clearCart: () => void;
   lumia: LumiaSession | null;
   setLumia: (s: LumiaSession | null) => void;
+  /** Website language (cookie, English by default) and its dictionary. */
+  lang: Lang;
+  t: Dict;
+  setLang: (l: Lang) => void;
 };
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -38,7 +44,8 @@ const LUMIA_KEY = "louis-lumia-v1";
 // Lumia session expires after 7 days (typical stay)
 const LUMIA_TTL = 7 * 24 * 3600 * 1000;
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({ children, lang }: { children: ReactNode; lang: Lang }) {
+  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [lumia, setLumiaState] = useState<LumiaSession | null>(null);
@@ -86,6 +93,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setCart([]), []);
 
+  // Server components read the cookie, so a refresh re-renders everything in the new language.
+  const setLang = useCallback(
+    (l: Lang) => {
+      document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      router.refresh();
+    },
+    [router],
+  );
+
   const value = useMemo<Ctx>(
     () => ({
       ready,
@@ -97,8 +113,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
       clearCart,
       lumia,
       setLumia,
+      lang,
+      t: dict(lang),
+      setLang,
     }),
-    [ready, cart, add, setQty, clearCart, lumia, setLumia],
+    [ready, cart, add, setQty, clearCart, lumia, setLumia, lang, setLang],
   );
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
