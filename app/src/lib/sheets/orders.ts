@@ -267,3 +267,5 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
   const items = itemRows.map((r) => decodeOrderItem(r.values)).filter((it) => it.orderId === id);
   return { ...next, items };
 }
+
+export { ORDERS_TAB, ORDERS_HEADERS, ORDER_ITEMS_TAB, ORDER_ITEMS_HEADERS };

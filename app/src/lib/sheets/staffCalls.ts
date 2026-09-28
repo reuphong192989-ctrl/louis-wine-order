@@ -74,3 +74,6 @@ export async function acknowledgeStaffCall(id: string, handledBy: string): Promi
   });
   return next;
 }
+
+export const STAFF_CALLS_TAB = TAB;
+export const STAFF_CALLS_HEADERS = HEADERS;
