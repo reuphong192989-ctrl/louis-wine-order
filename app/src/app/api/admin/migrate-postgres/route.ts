@@ -8,16 +8,16 @@ export const dynamic = "force-dynamic";
 // Copying every tab can take a while on a large sheet (Hobby plan allows up to 60s).
 export const maxDuration = 60;
 
-/** OWNER: current storage backend + row counts already in PostgreSQL. */
+/** OWNER/ADMIN: current storage backend + row counts already in PostgreSQL. */
 export const GET = withErrors(async () => {
-  const auth = await requireSession(["OWNER"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
   return NextResponse.json({ backend: dataBackend(), postgres: await postgresCounts() });
 });
 
-/** OWNER: copy Google Sheets → PostgreSQL. Body: { force?: boolean }. The Sheet is only read. */
+/** OWNER/ADMIN: copy Google Sheets → PostgreSQL. Body: { force?: boolean }. The Sheet is only read. */
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["OWNER"]);
+  const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
   if (dataBackend() === "postgres") {
     return NextResponse.json(

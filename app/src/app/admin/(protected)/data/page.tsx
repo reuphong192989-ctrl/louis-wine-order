@@ -4,7 +4,7 @@ import DataMigrationManager from "@/components/admin/DataMigrationManager";
 
 export default async function AdminDataPage() {
   const session = await getSession();
-  if (!session || session.role !== "OWNER") redirect("/admin/categories");
+  if (!session || (session.role !== "OWNER" && session.role !== "ADMIN")) redirect("/admin/categories");
 
   return <DataMigrationManager />;
 }
