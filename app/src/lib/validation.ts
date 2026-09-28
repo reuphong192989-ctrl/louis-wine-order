@@ -14,7 +14,23 @@ export const menuItemInputSchema = z.object({
   available: z.boolean().optional(),
   isHighlight: z.boolean().optional(),
   isFeaturedSpecial: z.boolean().optional(),
+  // Translations — omitted (undefined) keeps the stored value, "" / null clears it.
+  nameEn: z.string().trim().max(200).optional().nullable(),
+  noteEn: z.string().trim().max(500).optional().nullable(),
+  nameRu: z.string().trim().max(200).optional().nullable(),
+  noteRu: z.string().trim().max(500).optional().nullable(),
 });
+
+type TranslationKey = "nameEn" | "noteEn" | "nameRu" | "noteRu";
+
+/** Translation fields to store: values sent by the form, or the existing ones for fields it didn't send. */
+export function resolveTranslations(
+  input: MenuItemInput,
+  existing?: Partial<Record<TranslationKey, string | null>>,
+): Record<TranslationKey, string | null> {
+  const pick = (k: TranslationKey) => (input[k] === undefined ? (existing?.[k] ?? null) : input[k] || null);
+  return { nameEn: pick("nameEn"), noteEn: pick("noteEn"), nameRu: pick("nameRu"), noteRu: pick("noteRu") };
+}
 
 export type MenuItemInput = z.infer<typeof menuItemInputSchema>;
 

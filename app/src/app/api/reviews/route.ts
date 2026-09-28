@@ -1,4 +1,6 @@
 import { after, NextResponse } from "next/server";
+import { langFromRequest } from "@/lib/site/lang-server";
+import { dict } from "@/lib/site/i18n";
 import { createReview, listReviews, reviewSummary } from "@/lib/sheets/reviews";
 import { getSession } from "@/lib/auth";
 import { cleanText } from "@/lib/site/validate";
@@ -27,16 +29,17 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!rateLimit(req, "reviews", 3, 30 * 60 * 1000)) return tooMany();
+  const msg = dict(langFromRequest(req)).errors;
+  if (!rateLimit(req, "reviews", 3, 30 * 60 * 1000)) return tooMany(msg.tooMany);
   try {
     const b = await req.json().catch(() => null);
-    if (!b) return bad("Dữ liệu không hợp lệ.");
+    if (!b) return bad(msg.invalid);
     const customerName = cleanText(b.customerName, 60);
-    if (!customerName) return bad("Vui lòng nhập tên của bạn.");
+    if (!customerName) return bad(msg.reviewName);
     const rating = Math.floor(Number(b.rating));
-    if (!(rating >= 1 && rating <= 5)) return bad("Vui lòng chọn số sao.");
+    if (!(rating >= 1 && rating <= 5)) return bad(msg.stars);
     const comment = cleanText(b.comment, 1000);
-    if (!comment || comment.length < 5) return bad("Vui lòng chia sẻ cảm nhận (ít nhất 5 ký tự).");
+    if (!comment || comment.length < 5) return bad(msg.comment);
     const visitType = VISIT_TYPES.includes(b.visitType) ? (b.visitType as string) : null;
 
     await createReview({ customerName, rating, comment, visitType, isLumiaGuest: !!b.isLumiaGuest });
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ ok: false, error: "Lỗi máy chủ, vui lòng thử lại." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: msg.server }, { status: 500 });
   }
 }
 

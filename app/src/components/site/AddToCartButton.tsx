@@ -10,32 +10,33 @@ type Props = {
 };
 
 export function AddToCartButton({ item, compact }: Props) {
-  const { add, cart } = useApp();
+  const { add, cart, t } = useApp();
   const [flash, setFlash] = useState(false);
   const inCart = cart.find((c) => c.itemId === item.id)?.qty ?? 0;
 
   if (!item.available) {
-    return <span className="text-xs text-cream/40 italic">Tạm hết</span>;
+    return <span className="text-xs text-cream/40 italic">{t.item.soldOut}</span>;
   }
   if (item.priceValue == null) {
     return (
       <a href={`tel:${RESTAURANT.hotlineRaw}`} className="text-xs text-gold-300 underline underline-offset-4">
-        Gọi báo giá
+        {t.item.askPrice}
       </a>
     );
   }
   return (
     <button
       onClick={() => {
+        // Cart keeps the Vietnamese name: it's what staff and the kitchen see on the order.
         add({ itemId: item.id, name: item.name, price: item.priceValue!, imageUrl: item.imageUrl });
         setFlash(true);
         setTimeout(() => setFlash(false), 900);
       }}
-      className={`relative inline-flex items-center gap-1.5 rounded-full font-semibold transition ${
+      className={`relative inline-flex items-center gap-1.5 rounded-full font-semibold transition whitespace-nowrap ${
         compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
       } ${flash ? "bg-gold-300 text-wood-900 scale-105" : "bg-wine-600 hover:bg-wine-500 text-cream"}`}
     >
-      {flash ? "✓ Đã thêm" : "+ Thêm"}
+      {flash ? t.item.added : t.item.add}
       {inCart > 0 && !flash && (
         <span className="ml-0.5 rounded-full bg-gold-400 text-wood-900 text-[10px] px-1.5">{inCart}</span>
       )}

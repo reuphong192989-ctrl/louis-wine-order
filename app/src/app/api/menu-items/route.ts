@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
-import { menuItemInputSchema, resolvePriceFields } from "@/lib/validation";
+import { menuItemInputSchema, resolvePriceFields, resolveTranslations } from "@/lib/validation";
 import { findCategoryById, listCategories } from "@/lib/sheets/categories";
 import { createMenuItem, listAllMenuItems, nextSortOrderInCategory } from "@/lib/sheets/menuItems";
 
@@ -57,6 +57,7 @@ export const POST = withErrors(async (req: NextRequest) => {
     isHighlight: parsed.data.isHighlight ?? false,
     isFeaturedSpecial: parsed.data.isFeaturedSpecial ?? false,
     sortOrder,
+    ...resolveTranslations(parsed.data),
   });
 
   return NextResponse.json({ item }, { status: 201 });

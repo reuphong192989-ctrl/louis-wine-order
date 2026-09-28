@@ -1,4 +1,6 @@
 import { after } from "next/server";
+import { langFromRequest } from "@/lib/site/lang-server";
+import { dict } from "@/lib/site/i18n";
 import { createOrder, type OnlineOrderInfo } from "@/lib/sheets/orders";
 import { findMenuItemsByIds } from "@/lib/sheets/menuItems";
 import { computeTotals, type OnlineChannel } from "@/lib/site/pricing";
@@ -17,18 +19,19 @@ const CHANNELS: OnlineChannel[] = ["PICKUP", "DELIVERY", "LUMIA_ROOM"];
  * table as QR table orders, so they appear on the staff and kitchen screens.
  */
 export async function POST(req: Request) {
-  if (!rateLimit(req, "online-orders", 5, 10 * 60 * 1000)) return tooMany();
+  const msg = dict(langFromRequest(req)).errors;
+  if (!rateLimit(req, "online-orders", 5, 10 * 60 * 1000)) return tooMany(msg.tooMany);
   try {
     const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") return bad("Dữ liệu không hợp lệ.");
+    if (!body || typeof body !== "object") return bad(msg.invalid);
 
     const channel = body.channel as OnlineChannel;
-    if (!CHANNELS.includes(channel)) return bad("Vui lòng chọn hình thức nhận món.");
+    if (!CHANNELS.includes(channel)) return bad(msg.channel);
 
     const customerName = cleanText(body.customerName, 80);
-    if (!customerName) return bad("Vui lòng nhập họ tên.");
+    if (!customerName) return bad(msg.name);
     const phone = cleanPhone(body.phone);
-    if (!phone) return bad("Số điện thoại không hợp lệ.");
+    if (!phone) return bad(msg.phone);
 
     let address: string | null = null;
     let hotelRoom: string | null = null;
@@ -36,13 +39,13 @@ export async function POST(req: Request) {
 
     if (channel === "DELIVERY") {
       address = cleanText(body.address, 300);
-      if (!address) return bad("Vui lòng nhập địa chỉ giao hàng.");
+      if (!address) return bad(msg.address);
     }
     if (channel === "LUMIA_ROOM") {
       const floor = Number(body.floor);
       const room = String(body.room ?? "");
       if (!isValidRoom(floor, room)) {
-        return bad("Số tầng / số phòng Lumia Apartment không hợp lệ. Vui lòng kiểm tra lại.");
+        return bad(msg.room);
       }
       hotelRoom = room;
       roomVerified = verifyRoomKey(room, body.lumiaKey);
@@ -56,7 +59,7 @@ export async function POST(req: Request) {
       const qty = Math.floor(Number(it?.qty));
       if (id && qty > 0) wanted.set(id, Math.min(99, (wanted.get(id) ?? 0) + qty));
     }
-    if (!wanted.size) return bad("Giỏ hàng đang trống.");
+    if (!wanted.size) return bad(msg.empty);
 
     // Prices always come from the database, never from the browser.
     const byId = await findMenuItemsByIds([...wanted.keys()]);
@@ -66,7 +69,7 @@ export async function POST(req: Request) {
       if (!item || !item.available || item.priceValue == null) continue;
       lines.push({ menuItemId: item.id, nameSnapshot: item.name, unitPrice: item.priceValue, qty, lineTotal: item.priceValue * qty, note: null });
     }
-    if (!lines.length) return bad("Các món đã chọn hiện không thể đặt online.");
+    if (!lines.length) return bad(msg.unavailable);
 
     const totals = computeTotals(
       lines.reduce((s, l) => s + l.lineTotal, 0),
@@ -93,7 +96,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, code: online.code });
   } catch (e) {
     console.error(e);
-    return Response.json({ ok: false, error: "Lỗi máy chủ, vui lòng thử lại." }, { status: 500 });
+    return Response.json({ ok: false, error: msg.server }, { status: 500 });
   }
 }
 

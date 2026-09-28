@@ -10,6 +10,10 @@ export type MenuItemDTO = {
   isFeaturedSpecial: boolean;
   available: boolean;
   sortOrder: number;
+  nameEn?: string | null;
+  noteEn?: string | null;
+  nameRu?: string | null;
+  noteRu?: string | null;
 };
 
 export type AdminMenuItemDTO = MenuItemDTO & {
@@ -76,3 +80,24 @@ export type RealtimeMessage =
   | { type: "staffcall:new"; data: StaffCallDTO; ts: number }
   | { type: "staffcall:ack"; data: StaffCallDTO; ts: number }
   | { type: "menu:updated"; data: unknown; ts: number };
+
+export type ReservationDTO = {
+  id: string;
+  code: string;
+  customerName: string;
+  phone: string;
+  date: string; // YYYY-MM-DD (Vietnam time)
+  time: string; // HH:MM
+  guests: number;
+  area: string | null;
+  occasion: string | null;
+  isLumiaGuest: boolean;
+  hotelRoom: string | null;
+  roomVerified: boolean;
+  needShuttle: boolean;
+  pickupTime: string | null;
+  note: string | null;
+  status: "NEW" | "CONFIRMED" | "SEATED" | "COMPLETED" | "CANCELLED";
+  createdAt: string;
+  handledBy: string | null;
+};

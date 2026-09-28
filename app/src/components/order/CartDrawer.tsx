@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatVnd } from "@/lib/format";
+import type { OrderDict } from "@/lib/order-i18n";
 
 export type CartLine = {
   itemId: string;
@@ -25,6 +26,7 @@ export default function CartDrawer({
   onDec,
   onNoteChange,
   onSubmit,
+  t,
 }: {
   open: boolean;
   onClose: () => void;
@@ -36,31 +38,28 @@ export default function CartDrawer({
   onDec: (itemId: string) => void;
   onNoteChange: (itemId: string, note: string) => void;
   onSubmit: () => void;
+  t: OrderDict["drawer"];
 }) {
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   if (!open) return null;
 
   const sendLabel =
-    orderStatus === "sending"
-      ? "Đang gửi..."
-      : orderStatus === "sent"
-        ? "Đã gửi yêu cầu — nhân viên sẽ tới ngay"
-        : "Gửi yêu cầu tới nhân viên";
+    orderStatus === "sending" ? t.sending : orderStatus === "sent" ? t.sent : t.send;
 
   return (
     <div className="cart-backdrop" onClick={onClose}>
       <div className="cart-panel" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>Giỏ hàng</h3>
+          <h3 style={{ margin: 0 }}>{t.title}</h3>
           <button className="btn btn-ghost" onClick={onClose}>
-            Đóng
+            {t.close}
           </button>
         </div>
         <hr className="hr" style={{ margin: 0 }} />
 
         <div className="scroll-y" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
-          {lines.length === 0 && <p className="text-muted">Chưa có món nào trong giỏ.</p>}
+          {lines.length === 0 && <p className="text-muted">{t.empty}</p>}
           {lines.map((line) => (
             <div key={line.itemId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div className="cart-line">
@@ -71,11 +70,11 @@ export default function CartDrawer({
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button className="cart-qty-btn" onClick={() => onDec(line.itemId)} aria-label="Giảm số lượng">
+                  <button className="cart-qty-btn" onClick={() => onDec(line.itemId)} aria-label={t.dec}>
                     –
                   </button>
                   <span style={{ width: 20, textAlign: "center", fontSize: 13 }}>{line.qty}</span>
-                  <button className="cart-qty-btn" onClick={() => onInc(line.itemId)} aria-label="Tăng số lượng">
+                  <button className="cart-qty-btn" onClick={() => onInc(line.itemId)} aria-label={t.inc}>
                     +
                   </button>
                 </div>
@@ -86,7 +85,7 @@ export default function CartDrawer({
                 <input
                   className="input"
                   style={{ fontSize: 12, padding: "6px 10px" }}
-                  placeholder="Ghi chú (vd: không hành, sốt riêng...)"
+                  placeholder={t.notePh}
                   value={line.note}
                   onChange={(e) => onNoteChange(line.itemId, e.target.value)}
                 />
@@ -97,7 +96,7 @@ export default function CartDrawer({
                   style={{ fontSize: 11, alignSelf: "flex-start", padding: "2px 0", height: "auto" }}
                   onClick={() => setExpandedNotes((s) => new Set(s).add(line.itemId))}
                 >
-                  + Thêm ghi chú
+                  {t.addNote}
                 </button>
               )}
             </div>
@@ -106,7 +105,7 @@ export default function CartDrawer({
 
         <hr className="hr" style={{ margin: 0 }} />
         <div className="cart-total-row">
-          <span>Tổng</span>
+          <span>{t.total}</span>
           <span style={{ color: "var(--color-accent)" }}>{formatVnd(total)}</span>
         </div>
 

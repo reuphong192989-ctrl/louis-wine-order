@@ -26,6 +26,6 @@ export function rateLimit(req: Request, bucket: string, max: number, windowMs: n
   return true;
 }
 
-export function tooMany() {
-  return Response.json({ ok: false, error: "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút." }, { status: 429 });
+export function tooMany(message = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.") {
+  return Response.json({ ok: false, error: message }, { status: 429 });
 }

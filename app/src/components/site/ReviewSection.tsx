@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { useApp } from "./AppProviders";
 import type { ReviewDTO } from "@/lib/site/queries";
+import { DICTS, INTL_LOCALE, fmt } from "@/lib/site/i18n";
 
 type Data = { count: number; avg: number; dist: { star: number; n: number }[]; list: ReviewDTO[] };
 
-function Stars({ value, size = "text-base" }: { value: number; size?: string }) {
+// Stored (and shown to staff) in Vietnamese; displayed in the visitor's language.
+const VISITS_VI = DICTS.vi.reviews.visits;
+
+function Stars({ value, size = "text-base", label }: { value: number; size?: string; label: string }) {
   return (
-    <span className={`${size} tracking-tight`} aria-label={`${value} sao`}>
+    <span className={`${size} tracking-tight`} aria-label={label}>
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} className={i <= Math.round(value) ? "text-gold-400" : "text-cream/20"}>
           ★
@@ -19,22 +23,28 @@ function Stars({ value, size = "text-base" }: { value: number; size?: string }) 
 }
 
 export function ReviewSection({ initial }: { initial: Data }) {
-  const { lumia } = useApp();
+  const { lumia, lang, t } = useApp();
   const [data, setData] = useState<Data>(initial);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
-  const [visitType, setVisitType] = useState("Ăn tại nhà hàng");
+  const [visitIdx, setVisitIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
+
+  const visitLabel = (v: string | null) => {
+    if (!v) return "";
+    const idx = VISITS_VI.indexOf(v);
+    return idx >= 0 ? t.reviews.visits[idx] : v;
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
     if (!rating) {
-      setMsg({ ok: false, text: "Vui lòng chọn số sao." });
+      setMsg({ ok: false, text: t.reviews.pickStars });
       return;
     }
     setLoading(true);
@@ -42,17 +52,17 @@ export function ReviewSection({ initial }: { initial: Data }) {
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerName: name, rating, comment, visitType, isLumiaGuest: !!lumia }),
+        body: JSON.stringify({ customerName: name, rating, comment, visitType: VISITS_VI[visitIdx], isLumiaGuest: !!lumia }),
       });
       const d = await res.json();
       if (!d.ok) throw new Error(d.error);
-      setMsg({ ok: true, text: "Cảm ơn bạn đã đánh giá Louis Wine! 🍷" });
+      setMsg({ ok: true, text: t.reviews.thanks });
       setRating(0);
       setComment("");
       const fresh = await fetch("/api/reviews", { cache: "no-store" }).then((r) => r.json());
       if (fresh?.list) setData(fresh);
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof Error ? err.message : "Có lỗi xảy ra" });
+      setMsg({ ok: false, text: err instanceof Error ? err.message : t.cart.errGeneric });
     } finally {
       setLoading(false);
     }
@@ -67,8 +77,8 @@ export function ReviewSection({ initial }: { initial: Data }) {
           <div className="flex items-end gap-4">
             <p className="font-serif text-6xl gold-text leading-none">{data.count ? data.avg.toFixed(1) : "—"}</p>
             <div>
-              <Stars value={data.avg} size="text-xl" />
-              <p className="text-sm text-cream/60">{data.count} đánh giá</p>
+              <Stars value={data.avg} size="text-xl" label={fmt(t.reviews.stars, { n: data.avg.toFixed(1) })} />
+              <p className="text-sm text-cream/60">{fmt(t.reviews.count, { n: data.count })}</p>
             </div>
           </div>
           <div className="mt-5 space-y-1.5">
@@ -85,7 +95,7 @@ export function ReviewSection({ initial }: { initial: Data }) {
         </div>
 
         <form onSubmit={submit} className="rounded-2xl border border-gold-500/25 bg-wood-900/70 p-6 grid gap-3">
-          <p className="font-serif text-xl text-gold-300">Chia sẻ trải nghiệm của bạn</p>
+          <p className="font-serif text-xl text-gold-300">{t.reviews.share}</p>
           <div className="flex gap-1 text-3xl" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((i) => (
               <button
@@ -94,28 +104,25 @@ export function ReviewSection({ initial }: { initial: Data }) {
                 onMouseEnter={() => setHover(i)}
                 onClick={() => setRating(i)}
                 className={`transition ${(hover || rating) >= i ? "text-gold-400 scale-110" : "text-cream/25"}`}
-                aria-label={`${i} sao`}
+                aria-label={fmt(t.reviews.stars, { n: i })}
               >
                 ★
               </button>
             ))}
           </div>
-          <input className="input" placeholder="Tên của bạn *" value={name} onChange={(e) => setName(e.target.value)} required />
-          <select className="input" value={visitType} onChange={(e) => setVisitType(e.target.value)}>
-            <option>Ăn tại nhà hàng</option>
-            <option>Đặt mang về</option>
-            <option>Giao về phòng Lumia</option>
-            <option>Tiệc / sự kiện</option>
+          <input className="input" placeholder={t.reviews.name} value={name} onChange={(e) => setName(e.target.value)} required />
+          <select className="input" value={visitIdx} onChange={(e) => setVisitIdx(Number(e.target.value))}>
+            {t.reviews.visits.map((v, i) => (
+              <option key={i} value={i}>
+                {v}
+              </option>
+            ))}
           </select>
-          <textarea
-            className="input min-h-24"
-            placeholder="Món ăn, rượu vang, không gian, phục vụ..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            required
-          />
+          <textarea className="input min-h-24" placeholder={t.reviews.commentPh} value={comment} onChange={(e) => setComment(e.target.value)} required />
           {msg && <p className={`text-sm ${msg.ok ? "text-gold-300" : "text-wine-300"}`}>{msg.text}</p>}
-          <button className="btn-gold" disabled={loading}>{loading ? "Đang gửi..." : "Gửi đánh giá"}</button>
+          <button className="btn-gold" disabled={loading}>
+            {loading ? t.reviews.sending : t.reviews.submit}
+          </button>
         </form>
       </div>
 
@@ -124,8 +131,8 @@ export function ReviewSection({ initial }: { initial: Data }) {
           <div className="h-full min-h-60 rounded-2xl border border-dashed border-gold-500/30 grid place-items-center text-center p-8">
             <div>
               <p className="text-4xl">✨</p>
-              <p className="font-serif text-2xl mt-2">Chưa có đánh giá nào</p>
-              <p className="text-cream/60 mt-1">Hãy là người đầu tiên chia sẻ cảm nhận về Louis Wine.</p>
+              <p className="font-serif text-2xl mt-2">{t.reviews.emptyTitle}</p>
+              <p className="text-cream/60 mt-1">{t.reviews.emptySub}</p>
             </div>
           </div>
         ) : (
@@ -141,17 +148,17 @@ export function ReviewSection({ initial }: { initial: Data }) {
                       <div>
                         <p className="font-semibold leading-tight">{r.customerName}</p>
                         <p className="text-xs text-cream/50">
-                          {new Date(r.createdAt).toLocaleDateString("vi-VN")}
-                          {r.visitType ? ` · ${r.visitType}` : ""}
+                          {new Date(r.createdAt).toLocaleDateString(INTL_LOCALE[lang])}
+                          {r.visitType ? ` · ${visitLabel(r.visitType)}` : ""}
                         </p>
                       </div>
                     </div>
-                    <Stars value={r.rating} size="text-sm" />
+                    <Stars value={r.rating} size="text-sm" label={fmt(t.reviews.stars, { n: r.rating })} />
                   </div>
                   <p className="mt-3 text-sm text-cream/80 leading-relaxed whitespace-pre-line">{r.comment}</p>
                   {r.isLumiaGuest && (
                     <span className="mt-3 inline-block text-[10px] uppercase tracking-wider rounded-full border border-gold-500/40 px-2 py-0.5 text-gold-400">
-                      Khách Lumia Apartment
+                      {t.reviews.lumiaGuest}
                     </span>
                   )}
                 </article>
@@ -159,7 +166,7 @@ export function ReviewSection({ initial }: { initial: Data }) {
             </div>
             {data.list.length > 6 && (
               <button className="btn-outline mt-5" onClick={() => setShowAll((s) => !s)}>
-                {showAll ? "Thu gọn" : `Xem tất cả ${data.list.length} đánh giá`}
+                {showAll ? t.reviews.collapse : fmt(t.reviews.showAll, { n: data.list.length })}
               </button>
             )}
           </>
