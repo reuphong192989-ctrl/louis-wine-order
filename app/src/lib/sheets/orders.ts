@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, deleteRows, readAllRows, updateRow, cell } from "./core";
+import { appendRow, appendRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -84,9 +84,13 @@ function decodeOrderItem(values: Record<string, string>): OrderItemLine {
   };
 }
 
+// Staff/kitchen screens poll every 4s and a waiting customer every 3s; share one
+// read (both tabs in a single batchGet) across all of them for 2s.
+const LIST_TTL_MS = 2_000;
+
 /** Lists orders (most recent first), each with its line items attached. */
 export async function listOrders(status?: OrderStatus, limit = 200): Promise<Order[]> {
-  const [orderRows, itemRows] = await Promise.all([readAllRows(ORDERS_TAB), readAllRows(ORDER_ITEMS_TAB)]);
+  const [orderRows, itemRows] = await readTabsCached([ORDERS_TAB, ORDER_ITEMS_TAB], LIST_TTL_MS);
 
   const itemsByOrder = new Map<string, OrderItemLine[]>();
   for (const row of itemRows) {
@@ -108,7 +112,7 @@ export async function listOrders(status?: OrderStatus, limit = 200): Promise<Ord
 
 /** Orders without their line items — cheaper than listOrders() for reports/aggregation that only need status/amount/dates. */
 export async function listAllOrdersRaw(): Promise<Omit<Order, "items">[]> {
-  const rows = await readAllRows(ORDERS_TAB);
+  const rows = await readAllRowsCached(ORDERS_TAB, LIST_TTL_MS);
   return rows.map((r) => decodeOrder(r.values));
 }
 
@@ -139,23 +143,29 @@ export async function createOrder(input: {
     cancelledBy: "",
   });
 
-  const items: OrderItemLine[] = [];
-  for (const line of input.lines) {
-    const itemId = randomUUID();
-    const item: OrderItemLine = { id: itemId, orderId: id, ...line, kitchenStatus: "PENDING" };
-    items.push(item);
-    await appendRow(ORDER_ITEMS_TAB, ORDER_ITEMS_HEADERS, {
-      id: itemId,
+  const items: OrderItemLine[] = input.lines.map((line) => ({
+    id: randomUUID(),
+    orderId: id,
+    ...line,
+    kitchenStatus: "PENDING",
+  }));
+  // One append for all lines (was one request per line) — fewer writes against
+  // the per-minute quota and no half-written orders if a later request fails.
+  await appendRows(
+    ORDER_ITEMS_TAB,
+    ORDER_ITEMS_HEADERS,
+    items.map((item) => ({
+      id: item.id,
       orderId: id,
-      menuItemId: line.menuItemId,
-      nameSnapshot: line.nameSnapshot,
-      unitPrice: cell.int(line.unitPrice),
-      qty: cell.int(line.qty),
-      lineTotal: cell.int(line.lineTotal),
+      menuItemId: cell.str(item.menuItemId),
+      nameSnapshot: item.nameSnapshot,
+      unitPrice: cell.int(item.unitPrice),
+      qty: cell.int(item.qty),
+      lineTotal: cell.int(item.lineTotal),
       kitchenStatus: "PENDING",
-      note: cell.str(line.note),
-    });
-  }
+      note: cell.str(item.note),
+    }))
+  );
 
   return {
     id,

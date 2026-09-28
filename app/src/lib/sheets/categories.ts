@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, batchUpdateRows, deleteRow, readAllRows, updateRow, cell } from "./core";
+import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, updateRow, cell } from "./core";
 
 const TAB = "Categories";
 const HEADERS = ["id", "slug", "name", "sortOrder"];
@@ -20,8 +20,11 @@ function decode(values: Record<string, string>): Category {
   };
 }
 
+// Menu changes are rare; a 10s shared read keeps customer phones (menu poll every 20s) off the Sheets quota.
+const LIST_TTL_MS = 10_000;
+
 export async function listCategories(): Promise<Category[]> {
-  const rows = await readAllRows(TAB);
+  const rows = await readAllRowsCached(TAB, LIST_TTL_MS);
   return rows.map((r) => decode(r.values)).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
