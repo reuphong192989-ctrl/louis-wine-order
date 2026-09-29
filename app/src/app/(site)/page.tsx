@@ -99,15 +99,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <section className="relative min-h-[100svh] flex items-end overflow-hidden">
           <img src="/images/hero-building.jpg" alt={h.heroAlt} className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-wood-950 via-wood-950/60 to-wood-950/20" />
-          <div className="relative mx-auto max-w-7xl w-full px-4 sm:px-6 pb-16 pt-40">
-            <p className="text-xs sm:text-sm uppercase tracking-[0.4em] text-gold-400">Restaurant · Wine Cellar · Đà Nẵng</p>
-            <h1 className="font-serif text-5xl sm:text-7xl lg:text-8xl mt-4 leading-[1.05]">
+          <div className="relative mx-auto max-w-7xl w-full px-4 sm:px-6 pb-10 sm:pb-16 pt-28 sm:pt-40">
+            <p className="text-[11px] sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.4em] text-gold-400">Restaurant · Wine Cellar · Đà Nẵng</p>
+            <h1 className="font-serif text-4xl sm:text-7xl lg:text-8xl mt-4 leading-[1.05]">
               <span className="gold-text italic">Louis Wine</span>
               <br />
               <span className="text-cream">{h.heroTitle}</span>
             </h1>
-            <p className="mt-6 max-w-xl text-cream/75 text-lg leading-relaxed">{h.heroSub}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <p className="mt-4 sm:mt-6 max-w-xl text-cream/75 text-base sm:text-lg leading-relaxed">{h.heroSub}</p>
+            <div className="mt-6 sm:mt-8 flex flex-wrap gap-3">
               <Link href="/menu" className="btn-gold">
                 {h.ctaMenu}
               </Link>
@@ -115,17 +115,30 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                 {h.ctaBook}
               </Link>
             </div>
-            <div className="mt-12 grid sm:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-gold-500/20 bg-gold-500/20 max-w-4xl">
+            <div className="mt-8 sm:mt-12 grid sm:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-gold-500/20 bg-gold-500/20 max-w-4xl">
               {[
-                [h.addressLabel, t.restaurant.address],
-                ["☎ Hotline", RESTAURANT.hotline],
-                [h.hoursLabel, t.restaurant.hours],
-              ].map(([k, v]) => (
-                <div key={k} className="bg-wood-950/85 backdrop-blur px-5 py-4">
-                  <p className="text-xs text-gold-400">{k}</p>
-                  <p className="text-sm mt-1 text-cream/85">{v}</p>
-                </div>
-              ))}
+                { k: h.addressLabel, v: t.restaurant.address, href: RESTAURANT.mapsUrl },
+                { k: "☎ Hotline", v: RESTAURANT.hotline, href: `tel:${RESTAURANT.hotlineRaw}` },
+                { k: h.hoursLabel, v: t.restaurant.hours, href: null },
+              ].map(({ k, v, href }) =>
+                href ? (
+                  <a
+                    key={k}
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="group bg-wood-950/85 backdrop-blur px-5 py-3 sm:py-4 hover:bg-wood-900/90 transition"
+                  >
+                    <p className="text-xs text-gold-400">{k}</p>
+                    <p className="text-sm mt-1 text-cream/85 group-hover:text-gold-300 underline decoration-gold-500/30 underline-offset-4">{v}</p>
+                  </a>
+                ) : (
+                  <div key={k} className="bg-wood-950/85 backdrop-blur px-5 py-3 sm:py-4">
+                    <p className="text-xs text-gold-400">{k}</p>
+                    <p className="text-sm mt-1 text-cream/85">{v}</p>
+                  </div>
+                ),
+              )}
             </div>
           </div>
         </section>
@@ -345,6 +358,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         </section>
       </main>
       <Footer />
+
+      {/* Phones: call / menu / book always within thumb reach. */}
+      <nav className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-[1fr_1fr_1.3fr] gap-2 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-wood-950/95 backdrop-blur border-t border-gold-500/20">
+        <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-outline px-2 py-2.5 text-sm whitespace-nowrap">
+          ☎ {h.callNow}
+        </a>
+        <Link href="/menu" className="btn-outline px-2 py-2.5 text-sm whitespace-nowrap">
+          {t.nav.menu}
+        </Link>
+        <Link href="#dat-ban" className="btn-gold px-2 py-2.5 text-sm whitespace-nowrap">
+          {t.nav.book}
+        </Link>
+      </nav>
+      <div className="h-16 md:hidden" aria-hidden />
     </>
   );
 }
