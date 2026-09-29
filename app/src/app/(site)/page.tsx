@@ -70,7 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       "@type": "OpeningHoursSpecification",
       dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
       opens: "10:00",
-      closes: "23:00",
+      closes: "21:30",
     },
     ...(reviews.count > 0 && {
       aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.avg.toFixed(1), reviewCount: reviews.count },
@@ -322,6 +322,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                   </a>
                 </p>
                 <p>🕰 {t.restaurant.hours}</p>
+                <p className="text-sm text-cream/60">{t.restaurant.hoursNote}</p>
                 <p>{h.parking}</p>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">

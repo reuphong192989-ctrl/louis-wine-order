@@ -27,7 +27,8 @@ const vi = {
   },
   restaurant: {
     address: "93 Nguyễn Đình Thi, Phường Hòa Xuân, TP. Đà Nẵng",
-    hours: "10:00 – 23:00 hằng ngày",
+    hours: "10:00 – 21:30 hằng ngày",
+    hoursNote: "Bếp nhận gọi món đến 21:30. Khách vào trước giờ này vẫn có thể ngồi lại muộn hơn.",
   },
   nav: {
     about: "Giới thiệu",
@@ -301,6 +302,8 @@ const vi = {
     datePast: "Ngày đặt bàn không được ở quá khứ.",
     time: "Vui lòng chọn giờ.",
     timePast: "Giờ đặt bàn hôm nay đã qua, vui lòng chọn giờ khác.",
+    timeOutside: "Nhà hàng nhận đặt bàn từ 10:00 đến 21:00 (bếp nghỉ lúc 21:30).",
+    kitchenClosed: "Bếp phục vụ từ 10:00 đến 21:30. Hiện bếp đã nghỉ, vui lòng đặt món trong giờ phục vụ hoặc gọi hotline 0789 94 93 93.",
     guests: "Số khách không hợp lệ.",
     shuttleTime: "Vui lòng chọn giờ xe đón.",
     reviewName: "Vui lòng nhập tên của bạn.",
@@ -323,7 +326,8 @@ const en: Dict = {
   },
   restaurant: {
     address: "93 Nguyen Dinh Thi, Hoa Xuan Ward, Da Nang",
-    hours: "10:00 – 23:00 daily",
+    hours: "Daily 10:00 – 21:30",
+    hoursNote: "Last food order at 21:30. Guests seated before then are welcome to stay later.",
   },
   nav: {
     about: "About",
@@ -597,6 +601,8 @@ const en: Dict = {
     datePast: "The booking date can't be in the past.",
     time: "Please choose a time.",
     timePast: "That time has already passed today — please choose another.",
+    timeOutside: "Tables can be booked from 10:00 to 21:00 (the kitchen closes at 21:30).",
+    kitchenClosed: "Our kitchen is open 10:00 – 21:30 and is closed right now. Please order during kitchen hours or call +84 789 94 93 93.",
     guests: "Invalid number of guests.",
     shuttleTime: "Please choose a shuttle pickup time.",
     reviewName: "Please enter your name.",
@@ -617,7 +623,8 @@ const ru: Dict = {
   },
   restaurant: {
     address: "93 Nguyen Dinh Thi, р-н Хоа Суан, Дананг",
-    hours: "Ежедневно 10:00 – 23:00",
+    hours: "Ежедневно 10:00 – 21:30",
+    hoursNote: "Последний заказ на кухню в 21:30. Гости, пришедшие раньше, могут остаться дольше.",
   },
   nav: {
     about: "О нас",
@@ -891,6 +898,8 @@ const ru: Dict = {
     datePast: "Дата бронирования не может быть в прошлом.",
     time: "Выберите время.",
     timePast: "Это время сегодня уже прошло — выберите другое.",
+    timeOutside: "Столик можно забронировать с 10:00 до 21:00 (кухня закрывается в 21:30).",
+    kitchenClosed: "Кухня работает с 10:00 до 21:30 и сейчас закрыта. Пожалуйста, закажите в часы работы кухни или позвоните +84 789 94 93 93.",
     guests: "Неверное количество гостей.",
     shuttleTime: "Выберите время трансфера.",
     reviewName: "Пожалуйста, укажите имя.",

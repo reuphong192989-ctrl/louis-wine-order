@@ -4,7 +4,12 @@ export const RESTAURANT = {
   hotline: "0789 94 93 93",
   hotlineRaw: "0789949393",
   address: "93 Nguyễn Đình Thi, Phường Hòa Xuân, TP. Đà Nẵng",
-  hours: "10:00 – 23:00 hằng ngày",
+  hours: "10:00 – 21:30 hằng ngày",
+  // Kitchen hours (VN time). Guests seated before closing may stay on; no new food orders after it.
+  kitchenOpen: "10:00",
+  kitchenClose: "21:30",
+  // Latest table booking slot, so guests can still order before the kitchen closes.
+  lastBooking: "21:00",
   // Google Maps place "Louis Wine Đà Nẵng" (the street address alone shows the old "Hầm rượu Bảo Nam" listing).
   mapsUrl: "https://maps.app.goo.gl/oPEgTdq4zQPuv789A",
   lat: 16.018327,
