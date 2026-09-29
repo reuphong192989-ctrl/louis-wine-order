@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useApp } from "./AppProviders";
 import { RoomPicker } from "./RoomPicker";
+import { IconRing } from "./icons";
+import { Bus, ConciergeBell, Phone } from "lucide-react";
 import { RESTAURANT } from "@/lib/site/constants";
 import { fmt } from "@/lib/site/i18n";
 
@@ -49,14 +51,14 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
 
           <div className="mt-8 grid sm:grid-cols-2 gap-4 text-left">
             <Link href="/menu" className="group rounded-2xl border border-gold-500/30 bg-wood-950/70 p-5 hover:border-gold-500 transition">
-              <p className="text-3xl">🛎</p>
-              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">{p.orderTitle}</p>
+              <IconRing icon={ConciergeBell} />
+              <p className="font-serif text-2xl mt-3 group-hover:text-gold-300">{p.orderTitle}</p>
               <p className="text-sm text-cream/70 mt-1">{fmt(p.orderText, { room: active.room })}</p>
               <p className="mt-4 text-sm text-gold-400">{p.orderCta}</p>
             </Link>
             <Link href="/#dat-ban" className="group rounded-2xl border border-gold-500/30 bg-wood-950/70 p-5 hover:border-gold-500 transition">
-              <p className="text-3xl">🚐</p>
-              <p className="font-serif text-2xl mt-2 group-hover:text-gold-300">{p.bookTitle}</p>
+              <IconRing icon={Bus} />
+              <p className="font-serif text-2xl mt-3 group-hover:text-gold-300">{p.bookTitle}</p>
               <p className="text-sm text-cream/70 mt-1">{p.bookText}</p>
               <p className="mt-4 text-sm text-gold-400">{p.bookCta}</p>
             </Link>
@@ -64,6 +66,7 @@ export function LumiaWelcome({ qr, invalidQr }: Props) {
 
           <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm">
             <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-outline !py-2">
+              <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
               {fmt(p.call, { hotline: RESTAURANT.hotline })}
             </a>
             {!active.verified && (

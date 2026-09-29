@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Phone } from "lucide-react";
 import { useApp } from "./AppProviders";
 import { RESTAURANT } from "@/lib/site/constants";
 import { LANGS, LANG_LABEL, fmt } from "@/lib/site/i18n";
@@ -112,8 +113,9 @@ export function Header() {
           <div className="flex items-center gap-2">
             <LangMenu className="sm:hidden" />
             <LangSwitch className="hidden sm:flex" />
-            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="hidden 2xl:inline text-sm text-gold-300 mx-1">
-              ☎ {RESTAURANT.hotline}
+            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="hidden 2xl:inline-flex items-center gap-1.5 text-sm text-gold-300 mx-1">
+              <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              {RESTAURANT.hotline}
             </a>
             <Link
               href="/menu#gio-hang"
@@ -150,8 +152,9 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
-            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="py-2 text-gold-300">
-              ☎ Hotline {RESTAURANT.hotline}
+            <a href={`tel:${RESTAURANT.hotlineRaw}`} className="py-2 text-gold-300 flex items-center gap-2">
+              <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              Hotline {RESTAURANT.hotline}
             </a>
           </nav>
         )}

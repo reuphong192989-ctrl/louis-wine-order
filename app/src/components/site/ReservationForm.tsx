@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useApp } from "./AppProviders";
+import { IconRing } from "./icons";
+import { Bus, Wine } from "lucide-react";
 import { RoomPicker } from "./RoomPicker";
 import { DICTS, fmt } from "@/lib/site/i18n";
 
@@ -107,8 +109,8 @@ export function ReservationForm() {
   if (done) {
     return (
       <div className="rounded-2xl border border-gold-500/40 bg-wood-900/80 p-8 text-center">
-        <div className="text-5xl">🍷</div>
-        <h3 className="font-serif text-3xl mt-3 gold-text">{t.booking.doneTitle}</h3>
+        <IconRing icon={Wine} size="lg" />
+        <h3 className="font-serif text-3xl mt-4 gold-text">{t.booking.doneTitle}</h3>
         <p className="mt-2 text-cream/70">
           {t.booking.code}: <span className="font-mono text-gold-300 text-lg">{done}</span>
         </p>
@@ -231,7 +233,10 @@ export function ReservationForm() {
             {!locked && <p className="text-xs text-cream/50">{t.booking.lumiaTip}</p>}
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" className="h-4 w-4 accent-[#c9a14a]" checked={needShuttle} onChange={(e) => setNeedShuttle(e.target.checked)} />
-              <span className="text-sm">{t.booking.shuttle}</span>
+              <span className="text-sm flex items-center gap-2">
+                <Bus className="h-4 w-4 text-gold-400" strokeWidth={1.75} aria-hidden />
+                {t.booking.shuttle}
+              </span>
             </label>
             {needShuttle && (
               <div className="max-w-xs">

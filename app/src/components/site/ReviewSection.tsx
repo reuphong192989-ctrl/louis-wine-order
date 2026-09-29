@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { useApp } from "./AppProviders";
+import { IconRing } from "./icons";
 import type { ReviewDTO } from "@/lib/site/queries";
+import type { GooglePlace } from "@/lib/site/google-reviews";
 import { DICTS, INTL_LOCALE, fmt } from "@/lib/site/i18n";
 
 type Data = { count: number; avg: number; dist: { star: number; n: number }[]; list: ReviewDTO[] };
@@ -22,9 +25,23 @@ function Stars({ value, size = "text-base", label }: { value: number; size?: str
   );
 }
 
-export function ReviewSection({ initial }: { initial: Data }) {
+function Avatar({ name, photo }: { name: string; photo?: string | null }) {
+  if (photo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={photo} alt="" width={40} height={40} referrerPolicy="no-referrer" className="h-10 w-10 rounded-full object-cover" />;
+  }
+  return (
+    <span className="grid place-items-center h-10 w-10 rounded-full bg-wine-700 font-serif text-lg text-gold-300">{name.charAt(0).toUpperCase()}</span>
+  );
+}
+
+/**
+ * Public rating = the real Google Maps rating (when GOOGLE_PLACES_API_KEY is set),
+ * otherwise links to Google. The form sends private feedback to the manager;
+ * the manager can publish it from Quản trị → Đánh giá khách.
+ */
+export function ReviewSection({ initial, google, mapsUrl }: { initial: Data; google: GooglePlace | null; mapsUrl: string }) {
   const { lumia, lang, t } = useApp();
-  const [data, setData] = useState<Data>(initial);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [name, setName] = useState("");
@@ -39,6 +56,12 @@ export function ReviewSection({ initial }: { initial: Data }) {
     const idx = VISITS_VI.indexOf(v);
     return idx >= 0 ? t.reviews.visits[idx] : v;
   };
+
+  const viewUri = google?.reviewsUri ?? mapsUrl;
+  const writeUri = google?.writeReviewUri ?? mapsUrl;
+  const googleReviews = google?.reviews ?? [];
+  const site = initial.list;
+  const siteShown = showAll ? site : site.slice(0, 4);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,8 +82,6 @@ export function ReviewSection({ initial }: { initial: Data }) {
       setMsg({ ok: true, text: t.reviews.thanks });
       setRating(0);
       setComment("");
-      const fresh = await fetch("/api/reviews", { cache: "no-store" }).then((r) => r.json());
-      if (fresh?.list) setData(fresh);
     } catch (err) {
       setMsg({ ok: false, text: err instanceof Error ? err.message : t.cart.errGeneric });
     } finally {
@@ -68,34 +89,36 @@ export function ReviewSection({ initial }: { initial: Data }) {
     }
   }
 
-  const list = showAll ? data.list : data.list.slice(0, 6);
-
   return (
     <div className="grid lg:grid-cols-[380px_1fr] gap-8">
       <div className="space-y-6">
         <div className="rounded-2xl border border-gold-500/25 bg-wood-900/70 p-6">
-          <div className="flex items-end gap-4">
-            <p className="font-serif text-6xl gold-text leading-none">{data.count ? data.avg.toFixed(1) : "—"}</p>
-            <div>
-              <Stars value={data.avg} size="text-xl" label={fmt(t.reviews.stars, { n: data.avg.toFixed(1) })} />
-              <p className="text-sm text-cream/60">{fmt(t.reviews.count, { n: data.count })}</p>
-            </div>
-          </div>
-          <div className="mt-5 space-y-1.5">
-            {data.dist.map((d) => (
-              <div key={d.star} className="flex items-center gap-2 text-xs">
-                <span className="w-6 text-cream/70">{d.star}★</span>
-                <div className="flex-1 h-2 rounded-full bg-cream/10 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-gold-600 to-gold-300" style={{ width: `${data.count ? (d.n / data.count) * 100 : 0}%` }} />
-                </div>
-                <span className="w-6 text-right text-cream/50">{d.n}</span>
+          {google && google.count > 0 ? (
+            <div className="flex items-end gap-4">
+              <p className="font-serif text-6xl gold-text leading-none">{google.rating.toFixed(1)}</p>
+              <div>
+                <Stars value={google.rating} size="text-xl" label={fmt(t.reviews.stars, { n: google.rating.toFixed(1) })} />
+                <p className="text-sm text-cream/60">{fmt(t.reviews.googleCount, { n: google.count })}</p>
               </div>
-            ))}
+            </div>
+          ) : (
+            <p className="font-serif text-xl text-cream/85">{t.reviews.googleTitle}</p>
+          )}
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <a href={viewUri} target="_blank" rel="noopener noreferrer" className="btn-outline px-3 py-2.5 text-sm">
+              {t.reviews.viewGoogle}
+            </a>
+            <a href={writeUri} target="_blank" rel="noopener noreferrer" className="btn-gold px-3 py-2.5 text-sm">
+              {t.reviews.writeGoogle}
+            </a>
           </div>
         </div>
 
         <form onSubmit={submit} className="rounded-2xl border border-gold-500/25 bg-wood-900/70 p-6 grid gap-3">
-          <p className="font-serif text-xl text-gold-300">{t.reviews.share}</p>
+          <div>
+            <p className="font-serif text-xl text-gold-300">{t.reviews.share}</p>
+            <p className="text-xs text-cream/55 mt-1">{t.reviews.shareSub}</p>
+          </div>
           <div className="flex gap-1 text-3xl" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((i) => (
               <button
@@ -126,25 +149,47 @@ export function ReviewSection({ initial }: { initial: Data }) {
         </form>
       </div>
 
-      <div>
-        {data.list.length === 0 ? (
-          <div className="h-full min-h-60 rounded-2xl border border-dashed border-gold-500/30 grid place-items-center text-center p-8">
-            <div>
-              <p className="text-4xl">✨</p>
-              <p className="font-serif text-2xl mt-2">{t.reviews.emptyTitle}</p>
-              <p className="text-cream/60 mt-1">{t.reviews.emptySub}</p>
-            </div>
-          </div>
-        ) : (
-          <>
+      <div className="space-y-8">
+        {googleReviews.length > 0 && (
+          <div>
             <div className="grid sm:grid-cols-2 gap-4">
-              {list.map((r) => (
+              {googleReviews.map((r, i) => (
+                <article key={i} className="rounded-2xl border border-gold-500/15 bg-wood-900/50 p-5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar name={r.author} photo={r.photoUri} />
+                      <div className="min-w-0">
+                        {r.authorUri ? (
+                          <a href={r.authorUri} target="_blank" rel="noopener noreferrer" className="font-semibold leading-tight hover:text-gold-300 block truncate">
+                            {r.author}
+                          </a>
+                        ) : (
+                          <p className="font-semibold leading-tight truncate">{r.author}</p>
+                        )}
+                        <p className="text-xs text-cream/50">
+                          {r.when} · {t.reviews.onGoogle}
+                        </p>
+                      </div>
+                    </div>
+                    <Stars value={r.rating} size="text-sm" label={fmt(t.reviews.stars, { n: r.rating })} />
+                  </div>
+                  <p className="mt-3 text-sm text-cream/80 leading-relaxed whitespace-pre-line line-clamp-6">{r.text}</p>
+                </article>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-cream/40">{t.reviews.googleSource}</p>
+          </div>
+        )}
+
+        {site.length > 0 && (
+          <div>
+            {googleReviews.length > 0 && <p className="text-xs uppercase tracking-[0.3em] text-gold-500 mb-4">{t.reviews.fromWebsite}</p>}
+            <div className="grid sm:grid-cols-2 gap-4">
+              {siteShown.map((r) => (
                 <article key={r.id} className="rounded-2xl border border-gold-500/15 bg-wood-900/50 p-5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <span className="grid place-items-center h-10 w-10 rounded-full bg-wine-700 font-serif text-lg text-gold-300">
-                        {r.customerName.charAt(0).toUpperCase()}
-                      </span>
+                      <Avatar name={r.customerName} />
                       <div>
                         <p className="font-semibold leading-tight">{r.customerName}</p>
                         <p className="text-xs text-cream/50">
@@ -164,12 +209,25 @@ export function ReviewSection({ initial }: { initial: Data }) {
                 </article>
               ))}
             </div>
-            {data.list.length > 6 && (
+            {site.length > 4 && (
               <button className="btn-outline mt-5" onClick={() => setShowAll((s) => !s)}>
-                {showAll ? t.reviews.collapse : fmt(t.reviews.showAll, { n: data.list.length })}
+                {showAll ? t.reviews.collapse : fmt(t.reviews.showAll, { n: site.length })}
               </button>
             )}
-          </>
+          </div>
+        )}
+
+        {googleReviews.length === 0 && site.length === 0 && (
+          <div className="h-full min-h-60 rounded-2xl border border-dashed border-gold-500/30 grid place-items-center text-center p-8">
+            <div>
+              <IconRing icon={Sparkles} />
+              <p className="font-serif text-2xl mt-3">{t.reviews.emptyTitle}</p>
+              <p className="text-cream/60 mt-1">{t.reviews.emptySub}</p>
+              <a href={writeUri} target="_blank" rel="noopener noreferrer" className="btn-gold mt-5">
+                {t.reviews.writeGoogle}
+              </a>
+            </div>
+          </div>
         )}
       </div>
     </div>

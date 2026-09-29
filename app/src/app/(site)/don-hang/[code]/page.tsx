@@ -5,6 +5,8 @@ import { findOrderByCode } from "@/lib/sheets/orders";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { AutoRefresh } from "@/components/site/AutoRefresh";
+import { IconRing } from "@/components/site/icons";
+import { ConciergeBell, TriangleAlert, UtensilsCrossed } from "lucide-react";
 import { formatVnd } from "@/lib/site/pricing";
 import { RESTAURANT } from "@/lib/site/constants";
 import { getDict } from "@/lib/site/lang-server";
@@ -45,8 +47,8 @@ export default async function OrderPage({ params }: { params: Promise<{ code: st
       <main className="pt-28 pb-20 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto rounded-3xl border border-gold-500/30 bg-wood-900/80 p-6 sm:p-8">
           <div className="text-center">
-            <p className="text-5xl">{cancelled ? "⚠️" : "🍽"}</p>
-            <h1 className="font-serif text-3xl sm:text-4xl mt-3 gold-text">{cancelled ? L.cancelled : L.thanks}</h1>
+            <IconRing icon={cancelled ? TriangleAlert : UtensilsCrossed} size="lg" />
+            <h1 className="font-serif text-3xl sm:text-4xl mt-4 gold-text">{cancelled ? L.cancelled : L.thanks}</h1>
             <p className="text-cream/70 mt-2">
               {L.code}: <span className="font-mono text-gold-300 text-lg">{on.code}</span>
             </p>
@@ -67,8 +69,9 @@ export default async function OrderPage({ params }: { params: Promise<{ code: st
             <p><span className="text-cream/50">{L.type}:</span> {L.channels[on.channel]}</p>
             <p><span className="text-cream/50">{L.customer}:</span> {on.customerName} · {on.phone}</p>
             {on.channel === "LUMIA_ROOM" && on.hotelRoom && (
-              <p className="text-gold-300 font-semibold text-base">
-                🛎 Lumia Apartment — {fmt(t.room.floorRoom, { floor: on.hotelRoom[0], room: on.hotelRoom })}
+              <p className="text-gold-300 font-semibold text-base flex items-center gap-2">
+                <ConciergeBell className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                Lumia Apartment — {fmt(t.room.floorRoom, { floor: on.hotelRoom[0], room: on.hotelRoom })}
               </p>
             )}
             {on.channel === "DELIVERY" && <p><span className="text-cream/50">{L.address}:</span> {on.address}</p>}
