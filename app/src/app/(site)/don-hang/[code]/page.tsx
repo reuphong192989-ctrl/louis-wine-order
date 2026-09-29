@@ -25,7 +25,18 @@ export default async function OrderPage({ params }: { params: Promise<{ code: st
   const cancelled = o.status === "CANCELLED";
   const allDone = o.items.length > 0 && o.items.every((i) => i.kitchenStatus === "DONE");
   const cooking = o.items.some((i) => i.kitchenStatus !== "PENDING");
-  const step = o.status === "PENDING" ? 0 : allDone ? 3 : cooking ? 2 : 1;
+  // Received → confirmed → kitchen → ready / on the way → handed over.
+  const steps = on.channel === "PICKUP" ? L.pickupSteps : L.deliverySteps;
+  const step =
+    o.status === "PENDING"
+      ? 0
+      : o.fulfillment === "DELIVERED"
+        ? 4
+        : o.fulfillment === "DELIVERING" || allDone
+          ? 3
+          : cooking
+            ? 2
+            : 1;
 
   return (
     <>
@@ -43,7 +54,7 @@ export default async function OrderPage({ params }: { params: Promise<{ code: st
 
           {!cancelled && (
             <ol className="mt-8 flex justify-between gap-1">
-              {L.steps.map((s, i) => (
+              {steps.map((s, i) => (
                 <li key={s} className="flex-1 text-center">
                   <div className={`mx-auto h-3 w-3 rounded-full ${i <= step ? "bg-gold-400 shadow-[0_0_12px_#c9a14a]" : "bg-cream/15"}`} />
                   <p className={`text-[11px] mt-2 ${i <= step ? "text-gold-300" : "text-cream/40"}`}>{s}</p>

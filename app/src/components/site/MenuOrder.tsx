@@ -59,7 +59,7 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
     () =>
       menu.map((c) => ({
         ...c,
-        label: categoryName(c.name, lang),
+        label: categoryName(c.name, lang, c),
         items: c.items.map((it) => {
           const tr = dishText(it.name, it.note, lang, it);
           const en = dishText(it.name, null, "en", it).name;

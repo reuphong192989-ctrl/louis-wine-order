@@ -5,6 +5,7 @@ import KitchenDashboard from "@/components/kitchen/KitchenDashboard";
 export default async function KitchenPage() {
   const session = await getSession();
   if (!session) redirect("/staff/login");
+  if (session.role === "RECEPTION") redirect("/le-tan");
 
   return <KitchenDashboard username={session.username} role={session.role} />;
 }

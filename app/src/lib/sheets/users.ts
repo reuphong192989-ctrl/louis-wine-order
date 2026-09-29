@@ -4,7 +4,8 @@ import { appendRow, deleteRow, readAllRows, updateRow } from "./core";
 const TAB = "Users";
 const HEADERS = ["id", "username", "passwordHash", "role"];
 
-export type Role = "OWNER" | "ADMIN" | "STAFF";
+// RECEPTION = Lumia Apartment front desk: only the Lumia board (/le-tan).
+export type Role = "OWNER" | "ADMIN" | "STAFF" | "RECEPTION";
 
 export type SheetUser = {
   id: string;

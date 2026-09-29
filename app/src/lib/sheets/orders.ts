@@ -29,7 +29,20 @@ const ORDERS_HEADERS = [
   "subtotal",
   "discount",
   "shippingFee",
+  // Staff workflow: who took the pending order, then (website orders) handover + payment.
+  "claimedBy",
+  "claimedAt",
+  "fulfillment",
+  "fulfilledAt",
+  "fulfilledBy",
+  "paymentMethod",
+  "paidAt",
+  "paidBy",
 ];
+
+/** Website orders after the kitchen: out for delivery, then handed to the guest. */
+export type Fulfillment = "" | "DELIVERING" | "DELIVERED";
+export type PaymentMethod = "CASH" | "TRANSFER";
 
 /** TABLE = QR at a restaurant table; the rest come from the public website. */
 export type OrderChannel = "TABLE" | "PICKUP" | "DELIVERY" | "LUMIA_ROOM";
@@ -83,6 +96,14 @@ export type Order = {
   cancelledBy: string | null;
   /** Present only for website orders (pickup / delivery / Lumia room). */
   online: OnlineOrderInfo | null;
+  claimedBy: string | null;
+  claimedAt: string | null;
+  fulfillment: Fulfillment;
+  fulfilledAt: string | null;
+  fulfilledBy: string | null;
+  paymentMethod: PaymentMethod | null;
+  paidAt: string | null;
+  paidBy: string | null;
   items: OrderItemLine[];
 };
 
@@ -134,6 +155,14 @@ function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
     confirmedBy: cell.strOrNull(values.confirmedBy),
     cancelledBy: cell.strOrNull(values.cancelledBy),
     online: decodeOnline(values),
+    claimedBy: cell.strOrNull(values.claimedBy ?? ""),
+    claimedAt: cell.strOrNull(values.claimedAt ?? ""),
+    fulfillment: (values.fulfillment ?? "") as Fulfillment,
+    fulfilledAt: cell.strOrNull(values.fulfilledAt ?? ""),
+    fulfilledBy: cell.strOrNull(values.fulfilledBy ?? ""),
+    paymentMethod: (cell.strOrNull(values.paymentMethod ?? "") as PaymentMethod | null),
+    paidAt: cell.strOrNull(values.paidAt ?? ""),
+    paidBy: cell.strOrNull(values.paidBy ?? ""),
   };
 }
 
@@ -258,6 +287,14 @@ export async function createOrder(input: {
     confirmedBy: null,
     cancelledBy: null,
     online,
+    claimedBy: null,
+    claimedAt: null,
+    fulfillment: "",
+    fulfilledAt: null,
+    fulfilledBy: null,
+    paymentMethod: null,
+    paidAt: null,
+    paidBy: null,
     items,
   };
 }
@@ -347,6 +384,57 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
   const itemRows = await readAllRows(ORDER_ITEMS_TAB);
   const items = itemRows.map((r) => decodeOrderItem(r.values)).filter((it) => it.orderId === id);
   return { ...next, items };
+}
+
+export type OrderWorkflowAction =
+  | { type: "claim" }
+  | { type: "unclaim" }
+  | { type: "delivering" }
+  | { type: "delivered" }
+  | { type: "paid"; method: PaymentMethod };
+
+/**
+ * Staff workflow updates on one order. Returns the updated order, or an error
+ * message when the action doesn't apply (e.g. someone else already took it).
+ */
+export async function applyOrderWorkflow(
+  id: string,
+  action: OrderWorkflowAction,
+  username: string,
+): Promise<{ order: Order } | { error: string; status: number }> {
+  const rows = await readAllRows(ORDERS_TAB);
+  const row = rows.find((r) => r.values.id === id);
+  if (!row) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+  const current = decodeOrder(row.values);
+  const now = new Date().toISOString();
+  let patch: Record<string, string>;
+
+  switch (action.type) {
+    case "claim":
+      if (current.claimedBy && current.claimedBy !== username) {
+        return { error: `Đơn này đang được ${current.claimedBy} xử lý.`, status: 409 };
+      }
+      patch = { claimedBy: username, claimedAt: now };
+      break;
+    case "unclaim":
+      patch = { claimedBy: "", claimedAt: "" };
+      break;
+    case "delivering":
+    case "delivered":
+      if (!current.online) return { error: "Chỉ áp dụng cho đơn online.", status: 400 };
+      if (current.status !== "CONFIRMED") return { error: "Đơn chưa được xác nhận.", status: 400 };
+      patch = { fulfillment: action.type === "delivering" ? "DELIVERING" : "DELIVERED", fulfilledAt: now, fulfilledBy: username };
+      break;
+    case "paid":
+      patch = { paymentMethod: action.method, paidAt: now, paidBy: username };
+      break;
+  }
+
+  const values = { ...row.values, ...patch };
+  await updateRow(ORDERS_TAB, row.rowNumber, ORDERS_HEADERS, values);
+  const itemRows = await readAllRows(ORDER_ITEMS_TAB);
+  const items = itemRows.map((r) => decodeOrderItem(r.values)).filter((it) => it.orderId === id);
+  return { order: { ...decodeOrder(values), items } };
 }
 
 export { ORDERS_TAB, ORDERS_HEADERS, ORDER_ITEMS_TAB, ORDER_ITEMS_HEADERS };

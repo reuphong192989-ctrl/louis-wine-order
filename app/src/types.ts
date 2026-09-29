@@ -24,6 +24,8 @@ export type CategoryDTO = {
   id: string;
   slug: string;
   name: string;
+  nameEn?: string | null;
+  nameRu?: string | null;
   sortOrder: number;
   items: MenuItemDTO[];
 };
@@ -62,6 +64,14 @@ export type OrderDTO = {
     discount: number;
     shippingFee: number;
   } | null;
+  claimedBy?: string | null;
+  claimedAt?: string | null;
+  fulfillment?: "" | "DELIVERING" | "DELIVERED";
+  fulfilledAt?: string | null;
+  fulfilledBy?: string | null;
+  paymentMethod?: "CASH" | "TRANSFER" | null;
+  paidAt?: string | null;
+  paidBy?: string | null;
   items: OrderItemDTO[];
 };
 
@@ -100,4 +110,8 @@ export type ReservationDTO = {
   status: "NEW" | "CONFIRMED" | "SEATED" | "COMPLETED" | "CANCELLED";
   createdAt: string;
   handledBy: string | null;
+  claimedBy?: string | null;
+  claimedAt?: string | null;
+  shuttleDoneAt?: string | null;
+  shuttleDoneBy?: string | null;
 };

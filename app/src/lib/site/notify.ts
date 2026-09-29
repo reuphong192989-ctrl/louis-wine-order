@@ -47,6 +47,13 @@ export function orderMessage(o: Order) {
     .join("\n");
 }
 
+/** QR table / tablet order — backup alert for when no staff screen is open. */
+export function tableOrderMessage(o: Order) {
+  const NL = String.fromCharCode(10);
+  const lines = o.items.map((l) => `  • ${l.qty} × ${esc(l.nameSnapshot)}${l.note ? ` (${esc(l.note)})` : ""}`).join(NL);
+  return [`🍽 <b>ĐƠN TẠI BÀN ${esc(o.tableId)}</b>`, lines, `💰 <b>${formatVnd(o.totalAmount)}</b>`, `${siteUrl()}/staff`].join(NL);
+}
+
 export function reservationMessage(r: Reservation) {
   return [
     `🍷 <b>ĐẶT BÀN ${r.code}</b>`,

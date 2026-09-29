@@ -295,3 +295,29 @@ export const cell = {
   bool: (v: boolean): string => (v ? "true" : "false"),
   toBool: (s: string): boolean => s === "true",
 };
+
+/**
+ * Report export: replaces the whole content of `tab` (created if missing) with a
+ * header row + rows. Values are USER_ENTERED so numbers/dates stay summable in
+ * Google Sheets. Used by the daily report export — never by the app's own data.
+ */
+export async function writeReportTab(tab: string, rows: (string | number)[][]): Promise<void> {
+  const client = await getClient();
+  const meta = await client.spreadsheets.get({ spreadsheetId: spreadsheetId() });
+  const exists = (meta.data.sheets ?? []).some((s) => s.properties?.title === tab);
+  if (!exists) {
+    await client.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId(),
+      requestBody: { requests: [{ addSheet: { properties: { title: tab, gridProperties: { frozenRowCount: 1 } } } }] },
+    });
+    cachedSheetIdMap = null;
+  }
+  await client.spreadsheets.values.clear({ spreadsheetId: spreadsheetId(), range: tabRange(tab) });
+  await client.spreadsheets.values.update({
+    spreadsheetId: spreadsheetId(),
+    range: `${tabRange(tab)}!A1`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: rows },
+  });
+  invalidate(tab);
+}

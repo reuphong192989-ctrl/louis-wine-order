@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { notifyStaff, tableOrderMessage } from "@/lib/site/notify";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
@@ -56,6 +57,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   }
 
   const order = await createOrder({ tableId: parsed.data.tableId, lines });
+  after(() => notifyStaff(tableOrderMessage(order)));
   return NextResponse.json({ order }, { status: 201 });
 });
 

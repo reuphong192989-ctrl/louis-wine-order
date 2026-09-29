@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-type UserRow = { id: string; username: string; role: "OWNER" | "ADMIN" | "STAFF" };
+type UserRow = { id: string; username: string; role: "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" };
+type EditableRole = "ADMIN" | "STAFF" | "RECEPTION";
 
 export default function UsersManager() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
@@ -11,7 +12,7 @@ export default function UsersManager() {
 
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<"ADMIN" | "STAFF">("STAFF");
+  const [newRole, setNewRole] = useState<EditableRole>("STAFF");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPassword, setEditingPassword] = useState("");
@@ -48,7 +49,7 @@ export default function UsersManager() {
     }
   }
 
-  async function changeRole(id: string, role: "ADMIN" | "STAFF") {
+  async function changeRole(id: string, role: EditableRole) {
     setError(null);
     const res = await fetch(`/api/users/${id}`, {
       method: "PUT",
@@ -119,9 +120,10 @@ export default function UsersManager() {
                 {u.role === "OWNER" ? (
                   <span className="tag tag-accent">Chủ sở hữu</span>
                 ) : (
-                  <select className="input" style={{ width: 140 }} value={u.role} onChange={(e) => changeRole(u.id, e.target.value as "ADMIN" | "STAFF")}>
+                  <select className="input" style={{ width: 140 }} value={u.role} onChange={(e) => changeRole(u.id, e.target.value as EditableRole)}>
                     <option value="ADMIN">Quản lý</option>
                     <option value="STAFF">Nhân viên</option>
+                    <option value="RECEPTION">Lễ tân Lumia</option>
                   </select>
                 )}
               </td>
@@ -191,9 +193,10 @@ export default function UsersManager() {
         </div>
         <div className="field" style={{ minWidth: 140 }}>
           <label>Quyền</label>
-          <select className="input" value={newRole} onChange={(e) => setNewRole(e.target.value as "ADMIN" | "STAFF")}>
+          <select className="input" value={newRole} onChange={(e) => setNewRole(e.target.value as EditableRole)}>
             <option value="STAFF">Nhân viên</option>
             <option value="ADMIN">Quản lý</option>
+            <option value="RECEPTION">Lễ tân Lumia</option>
           </select>
         </div>
         <button className="btn btn-primary" type="submit" disabled={saving}>

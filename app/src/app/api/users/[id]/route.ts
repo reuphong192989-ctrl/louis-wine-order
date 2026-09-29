@@ -7,7 +7,7 @@ import { deleteUser, findUserById, listUsers, updateUser } from "@/lib/sheets/us
 
 const updateSchema = z.object({
   password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự").optional(),
-  role: z.enum(["ADMIN", "STAFF"]).optional(),
+  role: z.enum(["ADMIN", "STAFF", "RECEPTION"]).optional(),
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -27,7 +27,7 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
     return NextResponse.json({ error: "Bạn không có quyền chỉnh sửa tài khoản này." }, { status: 403 });
   }
 
-  if (existing.role === "ADMIN" && parsed.data.role === "STAFF") {
+  if (existing.role === "ADMIN" && parsed.data.role && parsed.data.role !== "ADMIN") {
     const all = await listUsers();
     const otherAdmins = all.filter((u) => u.role === "ADMIN" && u.id !== id);
     if (otherAdmins.length === 0) {

@@ -164,7 +164,7 @@ export default function StaffReviewManager() {
           <select className="input" value={username} onChange={(e) => setUsername(e.target.value)}>
             {users.map((u) => (
               <option key={u.id} value={u.username}>
-                {u.username} ({u.role === "OWNER" ? "Chủ sở hữu" : u.role === "ADMIN" ? "Quản lý" : "Nhân viên"})
+                {u.username} ({u.role === "OWNER" ? "Chủ sở hữu" : u.role === "ADMIN" ? "Quản lý" : u.role === "RECEPTION" ? "Lễ tân Lumia" : "Nhân viên"})
               </option>
             ))}
           </select>

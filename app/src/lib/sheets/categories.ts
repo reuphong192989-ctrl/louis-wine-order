@@ -2,13 +2,16 @@ import { randomUUID } from "crypto";
 import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, updateRow, cell } from "./core";
 
 const TAB = "Categories";
-const HEADERS = ["id", "slug", "name", "sortOrder"];
+// nameEn / nameRu: optional translations for foreign guests (empty = built-in dictionary, then Vietnamese).
+const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu"];
 
 export type Category = {
   id: string;
   slug: string;
   name: string;
   sortOrder: number;
+  nameEn: string | null;
+  nameRu: string | null;
 };
 
 function decode(values: Record<string, string>): Category {
@@ -17,6 +20,8 @@ function decode(values: Record<string, string>): Category {
     slug: values.slug,
     name: values.name,
     sortOrder: cell.toInt(values.sortOrder),
+    nameEn: cell.strOrNull(values.nameEn ?? ""),
+    nameRu: cell.strOrNull(values.nameRu ?? ""),
   };
 }
 
@@ -39,19 +44,21 @@ export async function findCategoryById(id: string): Promise<Category | null> {
 }
 
 export async function createCategory(input: { name: string; slug: string; sortOrder: number }): Promise<Category> {
-  const category: Category = { id: randomUUID(), slug: input.slug, name: input.name, sortOrder: input.sortOrder };
+  const category: Category = { id: randomUUID(), slug: input.slug, name: input.name, sortOrder: input.sortOrder, nameEn: null, nameRu: null };
   await appendRow(TAB, HEADERS, {
     id: category.id,
     slug: category.slug,
     name: category.name,
     sortOrder: cell.int(category.sortOrder),
+    nameEn: "",
+    nameRu: "",
   });
   return category;
 }
 
 export async function updateCategory(
   id: string,
-  patch: { name?: string; sortOrder?: number }
+  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null }
 ): Promise<Category | null> {
   const rows = await readAllRows(TAB);
   const row = rows.find((r) => r.values.id === id);
@@ -61,12 +68,16 @@ export async function updateCategory(
     ...current,
     name: patch.name ?? current.name,
     sortOrder: patch.sortOrder ?? current.sortOrder,
+    nameEn: patch.nameEn === undefined ? current.nameEn : patch.nameEn || null,
+    nameRu: patch.nameRu === undefined ? current.nameRu : patch.nameRu || null,
   };
   await updateRow(TAB, row.rowNumber, HEADERS, {
     id: next.id,
     slug: next.slug,
     name: next.name,
     sortOrder: cell.int(next.sortOrder),
+    nameEn: cell.str(next.nameEn),
+    nameRu: cell.str(next.nameRu),
   });
   return next;
 }
@@ -84,7 +95,8 @@ export async function reorderCategories(orderedIds: string[]): Promise<void> {
     if (category.sortOrder === index) return;
     updates.push({
       rowNumber: row.rowNumber,
-      record: { id: category.id, slug: category.slug, name: category.name, sortOrder: cell.int(index) },
+      // Keep every stored column (translations included) — only the position changes.
+      record: { ...row.values, sortOrder: cell.int(index) },
     });
   });
 
