@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "./AppProviders";
 import { RESTAURANT } from "@/lib/site/constants";
 import { LANGS, LANG_LABEL, fmt } from "@/lib/site/i18n";
 
-function LangSwitch({ className = "" }: { className?: string }) {
+function LangSwitch({ className = "flex" }: { className?: string }) {
   const { lang, setLang, t } = useApp();
   return (
-    <div role="group" aria-label={t.nav.language} className={`flex rounded-full border border-gold-500/40 overflow-hidden text-xs ${className}`}>
+    <div role="group" aria-label={t.nav.language} className={`rounded-full border border-gold-500/40 overflow-hidden text-xs ${className}`}>
       {LANGS.map((l) => (
         <button
           key={l}
@@ -20,6 +20,53 @@ function LangSwitch({ className = "" }: { className?: string }) {
           {LANG_LABEL[l]}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Phones: one round button showing the current language; tap to pick another. */
+function LangMenu({ className = "" }: { className?: string }) {
+  const { lang, setLang, t } = useApp();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label={t.nav.language}
+        aria-expanded={open}
+        className="grid place-items-center h-10 w-10 rounded-full border border-gold-500/40 text-xs font-bold text-gold-300"
+      >
+        {LANG_LABEL[lang]}
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-12 grid rounded-xl border border-gold-500/30 bg-wood-950/95 backdrop-blur p-1 shadow-xl">
+          {LANGS.map((l) => (
+            <button
+              key={l}
+              role="menuitemradio"
+              aria-checked={l === lang}
+              onClick={() => {
+                setOpen(false);
+                if (l !== lang) setLang(l);
+              }}
+              className={`w-14 rounded-lg py-2 text-sm font-semibold ${l === lang ? "bg-gold-500 text-wood-950" : "text-cream/80"}`}
+            >
+              {LANG_LABEL[l]}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -48,8 +95,8 @@ export function Header() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2 min-w-0">
             <img src="/images/logo.png" alt="Logo Louis Wine" width={40} height={40} className="h-10 w-10 shrink-0" />
-            <span className="leading-tight hidden min-[400px]:block">
-              <span className="block font-serif text-xl gold-text font-semibold">Louis Wine</span>
+            <span className="leading-tight min-w-0">
+              <span className="block font-serif text-lg sm:text-xl gold-text font-semibold whitespace-nowrap">Louis Wine</span>
               <span className="block text-[10px] tracking-[0.3em] uppercase text-cream/50">Đà Nẵng</span>
             </span>
           </Link>
@@ -63,7 +110,8 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <LangSwitch />
+            <LangMenu className="sm:hidden" />
+            <LangSwitch className="hidden sm:flex" />
             <a href={`tel:${RESTAURANT.hotlineRaw}`} className="hidden 2xl:inline text-sm text-gold-300 mx-1">
               ☎ {RESTAURANT.hotline}
             </a>
