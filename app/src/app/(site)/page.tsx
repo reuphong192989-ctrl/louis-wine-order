@@ -7,7 +7,7 @@ import { ReviewSection } from "@/components/site/ReviewSection";
 import { LumiaQrWelcome } from "@/components/site/LumiaQrWelcome";
 import { IconRing, InlineIcon } from "@/components/site/icons";
 import { BookOpen, Bus, Car, Clock, ConciergeBell, MapPin, Phone, ShoppingBag, Star, Wine } from "lucide-react";
-import { getGooglePlace } from "@/lib/site/google-reviews";
+import { getGoogleRating } from "@/lib/sheets/settings";
 import { getFeaturedItems, getReviews } from "@/lib/site/queries";
 import { RESTAURANT, LUMIA, mapsEmbedUrl, siteUrl } from "@/lib/site/constants";
 import { parseRoom } from "@/lib/site/lumia";
@@ -47,7 +47,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const [featured, reviews, google] = await Promise.all([
     getFeaturedItems(8).catch(() => []),
     getReviews().catch(() => ({ count: 0, avg: 0, dist: [5, 4, 3, 2, 1].map((star) => ({ star, n: 0 })), list: [] })),
-    getGooglePlace(lang),
+    getGoogleRating(),
   ]);
 
   const jsonLd = {

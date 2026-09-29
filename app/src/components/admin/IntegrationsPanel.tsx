@@ -2,39 +2,38 @@
 
 import { useEffect, useState } from "react";
 
-type Status = {
-  sheets: boolean;
-  cron: boolean;
-  telegram: boolean;
-  telegramLumia: boolean;
-  qrSecret: boolean;
-  googleKey: boolean;
-  googlePlace: boolean;
-};
+type Google = { rating: number | null; count: number | null; reviewUrl: string | null };
+type Status = { sheets: boolean; cron: boolean; telegram: boolean; telegramLumia: boolean; qrSecret: boolean; google: Google };
+type Flag = Exclude<keyof Status, "google">;
 
-type PlaceHit = { id: string; name: string; address: string; rating: number | null; count: number | null };
-
-const ROWS: { key: keyof Status; label: string; hint: string }[] = [
+const ROWS: { key: Flag; label: string; hint: string }[] = [
   { key: "sheets", label: "Google Sheets (báo cáo)", hint: "GOOGLE_SHEET_ID + tài khoản dịch vụ" },
   { key: "cron", label: "Tự xuất báo cáo 23:30 mỗi ngày", hint: "CRON_SECRET" },
   { key: "telegram", label: "Telegram nhóm nhà hàng", hint: "TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID" },
   { key: "telegramLumia", label: "Telegram nhóm lễ tân Lumia", hint: "TELEGRAM_LUMIA_CHAT_ID" },
   { key: "qrSecret", label: "Khoá ký mã QR phòng Lumia", hint: "LUMIA_QR_SECRET" },
-  { key: "googlePlace", label: "Điểm đánh giá Google Maps trên web", hint: "GOOGLE_PLACES_API_KEY + GOOGLE_PLACE_ID" },
 ];
 
-/** Quản trị → Dữ liệu: integration status, "export report now", Telegram and Google tests. */
+/** Quản trị → Dữ liệu: integration status, "export report now", Telegram test, Google rating shown on the site. */
 export default function IntegrationsPanel() {
   const [status, setStatus] = useState<Status | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [query, setQuery] = useState("Louis Wine Đà Nẵng");
-  const [hits, setHits] = useState<PlaceHit[] | null>(null);
+  const [rating, setRating] = useState("");
+  const [count, setCount] = useState("");
+  const [reviewUrl, setReviewUrl] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/integrations", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then(setStatus)
+      .then((s: Status | null) => {
+        setStatus(s);
+        if (s?.google) {
+          setRating(s.google.rating ? String(s.google.rating) : "");
+          setCount(s.google.count ? String(s.google.count) : "");
+          setReviewUrl(s.google.reviewUrl ?? "");
+        }
+      })
       .catch(() => setStatus(null));
   }, []);
 
@@ -49,7 +48,7 @@ export default function IntegrationsPanel() {
     return data;
   }
 
-  async function run(kind: "export" | "telegram" | "google" | "google-search") {
+  async function run(kind: "export" | "telegram" | "google") {
     setBusy(kind);
     setMsg(null);
     try {
@@ -59,13 +58,15 @@ export default function IntegrationsPanel() {
       } else if (kind === "telegram") {
         const d = await post("/api/admin/integrations");
         setMsg({ ok: true, text: `Đã gửi tin thử tới nhóm nhà hàng${d.lumia ? " và nhóm lễ tân Lumia" : ""}. Kiểm tra Telegram.` });
-      } else if (kind === "google") {
-        const d = await post("/api/admin/integrations", { action: "google" });
-        setMsg({ ok: true, text: `Kết nối Google thành công: ${d.rating} ★ · ${d.count} đánh giá · lấy được ${d.reviews} đánh giá gần đây để hiện trên web.` });
       } else {
-        const d = await post("/api/admin/integrations", { action: "google-search", query });
-        setHits(d.places);
-        if (!d.places.length) setMsg({ ok: false, text: "Không tìm thấy địa điểm nào. Thử tên khác, ví dụ: Louis Wine 93 Nguyễn Đình Thi." });
+        const r = rating.trim().replace(",", ".");
+        const c = count.trim().replace(/[.,\s]/g, "");
+        const rNum = r ? Number(r) : null;
+        const cNum = c ? Number(c) : null;
+        if (rNum !== null && !(rNum >= 1 && rNum <= 5)) throw new Error("Điểm phải từ 1 đến 5, ví dụ 4,7.");
+        if (cNum !== null && !Number.isInteger(cNum)) throw new Error("Số lượt đánh giá phải là số nguyên.");
+        const d = await post("/api/admin/integrations", { action: "google-rating", rating: rNum, count: cNum, reviewUrl: reviewUrl.trim() || null });
+        setMsg({ ok: true, text: d.google.rating ? `Đã lưu. Trang web hiện ${d.google.rating} ★ trên Google.` : "Đã lưu. Trang web ẩn điểm, chỉ hiện 2 nút Google." });
       }
     } catch (e) {
       setMsg({ ok: false, text: (e as Error).message });
@@ -104,48 +105,26 @@ export default function IntegrationsPanel() {
         <button className="btn btn-secondary" disabled={busy !== null || !status?.telegram} onClick={() => run("telegram")}>
           {busy === "telegram" ? "Đang gửi..." : "Gửi thử Telegram"}
         </button>
-        <button className="btn btn-secondary" disabled={busy !== null || !status?.googlePlace} onClick={() => run("google")}>
-          {busy === "google" ? "Đang kiểm tra..." : "Kiểm tra điểm Google"}
-        </button>
       </div>
 
-      {status?.googleKey && (
-        <div style={{ borderTop: "1px solid var(--color-border, #ddd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <strong style={{ fontSize: 14 }}>Tìm Place ID của nhà hàng</strong>
-          <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
-            Tìm đúng địa điểm Louis Wine Đà Nẵng, bấm Sao chép, rồi dán vào biến GOOGLE_PLACE_ID trên Vercel và Redeploy.
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} style={{ flex: 1 }} />
-            <button className="btn btn-secondary" disabled={busy !== null} onClick={() => run("google-search")}>
-              {busy === "google-search" ? "Đang tìm..." : "Tìm"}
-            </button>
-          </div>
-          {hits && hits.length > 0 && (
-            <table className="table">
-              <tbody>
-                {hits.map((h) => (
-                  <tr key={h.id}>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{h.name}</div>
-                      <div className="text-muted" style={{ fontSize: 12 }}>
-                        {h.address}
-                        {h.rating !== null ? ` · ${h.rating} ★ (${h.count ?? 0})` : ""}
-                      </div>
-                      <code style={{ fontSize: 12 }}>{h.id}</code>
-                    </td>
-                    <td style={{ width: 90 }}>
-                      <button className="btn btn-secondary" onClick={() => navigator.clipboard?.writeText(h.id)}>
-                        Sao chép
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <div style={{ borderTop: "1px solid var(--color-border, #ddd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        <strong style={{ fontSize: 14 }}>Điểm Google Maps hiển thị trên web</strong>
+        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+          Nhập đúng số đang hiện trên Google Maps. Để trống ô Điểm nếu muốn ẩn điểm (chỉ còn 2 nút Google). Link viết đánh giá lấy trong
+          Google Business Profile → &quot;Nhận thêm đánh giá&quot; (dạng https://g.page/r/…/review); để trống thì nút mở trang Google Maps
+          của nhà hàng.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "120px 160px 1fr", gap: 8 }}>
+          <input className="input" placeholder="Điểm, vd 4,7" value={rating} onChange={(e) => setRating(e.target.value)} inputMode="decimal" />
+          <input className="input" placeholder="Số lượt (không bắt buộc)" value={count} onChange={(e) => setCount(e.target.value)} inputMode="numeric" />
+          <input className="input" placeholder="Link viết đánh giá (không bắt buộc)" value={reviewUrl} onChange={(e) => setReviewUrl(e.target.value)} />
         </div>
-      )}
+        <div>
+          <button className="btn btn-primary" disabled={busy !== null || !status} onClick={() => run("google")}>
+            {busy === "google" ? "Đang lưu..." : "Lưu điểm Google"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
