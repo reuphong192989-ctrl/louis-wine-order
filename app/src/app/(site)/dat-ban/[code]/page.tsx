@@ -5,6 +5,8 @@ import { findReservationByCode } from "@/lib/sheets/reservations";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { AutoRefresh } from "@/components/site/AutoRefresh";
+import { IconRing } from "@/components/site/icons";
+import { Wine } from "lucide-react";
 import { RESTAURANT } from "@/lib/site/constants";
 import { getDict } from "@/lib/site/lang-server";
 import { fmt } from "@/lib/site/i18n";
@@ -24,8 +26,8 @@ export default async function ReservationPage({ params }: { params: Promise<{ co
       <AutoRefresh />
       <main className="pt-28 pb-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto rounded-3xl border border-gold-500/30 bg-wood-900/80 p-6 sm:p-8 text-center">
-          <p className="text-5xl">🍷</p>
-          <h1 className="font-serif text-3xl sm:text-4xl mt-3 gold-text">{R.title}</h1>
+          <IconRing icon={Wine} size="lg" />
+          <h1 className="font-serif text-3xl sm:text-4xl mt-4 gold-text">{R.title}</h1>
           <p className="text-cream/70 mt-2">
             {R.code}: <span className="font-mono text-gold-300 text-lg">{r.code}</span>
           </p>

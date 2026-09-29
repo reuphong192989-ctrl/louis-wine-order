@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useApp } from "./AppProviders";
 import { AddToCartButton } from "./AddToCartButton";
 import { RoomPicker } from "./RoomPicker";
+import { Bike, ConciergeBell, ShoppingBag, type LucideIcon } from "lucide-react";
 import type { MenuCategoryDTO } from "@/lib/site/queries";
 import { computeTotals, formatVnd, type OnlineChannel } from "@/lib/site/pricing";
 import { DELIVERY_FEE } from "@/lib/site/constants";
@@ -122,10 +123,10 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
     }
   }
 
-  const channels: [OnlineChannel, string, string][] = [
-    ["LUMIA_ROOM", t.cart.lumia, t.cart.lumiaSub],
-    ["DELIVERY", t.cart.delivery, fmt(t.cart.deliverySub, { fee: formatVnd(DELIVERY_FEE) })],
-    ["PICKUP", t.cart.pickup, t.cart.pickupSub],
+  const channels: [OnlineChannel, string, string, LucideIcon][] = [
+    ["LUMIA_ROOM", t.cart.lumia, t.cart.lumiaSub, ConciergeBell],
+    ["DELIVERY", t.cart.delivery, fmt(t.cart.deliverySub, { fee: formatVnd(DELIVERY_FEE) }), Bike],
+    ["PICKUP", t.cart.pickup, t.cart.pickupSub, ShoppingBag],
   ];
 
   const cartPanel = (
@@ -173,7 +174,7 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
           <form onSubmit={submit} className="p-5 border-t border-gold-500/15 grid gap-3">
             <p className="label !mb-0">{t.cart.how}</p>
             <div className="grid gap-2">
-              {channels.map(([v, title, sub]) => (
+              {channels.map(([v, title, sub, Icon]) => (
                 <label
                   key={v}
                   className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
@@ -182,7 +183,10 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
                 >
                   <input type="radio" name="otype" className="mt-1 accent-[#c9a14a]" checked={orderType === v} onChange={() => setOrderType(v)} />
                   <span>
-                    <span className="block text-sm font-medium">{title}</span>
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <Icon className="h-4 w-4 text-gold-400 shrink-0" strokeWidth={1.75} aria-hidden />
+                      {title}
+                    </span>
                     <span className={`block text-xs ${v === "LUMIA_ROOM" ? "text-gold-300" : "text-cream/50"}`}>{sub}</span>
                   </span>
                 </label>
@@ -337,7 +341,10 @@ export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
       {/* Mobile cart bar + drawer */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-wood-950/95 border-t border-gold-500/20 backdrop-blur">
         <button className="btn-gold w-full justify-between" onClick={() => setDrawer(true)}>
-          <span>{fmt(t.cart.bar, { n: cartCount })}</span>
+          <span className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {fmt(t.cart.bar, { n: cartCount })}
+          </span>
           <span>{formatVnd(totals.total)}</span>
         </button>
       </div>

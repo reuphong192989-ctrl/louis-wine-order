@@ -5,6 +5,9 @@ import { AddToCartButton } from "@/components/site/AddToCartButton";
 import { ReservationForm } from "@/components/site/ReservationForm";
 import { ReviewSection } from "@/components/site/ReviewSection";
 import { LumiaQrWelcome } from "@/components/site/LumiaQrWelcome";
+import { IconRing, InlineIcon } from "@/components/site/icons";
+import { BookOpen, Bus, Car, Clock, ConciergeBell, MapPin, Phone, ShoppingBag, Star, Wine } from "lucide-react";
+import { getGoogleRating } from "@/lib/sheets/settings";
 import { getFeaturedItems, getReviews } from "@/lib/site/queries";
 import { RESTAURANT, LUMIA, mapsEmbedUrl, siteUrl } from "@/lib/site/constants";
 import { parseRoom } from "@/lib/site/lumia";
@@ -41,9 +44,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     else invalidQr = true;
   }
 
-  const [featured, reviews] = await Promise.all([
+  const [featured, reviews, google] = await Promise.all([
     getFeaturedItems(8).catch(() => []),
     getReviews().catch(() => ({ count: 0, avg: 0, dist: [5, 4, 3, 2, 1].map((star) => ({ star, n: 0 })), list: [] })),
+    getGoogleRating(),
   ]);
 
   const jsonLd = {
@@ -72,16 +76,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       opens: "10:00",
       closes: "21:30",
     },
-    ...(reviews.count > 0 && {
-      aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.avg.toFixed(1), reviewCount: reviews.count },
-    }),
   };
 
   const services = [
-    { icon: "📖", href: "/menu", ...h.services[0] },
-    { icon: "🛍", href: "/menu", ...h.services[1] },
-    { icon: "🍷", href: "#dat-ban", ...h.services[2] },
-    { icon: "⭐", href: "#danh-gia", ...h.services[3] },
+    { icon: BookOpen, href: "/menu", ...h.services[0] },
+    { icon: ShoppingBag, href: "/menu", ...h.services[1] },
+    { icon: Wine, href: "#dat-ban", ...h.services[2] },
+    { icon: Star, href: "#danh-gia", ...h.services[3] },
   ];
   const gallery = [
     { img: "/images/round-table.jpg", ...h.gallery[0] },
@@ -117,10 +118,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             </div>
             <div className="mt-8 sm:mt-12 grid sm:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-gold-500/20 bg-gold-500/20 max-w-4xl">
               {[
-                { k: h.addressLabel, v: t.restaurant.address, href: RESTAURANT.mapsUrl },
-                { k: "☎ Hotline", v: RESTAURANT.hotline, href: `tel:${RESTAURANT.hotlineRaw}` },
-                { k: h.hoursLabel, v: t.restaurant.hours, href: null },
-              ].map(({ k, v, href }) =>
+                { icon: MapPin, k: h.addressLabel, v: t.restaurant.address, href: RESTAURANT.mapsUrl },
+                { icon: Phone, k: "Hotline", v: RESTAURANT.hotline, href: `tel:${RESTAURANT.hotlineRaw}` },
+                { icon: Clock, k: h.hoursLabel, v: t.restaurant.hours, href: null },
+              ].map(({ icon, k, v, href }) =>
                 href ? (
                   <a
                     key={k}
@@ -129,12 +130,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                     rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
                     className="group bg-wood-950/85 backdrop-blur px-5 py-3 sm:py-4 hover:bg-wood-900/90 transition"
                   >
-                    <p className="text-xs text-gold-400">{k}</p>
+                    <p className="text-xs text-gold-400 flex items-center gap-1.5">
+                      <InlineIcon icon={icon} />
+                      {k}
+                    </p>
                     <p className="text-sm mt-1 text-cream/85 group-hover:text-gold-300 underline decoration-gold-500/30 underline-offset-4">{v}</p>
                   </a>
                 ) : (
                   <div key={k} className="bg-wood-950/85 backdrop-blur px-5 py-3 sm:py-4">
-                    <p className="text-xs text-gold-400">{k}</p>
+                    <p className="text-xs text-gold-400 flex items-center gap-1.5">
+                      <InlineIcon icon={icon} />
+                      {k}
+                    </p>
                     <p className="text-sm mt-1 text-cream/85">{v}</p>
                   </div>
                 ),
@@ -152,8 +159,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                 href={s.href}
                 className="group rounded-2xl border border-gold-500/20 bg-wood-900/60 p-5 sm:p-6 hover:border-gold-500/60 hover:-translate-y-1 transition"
               >
-                <span className="text-3xl">{s.icon}</span>
-                <p className="font-serif text-xl mt-3 group-hover:text-gold-300">{s.t}</p>
+                <IconRing icon={s.icon} />
+                <p className="font-serif text-xl mt-4 group-hover:text-gold-300">{s.t}</p>
                 <p className="text-sm text-cream/60 mt-1">{s.d}</p>
               </Link>
             ))}
@@ -260,12 +267,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                 </p>
                 <div className="mt-8 grid sm:grid-cols-2 gap-4">
                   {[
-                    { icon: "🛎", title: h.roomCardTitle, lines: h.roomCard },
-                    { icon: "🚐", title: h.tableCardTitle, lines: h.tableCard },
+                    { icon: ConciergeBell, title: h.roomCardTitle, lines: h.roomCard },
+                    { icon: Bus, title: h.tableCardTitle, lines: h.tableCard },
                   ].map((c) => (
                     <div key={c.title} className="rounded-2xl border border-gold-500/40 bg-wood-950/70 p-6">
-                      <p className="text-3xl">{c.icon}</p>
-                      <p className="font-serif text-2xl mt-2">{c.title}</p>
+                      <IconRing icon={c.icon} />
+                      <p className="font-serif text-2xl mt-3">{c.title}</p>
                       <ul className="mt-3 space-y-1.5 text-sm text-cream/80">
                         {c.lines.map((l, i) => (
                           <li key={l}>
@@ -301,7 +308,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <section id="danh-gia" className="wood-panel py-24 scroll-mt-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <SectionTitle kicker={h.reviewsKicker} title={h.reviewsTitle} sub={h.reviewsSub} />
-            <ReviewSection initial={reviews} />
+            <ReviewSection initial={reviews} google={google} mapsUrl={RESTAURANT.mapsUrl} />
           </div>
         </section>
 
@@ -322,21 +329,27 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
               <p className="text-xs uppercase tracking-[0.35em] text-gold-500">{h.contactKicker}</p>
               <h2 className="font-serif text-4xl mt-3">{h.contactTitle}</h2>
               <div className="mt-6 space-y-4 text-cream/80">
-                <p>
-                  📍{" "}
+                <p className="flex items-start gap-3">
+                  <InlineIcon icon={MapPin} className="mt-1" />
                   <a href={RESTAURANT.mapsUrl} target="_blank" rel="noreferrer" className="hover:text-gold-300 underline-offset-4 hover:underline">
                     {t.restaurant.address}
                   </a>
                 </p>
-                <p>
-                  ☎{" "}
+                <p className="flex items-center gap-3">
+                  <InlineIcon icon={Phone} />
                   <a href={`tel:${RESTAURANT.hotlineRaw}`} className="text-gold-300 text-xl font-semibold">
                     {RESTAURANT.hotline}
                   </a>
                 </p>
-                <p>🕰 {t.restaurant.hours}</p>
-                <p className="text-sm text-cream/60">{t.restaurant.hoursNote}</p>
-                <p>{h.parking}</p>
+                <p className="flex items-center gap-3">
+                  <InlineIcon icon={Clock} />
+                  {t.restaurant.hours}
+                </p>
+                <p className="text-sm text-cream/60 pl-8">{t.restaurant.hoursNote}</p>
+                <p className="flex items-center gap-3">
+                  <InlineIcon icon={Car} />
+                  {h.parking}
+                </p>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-gold">
@@ -362,7 +375,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       {/* Phones: call / menu / book always within thumb reach. */}
       <nav className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-[1fr_1fr_1.3fr] gap-2 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-wood-950/95 backdrop-blur border-t border-gold-500/20">
         <a href={`tel:${RESTAURANT.hotlineRaw}`} className="btn-outline px-2 py-2.5 text-sm whitespace-nowrap">
-          ☎ {h.callNow}
+          <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          {h.callNow}
         </a>
         <Link href="/menu" className="btn-outline px-2 py-2.5 text-sm whitespace-nowrap">
           {t.nav.menu}

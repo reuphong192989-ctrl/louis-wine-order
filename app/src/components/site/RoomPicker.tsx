@@ -4,6 +4,8 @@ import { LUMIA } from "@/lib/site/constants";
 import { roomCode } from "@/lib/site/lumia";
 import { fmt } from "@/lib/site/i18n";
 import { useApp } from "./AppProviders";
+import { IconRing } from "./icons";
+import { KeyRound } from "lucide-react";
 
 type Props = {
   floor: number | "";
@@ -22,7 +24,7 @@ export function RoomPicker({ floor, room, onChange, locked }: Props) {
           <p className="text-xs uppercase tracking-widest text-gold-400">{t.room.verified}</p>
           <p className="font-serif text-2xl mt-1">{fmt(t.room.floorRoom, { floor, room })}</p>
         </div>
-        <span className="text-3xl">🔑</span>
+        <IconRing icon={KeyRound} />
       </div>
     );
   }

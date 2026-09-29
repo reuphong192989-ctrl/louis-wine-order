@@ -59,7 +59,8 @@ export async function reviewSummary(limit = 30) {
 }
 
 export async function createReview(input: Omit<Review, "id" | "isVisible" | "createdAt">): Promise<Review> {
-  const r: Review = { ...input, id: randomUUID(), isVisible: true, createdAt: new Date().toISOString() };
+  // Private feedback to the manager; published only when the manager turns it on in Quản trị → Đánh giá khách.
+  const r: Review = { ...input, id: randomUUID(), isVisible: false, createdAt: new Date().toISOString() };
   await appendRow(TAB, HEADERS, encode(r));
   return r;
 }
