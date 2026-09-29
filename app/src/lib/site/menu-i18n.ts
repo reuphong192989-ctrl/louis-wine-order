@@ -434,9 +434,17 @@ const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 const ITEM_INDEX = new Map(Object.entries(ITEMS).map(([k, v]) => [norm(k), v]));
 const CATEGORY_INDEX = new Map(Object.entries(CATEGORIES).map(([k, v]) => [norm(k), v]));
 
-export function categoryName(name: string, lang: Lang): string {
+/** Category label; a translation saved in admin wins over the built-in dictionary. */
+export function categoryName(name: string, lang: Lang, stored?: { nameEn?: string | null; nameRu?: string | null }): string {
   if (lang === "vi") return name;
-  return CATEGORY_INDEX.get(norm(name))?.[lang] ?? name;
+  const saved = lang === "en" ? stored?.nameEn : stored?.nameRu;
+  return saved || CATEGORY_INDEX.get(norm(name))?.[lang] || name;
+}
+
+/** Built-in translation for a category — pre-fills the admin form. */
+export function builtInCategoryName(name: string): { nameEn: string | null; nameRu: string | null } {
+  const t = CATEGORY_INDEX.get(norm(name));
+  return { nameEn: t?.en ?? null, nameRu: t?.ru ?? null };
 }
 
 /** Translations typed in Quản trị → Món ăn (stored on the menu item). */

@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify";
+import { builtInCategoryName } from "@/lib/site/menu-i18n";
 
 type CategoryRow = {
   id: string;
   slug: string;
   name: string;
   sortOrder: number;
+  nameEn?: string | null;
+  nameRu?: string | null;
   _count: { items: number };
 };
 
@@ -19,6 +22,8 @@ export default function CategoriesManager() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingEn, setEditingEn] = useState("");
+  const [editingRu, setEditingRu] = useState("");
   const [saving, setSaving] = useState(false);
   const [reordering, setReordering] = useState(false);
 
@@ -64,7 +69,7 @@ export default function CategoriesManager() {
     await fetch(`/api/categories/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editingName.trim() }),
+      body: JSON.stringify({ name: editingName.trim(), nameEn: editingEn.trim() || null, nameRu: editingRu.trim() || null }),
     });
     setEditingId(null);
     await load();
@@ -164,20 +169,31 @@ export default function CategoriesManager() {
               </td>
               <td>
                 {editingId === cat.id ? (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input className="input" value={editingName} onChange={(e) => setEditingName(e.target.value)} autoFocus />
-                    <button className="btn btn-primary" onClick={() => saveRename(cat.id)}>Lưu</button>
-                    <button className="btn btn-secondary" onClick={() => setEditingId(null)}>Huỷ</button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 360 }}>
+                    <input className="input" value={editingName} onChange={(e) => setEditingName(e.target.value)} autoFocus placeholder="Tên tiếng Việt" />
+                    <input className="input" value={editingEn} onChange={(e) => setEditingEn(e.target.value)} placeholder="Tên tiếng Anh (EN) — vd: Seafood" />
+                    <input className="input" value={editingRu} onChange={(e) => setEditingRu(e.target.value)} placeholder="Tên tiếng Nga (RU) — vd: Морепродукты" />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn btn-primary" onClick={() => saveRename(cat.id)}>Lưu</button>
+                      <button className="btn btn-secondary" onClick={() => setEditingId(null)}>Huỷ</button>
+                    </div>
                   </div>
                 ) : (
                   <span
                     style={{ cursor: "pointer" }}
                     onClick={() => {
+                      const builtIn = builtInCategoryName(cat.name);
                       setEditingId(cat.id);
                       setEditingName(cat.name);
+                      setEditingEn(cat.nameEn || builtIn.nameEn || "");
+                      setEditingRu(cat.nameRu || builtIn.nameRu || "");
                     }}
+                    title="Bấm để sửa tên (VI / EN / RU)"
                   >
                     {cat.name}
+                    <span className="text-muted" style={{ display: "block", fontSize: 11 }}>
+                      EN: {cat.nameEn || builtInCategoryName(cat.name).nameEn || "—"} · RU: {cat.nameRu || builtInCategoryName(cat.name).nameRu || "—"}
+                    </span>
                   </span>
                 )}
               </td>

@@ -163,8 +163,8 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
   const activeCatName = useMemo(() => {
     if (activeCat === HIGHLIGHT_TAB_ID) return t.highlight;
     if (activeCat === FEATURED_TAB_ID) return t.featured;
-    const name = categories?.find((c) => c.id === activeCat)?.name ?? "";
-    return categoryName(name, lang);
+    const cat = categories?.find((c) => c.id === activeCat);
+    return cat ? categoryName(cat.name, lang, cat) : "";
   }, [activeCat, categories, t, lang]);
 
   const displayItems: MenuItemDTO[] = useMemo(() => {
@@ -358,7 +358,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
               className={`order-cat-btn ${activeCat === cat.id && !isSearching ? "active" : ""}`}
               onClick={() => selectCategory(cat.id)}
             >
-              {categoryName(cat.name, lang)}
+              {categoryName(cat.name, lang, cat)}
             </button>
           ))}
         </aside>

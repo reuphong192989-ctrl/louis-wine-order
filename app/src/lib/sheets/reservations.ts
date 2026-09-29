@@ -21,6 +21,11 @@ const HEADERS = [
   "status",
   "createdAt",
   "handledBy",
+  "claimedBy",
+  "claimedAt",
+  // Lumia shuttle: set by the Lumia front desk / driver when the guest was picked up.
+  "shuttleDoneAt",
+  "shuttleDoneBy",
 ];
 
 // new → confirmed → seated → completed, or cancelled
@@ -46,6 +51,10 @@ export type Reservation = {
   status: ReservationStatus;
   createdAt: string;
   handledBy: string | null;
+  claimedBy: string | null;
+  claimedAt: string | null;
+  shuttleDoneAt: string | null;
+  shuttleDoneBy: string | null;
 };
 
 function decode(v: Record<string, string>): Reservation {
@@ -68,6 +77,10 @@ function decode(v: Record<string, string>): Reservation {
     status: (v.status || "NEW") as ReservationStatus,
     createdAt: v.createdAt,
     handledBy: cell.strOrNull(v.handledBy ?? ""),
+    claimedBy: cell.strOrNull(v.claimedBy ?? ""),
+    claimedAt: cell.strOrNull(v.claimedAt ?? ""),
+    shuttleDoneAt: cell.strOrNull(v.shuttleDoneAt ?? ""),
+    shuttleDoneBy: cell.strOrNull(v.shuttleDoneBy ?? ""),
   };
 }
 
@@ -91,6 +104,10 @@ function encode(r: Reservation): Record<string, string> {
     status: r.status,
     createdAt: r.createdAt,
     handledBy: cell.str(r.handledBy),
+    claimedBy: cell.str(r.claimedBy),
+    claimedAt: cell.str(r.claimedAt),
+    shuttleDoneAt: cell.str(r.shuttleDoneAt),
+    shuttleDoneBy: cell.str(r.shuttleDoneBy),
   };
 }
 
@@ -110,8 +127,23 @@ export async function findReservationByCode(code: string): Promise<Reservation |
   return all.find((r) => r.code === code) ?? null;
 }
 
-export async function createReservation(input: Omit<Reservation, "id" | "status" | "createdAt" | "handledBy">): Promise<Reservation> {
-  const r: Reservation = { ...input, id: randomUUID(), status: "NEW", createdAt: new Date().toISOString(), handledBy: null };
+type ReservationInput = Omit<
+  Reservation,
+  "id" | "status" | "createdAt" | "handledBy" | "claimedBy" | "claimedAt" | "shuttleDoneAt" | "shuttleDoneBy"
+>;
+
+export async function createReservation(input: ReservationInput): Promise<Reservation> {
+  const r: Reservation = {
+    ...input,
+    id: randomUUID(),
+    status: "NEW",
+    createdAt: new Date().toISOString(),
+    handledBy: null,
+    claimedBy: null,
+    claimedAt: null,
+    shuttleDoneAt: null,
+    shuttleDoneBy: null,
+  };
   await appendRow(TAB, HEADERS, encode(r));
   return r;
 }
@@ -121,6 +153,36 @@ export async function setReservationStatus(id: string, status: ReservationStatus
   const row = rows.find((r) => r.values.id === id);
   if (!row) return null;
   const next = { ...decode(row.values), status, handledBy };
+  await updateRow(TAB, row.rowNumber, HEADERS, encode(next));
+  return next;
+}
+
+/** "Tôi nhận xử lý" on a new booking; refuses when another staff member already took it. */
+export async function claimReservation(id: string, username: string, release = false): Promise<{ reservation: Reservation } | { error: string; status: number }> {
+  const rows = await readAllRows(TAB);
+  const row = rows.find((r) => r.values.id === id);
+  if (!row) return { error: "Không tìm thấy lượt đặt bàn.", status: 404 };
+  const current = decode(row.values);
+  if (!release && current.claimedBy && current.claimedBy !== username) {
+    return { error: `Lượt đặt bàn này đang được ${current.claimedBy} xử lý.`, status: 409 };
+  }
+  const next = release
+    ? { ...current, claimedBy: null, claimedAt: null }
+    : { ...current, claimedBy: username, claimedAt: new Date().toISOString() };
+  await updateRow(TAB, row.rowNumber, HEADERS, encode(next));
+  return { reservation: next };
+}
+
+/** Lumia shuttle picked the guest up (or undo). */
+export async function setShuttleDone(id: string, username: string, done: boolean): Promise<Reservation | null> {
+  const rows = await readAllRows(TAB);
+  const row = rows.find((r) => r.values.id === id);
+  if (!row) return null;
+  const next = {
+    ...decode(row.values),
+    shuttleDoneAt: done ? new Date().toISOString() : null,
+    shuttleDoneBy: done ? username : null,
+  };
   await updateRow(TAB, row.rowNumber, HEADERS, encode(next));
   return next;
 }

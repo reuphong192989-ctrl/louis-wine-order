@@ -8,6 +8,8 @@ import { countItemsInCategory } from "@/lib/sheets/menuItems";
 const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   sortOrder: z.number().int().optional(),
+  nameEn: z.string().trim().max(120).optional().nullable(),
+  nameRu: z.string().trim().max(120).optional().nullable(),
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

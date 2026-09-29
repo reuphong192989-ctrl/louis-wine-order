@@ -23,6 +23,8 @@ export type MenuCategoryDTO = {
   id: string;
   slug: string;
   name: string;
+  nameEn: string | null;
+  nameRu: string | null;
   items: MenuItemDTO[];
 };
 
@@ -52,6 +54,8 @@ export async function getMenu(): Promise<MenuCategoryDTO[]> {
       id: c.id,
       slug: c.slug,
       name: c.name,
+      nameEn: c.nameEn,
+      nameRu: c.nameRu,
       items: items.filter((i) => i.categoryId === c.id && i.available).map(toDTO),
     }))
     .filter((c) => c.items.length > 0);
