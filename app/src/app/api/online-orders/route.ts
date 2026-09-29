@@ -6,7 +6,8 @@ import { findMenuItemsByIds } from "@/lib/sheets/menuItems";
 import { computeTotals, type OnlineChannel } from "@/lib/site/pricing";
 import { isValidRoom } from "@/lib/site/lumia";
 import { verifyRoomKey } from "@/lib/site/lumia-server";
-import { cleanPhone, cleanText, genCode } from "@/lib/site/validate";
+import { cleanPhone, cleanText, genCode, nowTimeVN } from "@/lib/site/validate";
+import { RESTAURANT } from "@/lib/site/constants";
 import { rateLimit, tooMany } from "@/lib/site/rate-limit";
 import { notifyStaff, orderMessage } from "@/lib/site/notify";
 
@@ -27,6 +28,11 @@ export async function POST(req: Request) {
 
     const channel = body.channel as OnlineChannel;
     if (!CHANNELS.includes(channel)) return bad(msg.channel);
+
+    // Kitchen 10:00–21:30: after closing no online orders; before opening only scheduled ones ("Lúc 11:00").
+    const now = nowTimeVN();
+    const scheduled = typeof body.scheduledTime === "string" && body.scheduledTime.startsWith("Lúc ");
+    if (now >= RESTAURANT.kitchenClose || (now < RESTAURANT.kitchenOpen && !scheduled)) return bad(msg.kitchenClosed);
 
     const customerName = cleanText(body.customerName, 80);
     if (!customerName) return bad(msg.name);

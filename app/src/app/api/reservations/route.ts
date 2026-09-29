@@ -9,6 +9,7 @@ import { verifyRoomKey } from "@/lib/site/lumia-server";
 import { cleanPhone, cleanText, genCode, nowTimeVN, todayVN } from "@/lib/site/validate";
 import { rateLimit, tooMany } from "@/lib/site/rate-limit";
 import { notifyStaff, reservationMessage } from "@/lib/site/notify";
+import { RESTAURANT } from "@/lib/site/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
     if (date < todayVN()) return bad(msg.datePast);
     const time = String(b.time ?? "");
     if (!/^\d{2}:\d{2}$/.test(time)) return bad(msg.time);
+    if (time < RESTAURANT.kitchenOpen || time > RESTAURANT.lastBooking) return bad(msg.timeOutside);
     if (date === todayVN() && time <= nowTimeVN()) return bad(msg.timePast);
     const guests = Math.floor(Number(b.guests));
     if (!Number.isInteger(guests) || guests < 1 || guests > 100) return bad(msg.guests);
