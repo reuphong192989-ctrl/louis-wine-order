@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
-import { playAlertSound } from "@/lib/sound";
+import { playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO } from "@/types";
 
@@ -62,6 +62,7 @@ export default function KitchenDashboard({ username, role }: { username: string;
   }, [activeOrders]);
 
   async function cycleItemStatus(itemId: string, current: "PENDING" | "COOKING" | "DONE") {
+    stopAlertSound();
     setBusyIds((s) => new Set(s).add(itemId));
     try {
       await fetch(`/api/order-items/${itemId}`, {

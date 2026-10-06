@@ -57,6 +57,22 @@ export function playAlertSound() {
   }
 }
 
+/** Cuts the alarm short — call this the moment staff acts on whatever it was
+ * ringing for (ack/confirm/cancel/claim), so it doesn't keep blaring for the
+ * rest of its 30s window after someone's already looking at it. */
+export function stopAlertSound() {
+  if (alarmTimer) {
+    clearInterval(alarmTimer);
+    alarmTimer = null;
+  }
+  alarmStopAt = 0;
+  try {
+    navigator.vibrate?.(0);
+  } catch {
+    // vibration not available — non-critical
+  }
+}
+
 /** Vibrates the device (if supported) with a strong, easy-to-feel pattern. */
 function vibrateDevice() {
   try {

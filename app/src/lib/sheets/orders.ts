@@ -43,6 +43,8 @@ const ORDERS_HEADERS = [
   "billNo",
   "bankAccountKey",
   "bankAccountLabel",
+  // Required when status becomes CANCELLED — shown to managers in the cancellation report.
+  "cancelReason",
 ];
 
 /** Website orders after the kitchen: out for delivery, then handed to the guest. */
@@ -114,6 +116,7 @@ export type Order = {
   billNo: string | null;
   bankAccountKey: BankAccountKey | null;
   bankAccountLabel: string | null;
+  cancelReason: string | null;
   items: OrderItemLine[];
 };
 
@@ -176,6 +179,7 @@ function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
     billNo: cell.strOrNull(values.billNo ?? ""),
     bankAccountKey: (cell.strOrNull(values.bankAccountKey ?? "") as BankAccountKey | null),
     bankAccountLabel: cell.strOrNull(values.bankAccountLabel ?? ""),
+    cancelReason: cell.strOrNull(values.cancelReason ?? ""),
   };
 }
 
@@ -311,6 +315,7 @@ export async function createOrder(input: {
     billNo: null,
     bankAccountKey: null,
     bankAccountLabel: null,
+    cancelReason: null,
     items,
   };
 }
@@ -365,8 +370,14 @@ export async function deleteOrdersInRange(fromIso: string, toIso: string): Promi
   return toDelete.length;
 }
 
-/** handledBy is the username of the staff member confirming/cancelling — recorded for the monthly staff KPI review. */
-export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLED", handledBy: string): Promise<Order | null> {
+/** handledBy is the username of the staff member confirming/cancelling — recorded for the monthly staff KPI review.
+ * cancelReason is required by the API layer whenever status is CANCELLED (see cancellation report). */
+export async function setOrderStatus(
+  id: string,
+  status: "CONFIRMED" | "CANCELLED",
+  handledBy: string,
+  cancelReason?: string,
+): Promise<Order | null> {
   const rows = await readAllRows(ORDERS_TAB);
   const row = rows.find((r) => r.values.id === id);
   if (!row) return null;
@@ -380,6 +391,7 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
     cancelledAt: status === "CANCELLED" ? now : current.cancelledAt,
     confirmedBy: status === "CONFIRMED" ? handledBy : current.confirmedBy,
     cancelledBy: status === "CANCELLED" ? handledBy : current.cancelledBy,
+    cancelReason: status === "CANCELLED" ? cancelReason || current.cancelReason : current.cancelReason,
   };
 
   await updateRow(ORDERS_TAB, row.rowNumber, ORDERS_HEADERS, {
@@ -395,11 +407,21 @@ export async function setOrderStatus(id: string, status: "CONFIRMED" | "CANCELLE
     itemsSummary: row.values.itemsSummary ?? "",
     confirmedBy: cell.str(next.confirmedBy),
     cancelledBy: cell.str(next.cancelledBy),
+    cancelReason: cell.str(next.cancelReason),
   });
 
   const itemRows = await readAllRows(ORDER_ITEMS_TAB);
   const items = itemRows.map((r) => decodeOrderItem(r.values)).filter((it) => it.orderId === id);
   return { ...next, items };
+}
+
+/** Cancelled orders in [fromIso, toIso], for the manager-facing cancellation report. */
+export async function listCancelledOrders(fromIso: string, toIso: string): Promise<Omit<Order, "items">[]> {
+  const rows = await readAllRowsCached(ORDERS_TAB, LIST_TTL_MS);
+  return rows
+    .map((r) => decodeOrder(r.values))
+    .filter((o) => o.status === "CANCELLED" && o.cancelledAt && o.cancelledAt >= fromIso && o.cancelledAt <= toIso)
+    .sort((a, b) => (a.cancelledAt! < b.cancelledAt! ? 1 : -1));
 }
 
 export type OrderWorkflowAction =

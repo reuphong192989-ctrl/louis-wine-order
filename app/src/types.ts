@@ -75,6 +75,7 @@ export type OrderDTO = {
   billNo?: string | null;
   bankAccountKey?: "no_invoice" | "invoice" | null;
   bankAccountLabel?: string | null;
+  cancelReason?: string | null;
   items: OrderItemDTO[];
 };
 
