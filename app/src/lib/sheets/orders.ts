@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { appendRow, appendRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
+import { genCode } from "../site/validate";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -38,11 +39,17 @@ const ORDERS_HEADERS = [
   "paymentMethod",
   "paidAt",
   "paidBy",
+  // Cashier screen (/thu-ngan): printable bill record, set once payment is finalized there.
+  "billNo",
+  "bankAccountKey",
+  "bankAccountLabel",
 ];
 
 /** Website orders after the kitchen: out for delivery, then handed to the guest. */
 export type Fulfillment = "" | "DELIVERING" | "DELIVERED";
 export type PaymentMethod = "CASH" | "TRANSFER";
+/** Which of the 2 cashier-configured accounts a transfer went to — "invoice" = needs a VAT bill raised separately (accounting follow-up). */
+export type BankAccountKey = "no_invoice" | "invoice";
 
 /** TABLE = QR at a restaurant table; the rest come from the public website. */
 export type OrderChannel = "TABLE" | "PICKUP" | "DELIVERY" | "LUMIA_ROOM";
@@ -104,6 +111,9 @@ export type Order = {
   paymentMethod: PaymentMethod | null;
   paidAt: string | null;
   paidBy: string | null;
+  billNo: string | null;
+  bankAccountKey: BankAccountKey | null;
+  bankAccountLabel: string | null;
   items: OrderItemLine[];
 };
 
@@ -163,6 +173,9 @@ function decodeOrder(values: Record<string, string>): Omit<Order, "items"> {
     paymentMethod: (cell.strOrNull(values.paymentMethod ?? "") as PaymentMethod | null),
     paidAt: cell.strOrNull(values.paidAt ?? ""),
     paidBy: cell.strOrNull(values.paidBy ?? ""),
+    billNo: cell.strOrNull(values.billNo ?? ""),
+    bankAccountKey: (cell.strOrNull(values.bankAccountKey ?? "") as BankAccountKey | null),
+    bankAccountLabel: cell.strOrNull(values.bankAccountLabel ?? ""),
   };
 }
 
@@ -295,6 +308,9 @@ export async function createOrder(input: {
     paymentMethod: null,
     paidAt: null,
     paidBy: null,
+    billNo: null,
+    bankAccountKey: null,
+    bankAccountLabel: null,
     items,
   };
 }
@@ -391,7 +407,14 @@ export type OrderWorkflowAction =
   | { type: "unclaim" }
   | { type: "delivering" }
   | { type: "delivered" }
-  | { type: "paid"; method: PaymentMethod };
+  | { type: "paid"; method: PaymentMethod }
+  // Cashier screen: finalizes payment + prints a bill. Separate from "paid" above
+  // (the staff quick-mark button) so that flow keeps working unchanged; this one
+  // additionally stamps a stable bill number and which account a transfer went to.
+  // billNo: pass the same value across a batch of calls to combine several table
+  // orders under one printed bill number (see billTable() in lib/billing.ts) —
+  // omit it to let a single order mint its own.
+  | { type: "bill"; method: PaymentMethod; bankAccountKey: BankAccountKey | null; bankAccountLabel: string | null; billNo?: string };
 
 /**
  * Staff workflow updates on one order. Returns the updated order, or an error
@@ -427,6 +450,18 @@ export async function applyOrderWorkflow(
       break;
     case "paid":
       patch = { paymentMethod: action.method, paidAt: now, paidBy: username };
+      break;
+    case "bill":
+      if (current.status !== "CONFIRMED") return { error: "Đơn chưa được xác nhận.", status: 400 };
+      // Keep the same bill number on reprint/correction instead of minting a new one each time.
+      patch = {
+        paymentMethod: action.method,
+        paidAt: current.paidAt || now,
+        paidBy: current.paidBy || username,
+        billNo: current.billNo || action.billNo || genCode("HD"),
+        bankAccountKey: action.bankAccountKey ?? "",
+        bankAccountLabel: action.bankAccountLabel ?? "",
+      };
       break;
   }
 

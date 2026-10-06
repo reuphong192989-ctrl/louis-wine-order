@@ -283,3 +283,55 @@ select.input { cursor: pointer; }
     overflow: visible !important;
   }
 }
+
+/* A5 cashier bill (Màn hình thu ngân → in hoá đơn). Readable on screen as a preview too. */
+.invoice-print {
+  background: #fff;
+  color: #111;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+.invoice-meta {
+  width: 100%;
+  margin: 10px 0;
+  border-collapse: collapse;
+}
+.invoice-meta td {
+  padding: 2px 0;
+  vertical-align: top;
+}
+.invoice-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+.invoice-items th,
+.invoice-items td {
+  border: 1px solid #999;
+  padding: 3px 4px;
+  font-size: 11px;
+}
+.invoice-items th {
+  text-align: center;
+  background: #f0f0f0;
+}
+.invoice-totals {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+.invoice-totals td {
+  padding: 2px 0;
+}
+.invoice-totals td:last-child {
+  text-align: right;
+}
+.invoice-totals .invoice-grand-total td {
+  font-weight: 800;
+  font-size: 14px;
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}

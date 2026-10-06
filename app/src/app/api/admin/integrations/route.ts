@@ -3,7 +3,7 @@ import { z } from "zod";
 import { withErrors } from "@/lib/api-handler";
 import { requireSession } from "@/lib/api-auth";
 import { notifyStaff } from "@/lib/site/notify";
-import { getGoogleRating, setSettings } from "@/lib/sheets/settings";
+import { getBankAccounts, getGoogleRating, setSettings } from "@/lib/sheets/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +33,17 @@ const googleSchema = z.object({
 export const GET = withErrors(async () => {
   const auth = await requireSession(["OWNER", "ADMIN"]);
   if ("error" in auth) return auth.error;
-  return NextResponse.json({ ...status(), google: await getGoogleRating() });
+  return NextResponse.json({ ...status(), google: await getGoogleRating(), bankAccounts: await getBankAccounts() });
 });
+
+const bankAccountSchema = z.object({ bank: z.string().trim().max(100), number: z.string().trim().max(50), holder: z.string().trim().max(100) });
+const bankAccountsSchema = z.object({ action: z.literal("bank-accounts"), noInvoice: bankAccountSchema, invoice: bankAccountSchema });
 
 /**
  * OWNER/ADMIN:
  * - {} : Telegram test message to the restaurant (and Lumia) groups
  * - { action: "google-rating", rating, count, reviewUrl }: update the Google Maps rating shown on the website
+ * - { action: "bank-accounts", noInvoice, invoice }: the 2 accounts the cashier screen picks from when a payment is by transfer
  */
 export const POST = withErrors(async (req: NextRequest) => {
   const auth = await requireSession(["OWNER", "ADMIN"]);
@@ -55,6 +59,24 @@ export const POST = withErrors(async (req: NextRequest) => {
       auth.session.username,
     );
     return NextResponse.json({ ok: true, google: await getGoogleRating() });
+  }
+
+  if (body?.action === "bank-accounts") {
+    const parsed = bankAccountsSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." }, { status: 400 });
+    const { noInvoice, invoice } = parsed.data;
+    await setSettings(
+      {
+        bankNoInvoiceBank: noInvoice.bank,
+        bankNoInvoiceNumber: noInvoice.number,
+        bankNoInvoiceHolder: noInvoice.holder,
+        bankInvoiceBank: invoice.bank,
+        bankInvoiceNumber: invoice.number,
+        bankInvoiceHolder: invoice.holder,
+      },
+      auth.session.username,
+    );
+    return NextResponse.json({ ok: true, bankAccounts: await getBankAccounts() });
   }
 
   const s = status();

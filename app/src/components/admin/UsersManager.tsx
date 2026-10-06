@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-type UserRow = { id: string; username: string; role: "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" };
-type EditableRole = "ADMIN" | "STAFF" | "RECEPTION";
+type UserRow = { id: string; username: string; role: "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" | "CASHIER" };
+type EditableRole = "ADMIN" | "STAFF" | "RECEPTION" | "CASHIER";
 
 export default function UsersManager() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
@@ -124,6 +124,7 @@ export default function UsersManager() {
                     <option value="ADMIN">Quản lý</option>
                     <option value="STAFF">Nhân viên</option>
                     <option value="RECEPTION">Lễ tân Lumia</option>
+                    <option value="CASHIER">Thu ngân</option>
                   </select>
                 )}
               </td>
@@ -197,6 +198,7 @@ export default function UsersManager() {
             <option value="STAFF">Nhân viên</option>
             <option value="ADMIN">Quản lý</option>
             <option value="RECEPTION">Lễ tân Lumia</option>
+            <option value="CASHIER">Thu ngân</option>
           </select>
         </div>
         <button className="btn btn-primary" type="submit" disabled={saving}>

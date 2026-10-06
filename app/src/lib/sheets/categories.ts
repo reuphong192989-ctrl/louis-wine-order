@@ -3,7 +3,10 @@ import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, 
 
 const TAB = "Categories";
 // nameEn / nameRu: optional translations for foreign guests (empty = built-in dictionary, then Vietnamese).
-const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu"];
+// vatRate: % applied to this category's items on a cashier-printed bill (internal use only, not an e-invoice).
+const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate"];
+
+const DEFAULT_VAT_RATE = 8;
 
 export type Category = {
   id: string;
@@ -12,6 +15,7 @@ export type Category = {
   sortOrder: number;
   nameEn: string | null;
   nameRu: string | null;
+  vatRate: number;
 };
 
 function decode(values: Record<string, string>): Category {
@@ -22,6 +26,7 @@ function decode(values: Record<string, string>): Category {
     sortOrder: cell.toInt(values.sortOrder),
     nameEn: cell.strOrNull(values.nameEn ?? ""),
     nameRu: cell.strOrNull(values.nameRu ?? ""),
+    vatRate: values.vatRate === "" || values.vatRate == null ? DEFAULT_VAT_RATE : cell.toInt(values.vatRate),
   };
 }
 
@@ -44,7 +49,15 @@ export async function findCategoryById(id: string): Promise<Category | null> {
 }
 
 export async function createCategory(input: { name: string; slug: string; sortOrder: number }): Promise<Category> {
-  const category: Category = { id: randomUUID(), slug: input.slug, name: input.name, sortOrder: input.sortOrder, nameEn: null, nameRu: null };
+  const category: Category = {
+    id: randomUUID(),
+    slug: input.slug,
+    name: input.name,
+    sortOrder: input.sortOrder,
+    nameEn: null,
+    nameRu: null,
+    vatRate: DEFAULT_VAT_RATE,
+  };
   await appendRow(TAB, HEADERS, {
     id: category.id,
     slug: category.slug,
@@ -52,13 +65,14 @@ export async function createCategory(input: { name: string; slug: string; sortOr
     sortOrder: cell.int(category.sortOrder),
     nameEn: "",
     nameRu: "",
+    vatRate: cell.int(category.vatRate),
   });
   return category;
 }
 
 export async function updateCategory(
   id: string,
-  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null }
+  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null; vatRate?: number }
 ): Promise<Category | null> {
   const rows = await readAllRows(TAB);
   const row = rows.find((r) => r.values.id === id);
@@ -70,6 +84,7 @@ export async function updateCategory(
     sortOrder: patch.sortOrder ?? current.sortOrder,
     nameEn: patch.nameEn === undefined ? current.nameEn : patch.nameEn || null,
     nameRu: patch.nameRu === undefined ? current.nameRu : patch.nameRu || null,
+    vatRate: patch.vatRate ?? current.vatRate,
   };
   await updateRow(TAB, row.rowNumber, HEADERS, {
     id: next.id,
@@ -78,6 +93,7 @@ export async function updateCategory(
     sortOrder: cell.int(next.sortOrder),
     nameEn: cell.str(next.nameEn),
     nameRu: cell.str(next.nameRu),
+    vatRate: cell.int(next.vatRate),
   });
   return next;
 }

@@ -23,7 +23,7 @@ const createSchema = z.object({
     .min(2, "Tên đăng nhập tối thiểu 2 ký tự")
     .regex(/^[a-z0-9._-]+$/, "Tên đăng nhập chỉ gồm chữ thường, số, dấu chấm/gạch ngang"),
   password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
-  role: z.enum(["ADMIN", "STAFF", "RECEPTION"]),
+  role: z.enum(["ADMIN", "STAFF", "RECEPTION", "CASHIER"]),
 });
 
 export const POST = withErrors(async (req: NextRequest) => {

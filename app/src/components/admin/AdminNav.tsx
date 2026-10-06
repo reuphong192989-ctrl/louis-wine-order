@@ -50,6 +50,9 @@ export default function AdminNav({ username, role }: { username: string; role: "
         <Link href="/kitchen" className="btn btn-secondary">
           Màn hình bếp
         </Link>
+        <Link href="/thu-ngan" className="btn btn-secondary">
+          Thu ngân
+        </Link>
       </nav>
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
         <span className="text-muted" style={{ fontSize: 13 }}>{username}</span>
