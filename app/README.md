@@ -28,6 +28,19 @@
 > | `PUBLIC_SITE_URL` | Tên miền công khai (mặc định `https://louis-wine-order.vercel.app`) cho QR, SEO, sitemap |
 > | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Tuỳ chọn — báo đơn online / đặt bàn / đánh giá về nhóm nhà hàng |
 > | `TELEGRAM_LUMIA_CHAT_ID` | Tuỳ chọn — thêm bản sao đơn phòng Lumia & đặt bàn khách Lumia cho nhóm lễ tân |
+>
+> **Thông báo đẩy (push) cho nhân viên** — để màn hình nhân viên vẫn kêu khi tắt/khoá màn hình (đơn mới, gọi nhân viên, đặt bàn, bếp
+> báo xong món), không chỉ khi app đang mở: `npx web-push generate-vapid-keys` để tạo cặp khoá, rồi đặt trên Vercel:
+>
+> | Biến môi trường (push) | Ý nghĩa |
+> |---|---|
+> | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Khoá công khai VAPID — client dùng để đăng ký nhận thông báo |
+> | `VAPID_PRIVATE_KEY` | Khoá riêng tư VAPID — **bí mật**, chỉ server dùng để gửi thông báo |
+> | `VAPID_SUBJECT` | Tuỳ chọn, mặc định `mailto:admin@louiswine.vn` |
+>
+> Không đặt 2 biến VAPID thì tính năng push tự tắt (không lỗi) — vẫn còn chuông/rung khi màn hình đang mở như trước.
+> Nhân viên bấm "Bật thông báo" trên màn hình `/staff` một lần (mỗi thiết bị). **iPhone/iPad**: phải "Thêm vào Màn hình chính"
+> trong Safari rồi mở lại từ biểu tượng đó thì thông báo mới chạy được khi khoá máy — mở bằng Safari thường thì không được.
 
 Ứng dụng order tại bàn cho Louis Wine (hầm rượu vang, Đà Nẵng): khách quét QR ở
 bàn → xem menu → thêm vào giỏ → gửi yêu cầu tới nhân viên theo thời gian thực.

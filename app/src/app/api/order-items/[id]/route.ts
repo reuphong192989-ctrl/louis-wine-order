@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { setOrderItemStatus } from "@/lib/sheets/orders";
+import { notifyPush } from "@/lib/push";
 
 const patchSchema = z.object({ kitchenStatus: z.enum(["PENDING", "COOKING", "DONE"]) });
 
@@ -19,6 +20,18 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
 
   const order = await setOrderItemStatus(id, parsed.data.kitchenStatus);
   if (!order) return NextResponse.json({ error: "Không tìm thấy món trong đơn." }, { status: 404 });
+
+  // Kitchen just finished the last item of this order — tell staff instead of relying on the radio.
+  if (order.status === "CONFIRMED" && order.items.length > 0 && order.items.every((it) => it.kitchenStatus === "DONE")) {
+    after(() =>
+      notifyPush(["OWNER", "ADMIN", "STAFF"], {
+        title: "Bếp đã làm xong",
+        body: order.online ? `${order.tableId} · tất cả món đã xong` : `Bàn ${order.tableId} — tất cả món đã xong`,
+        tag: `lwo-done-${order.id}`,
+        url: "/staff",
+      }),
+    );
+  }
 
   return NextResponse.json({ order });
 });

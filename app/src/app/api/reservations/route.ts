@@ -9,6 +9,7 @@ import { verifyRoomKey } from "@/lib/site/lumia-server";
 import { cleanPhone, cleanText, genCode, nowTimeVN, todayVN } from "@/lib/site/validate";
 import { rateLimit, tooMany } from "@/lib/site/rate-limit";
 import { notifyStaff, reservationMessage } from "@/lib/site/notify";
+import { notifyPush } from "@/lib/push";
 import { RESTAURANT } from "@/lib/site/constants";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +80,14 @@ export async function POST(req: Request) {
       note: cleanText(b.note, 500),
     });
     after(() => notifyStaff(reservationMessage(r), { lumia: isLumiaGuest }));
+    after(() =>
+      notifyPush(["OWNER", "ADMIN", "STAFF"], {
+        title: "Đặt bàn mới",
+        body: `${r.customerName} · ${r.time} ${r.date.split("-").reverse().join("/")}`,
+        tag: "lwo-reservation",
+        url: "/staff",
+      }),
+    );
     return Response.json({ ok: true, code: r.code });
   } catch (e) {
     console.error(e);

@@ -7,6 +7,7 @@ import { formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { playAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
+import PushBanner from "@/components/shared/PushBanner";
 import type { OrderDTO, ReservationDTO, StaffCallDTO } from "@/types";
 
 // Pending work nobody has taken for this long is "overdue": red card + repeat chime.
@@ -24,6 +25,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(() => Date.now());
   const knownPendingIds = useRef<Set<string> | null>(null);
+  const knownReadyOrderIds = useRef<Set<string> | null>(null);
   const lastReminderAt = useRef(0);
   const [connError, setConnError] = useState(false);
 
@@ -71,6 +73,21 @@ export default function StaffDashboard({ username, role }: { username: string; r
       }
     }
     knownPendingIds.current = nowPendingIds;
+
+    // Kitchen just finished every item of a confirmed order — chime here too, not only via radio.
+    const nowReadyIds = new Set(
+      nextOrders
+        .filter((o) => o.status === "CONFIRMED" && o.items.length > 0 && o.items.every((it) => it.kitchenStatus === "DONE"))
+        .map((o) => o.id),
+    );
+    if (knownReadyOrderIds.current) {
+      const hasNewReady = [...nowReadyIds].some((id) => !knownReadyOrderIds.current!.has(id));
+      if (hasNewReady && !chimed) {
+        playAlertSound();
+        chimed = true;
+      }
+    }
+    knownReadyOrderIds.current = nowReadyIds;
 
     const overdue =
       nextOrders.some((o) => o.status === "PENDING" && !o.claimedBy && t - Date.parse(o.createdAt) > OVERDUE_MS) ||
@@ -221,6 +238,8 @@ export default function StaffDashboard({ username, role }: { username: string; r
           </button>
         </div>
       </header>
+
+      <PushBanner />
 
       <main className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         {connError && (
