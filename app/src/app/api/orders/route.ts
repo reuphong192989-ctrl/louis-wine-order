@@ -1,5 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { notifyStaff, tableOrderMessage } from "@/lib/site/notify";
+import { notifyPush } from "@/lib/push";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
@@ -58,6 +59,14 @@ export const POST = withErrors(async (req: NextRequest) => {
 
   const order = await createOrder({ tableId: parsed.data.tableId, lines });
   after(() => notifyStaff(tableOrderMessage(order)));
+  after(() =>
+    notifyPush(["OWNER", "ADMIN", "STAFF"], {
+      title: "Đơn mới tại bàn",
+      body: `Bàn ${order.tableId}`,
+      tag: "lwo-order",
+      url: "/staff",
+    }),
+  );
   return NextResponse.json({ order }, { status: 201 });
 });
 

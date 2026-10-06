@@ -10,6 +10,8 @@ import { cleanPhone, cleanText, genCode, nowTimeVN } from "@/lib/site/validate";
 import { RESTAURANT } from "@/lib/site/constants";
 import { rateLimit, tooMany } from "@/lib/site/rate-limit";
 import { notifyStaff, orderMessage } from "@/lib/site/notify";
+import { notifyPush } from "@/lib/push";
+import { CHANNEL_LABEL } from "@/lib/site/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +101,14 @@ export async function POST(req: Request) {
 
     const order = await createOrder({ tableId, lines, online, note: cleanText(body.note, 500) });
     after(() => notifyStaff(orderMessage(order), { lumia: channel === "LUMIA_ROOM" }));
+    after(() =>
+      notifyPush(["OWNER", "ADMIN", "STAFF"], {
+        title: "Đơn online mới",
+        body: `${CHANNEL_LABEL[channel] ?? channel} · ${online.code}`,
+        tag: "lwo-order",
+        url: "/staff",
+      }),
+    );
     return Response.json({ ok: true, code: online.code });
   } catch (e) {
     console.error(e);

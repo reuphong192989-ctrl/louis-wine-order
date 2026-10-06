@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { createStaffCall, listStaffCalls, type StaffCallStatus } from "@/lib/sheets/staffCalls";
+import { notifyPush } from "@/lib/push";
 
 const schema = z.object({ tableId: z.string().trim().min(1).max(50) });
 
@@ -14,6 +15,14 @@ export const POST = withErrors(async (req: NextRequest) => {
   }
 
   const call = await createStaffCall(parsed.data.tableId);
+  after(() =>
+    notifyPush(["OWNER", "ADMIN", "STAFF"], {
+      title: "Gọi nhân viên",
+      body: `Bàn ${call.tableId}`,
+      tag: "lwo-call",
+      url: "/staff",
+    }),
+  );
   return NextResponse.json({ call }, { status: 201 });
 });
 
