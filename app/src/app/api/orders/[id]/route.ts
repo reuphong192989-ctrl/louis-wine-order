@@ -4,7 +4,10 @@ import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
 
-const patchSchema = z.object({ status: z.enum(["CONFIRMED", "CANCELLED"]) });
+const patchSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("CONFIRMED") }),
+  z.object({ status: z.literal("CANCELLED"), cancelReason: z.string().trim().min(1, "Vui lòng nhập lý do huỷ.").max(500) }),
+]);
 
 /**
  * Public status check for the customer's own order (polled while waiting for
@@ -26,10 +29,15 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
   const { id } = await params;
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Trạng thái không hợp lệ." }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Trạng thái không hợp lệ." }, { status: 400 });
   }
 
-  const order = await setOrderStatus(id, parsed.data.status, auth.session.username);
+  const order = await setOrderStatus(
+    id,
+    parsed.data.status,
+    auth.session.username,
+    parsed.data.status === "CANCELLED" ? parsed.data.cancelReason : undefined,
+  );
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   return NextResponse.json({ order });

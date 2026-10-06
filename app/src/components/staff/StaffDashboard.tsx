@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
-import { playAlertSound } from "@/lib/sound";
+import { playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import PushBanner from "@/components/shared/PushBanner";
 import type { OrderDTO, ReservationDTO, StaffCallDTO } from "@/types";
@@ -28,6 +28,8 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const knownReadyOrderIds = useRef<Set<string> | null>(null);
   const lastReminderAt = useRef(0);
   const [connError, setConnError] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReasonInput, setCancelReasonInput] = useState("");
 
   // Poll every few seconds — the realtime substitute for WebSocket push on
   // serverless hosting. Chimes for genuinely new pending orders/calls/bookings,
@@ -114,6 +116,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
   }
 
   async function patchReservation(id: string, body: Record<string, unknown>) {
+    stopAlertSound();
     markBusy(id, true);
     try {
       const res = await fetch(`/api/reservations/${id}`, {
@@ -132,6 +135,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
   }
 
   async function orderWorkflow(id: string, body: OrderAction) {
+    stopAlertSound();
     markBusy(id, true);
     try {
       const res = await fetch(`/api/orders/${id}/workflow`, {
@@ -149,20 +153,42 @@ export default function StaffDashboard({ username, role }: { username: string; r
     }
   }
 
-  async function updateOrder(id: string, status: "CONFIRMED" | "CANCELLED") {
+  async function updateOrder(id: string, status: "CONFIRMED" | "CANCELLED", cancelReason?: string) {
+    stopAlertSound();
     markBusy(id, true);
     try {
-      await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(status === "CANCELLED" ? { status, cancelReason } : { status }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        window.alert(data?.error ?? "Không cập nhật được đơn — vui lòng thử lại.");
+      }
+    } catch {
+      window.alert("Mất kết nối — chưa cập nhật được đơn, vui lòng thử lại.");
     } finally {
       markBusy(id, false);
     }
   }
 
+  function openCancelDialog(id: string) {
+    setCancelOrderId(id);
+    setCancelReasonInput("");
+  }
+
+  async function confirmCancelOrder() {
+    if (!cancelOrderId) return;
+    const reason = cancelReasonInput.trim();
+    if (!reason) return;
+    await updateOrder(cancelOrderId, "CANCELLED", reason);
+    setCancelOrderId(null);
+    setCancelReasonInput("");
+  }
+
   async function ackCall(id: string) {
+    stopAlertSound();
     markBusy(id, true);
     try {
       await fetch(`/api/staff-calls/${id}`, { method: "PATCH" });
@@ -442,7 +468,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                     <button className="btn btn-primary" style={{ flex: 1 }} disabled={busyIds.has(o.id)} onClick={() => updateOrder(o.id, "CONFIRMED")}>
                       Xác nhận đã nhận đơn
                     </button>
-                    <button className="btn btn-danger" disabled={busyIds.has(o.id)} onClick={() => updateOrder(o.id, "CANCELLED")}>
+                    <button className="btn btn-danger" disabled={busyIds.has(o.id)} onClick={() => openCancelDialog(o.id)}>
                       Huỷ
                     </button>
                   </div>
@@ -503,6 +529,45 @@ export default function StaffDashboard({ username, role }: { username: string; r
           </details>
         )}
       </main>
+
+      {cancelOrderId && (
+        <div className="confirm-backdrop" onClick={() => setCancelOrderId(null)}>
+          <form
+            className="confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmCancelOrder();
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>
+              Lý do huỷ đơn
+            </div>
+            <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
+              Bắt buộc nhập lý do — được ghi lại để quản lý đối chiếu nếu cần.
+            </p>
+            <div className="field">
+              <textarea
+                className="input"
+                rows={3}
+                value={cancelReasonInput}
+                onChange={(e) => setCancelReasonInput(e.target.value)}
+                placeholder="VD: Khách đổi ý, gọi nhầm món, hết nguyên liệu..."
+                required
+                autoFocus
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button className="btn btn-danger" style={{ flex: 1 }} type="submit" disabled={!cancelReasonInput.trim() || busyIds.has(cancelOrderId)}>
+                Xác nhận huỷ
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setCancelOrderId(null)}>
+                Đóng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

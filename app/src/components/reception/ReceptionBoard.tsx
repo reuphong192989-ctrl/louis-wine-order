@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
-import { playAlertSound } from "@/lib/sound";
+import { playAlertSound, stopAlertSound } from "@/lib/sound";
 import type { OrderDTO, ReservationDTO } from "@/types";
 
 // Chime and highlight a shuttle pickup this long before its time.
@@ -80,6 +80,7 @@ export default function ReceptionBoard({ username, role }: { username: string; r
   }, 10_000);
 
   async function shuttle(id: string, done: boolean) {
+    stopAlertSound();
     setBusy(id);
     try {
       const res = await fetch(`/api/reservations/${id}`, {

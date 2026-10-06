@@ -72,6 +72,7 @@ export type OrderDTO = {
   paymentMethod?: "CASH" | "TRANSFER" | null;
   paidAt?: string | null;
   paidBy?: string | null;
+  cancelReason?: string | null;
   items: OrderItemDTO[];
 };
 
