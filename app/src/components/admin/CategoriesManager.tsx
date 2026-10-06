@@ -11,6 +11,7 @@ type CategoryRow = {
   sortOrder: number;
   nameEn?: string | null;
   nameRu?: string | null;
+  vatRate: number;
   _count: { items: number };
 };
 
@@ -109,6 +110,15 @@ export default function CategoriesManager() {
     }
   }
 
+  async function saveVatRate(id: string, vatRate: number) {
+    await fetch(`/api/categories/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vatRate }),
+    });
+    await load();
+  }
+
   async function remove(id: string) {
     if (!confirm("Xoá danh mục này?")) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
@@ -133,6 +143,7 @@ export default function CategoriesManager() {
             <th>Tên</th>
             <th>Slug</th>
             <th>Số món</th>
+            <th style={{ width: 90 }}>VAT %</th>
             <th></th>
           </tr>
         </thead>
@@ -199,6 +210,25 @@ export default function CategoriesManager() {
               </td>
               <td className="text-muted">{cat.slug}</td>
               <td>{cat._count.items}</td>
+              <td>
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={cat.vatRate}
+                  style={{ width: 60, padding: "4px 6px", textAlign: "center" }}
+                  title="Thuế suất VAT áp cho các món trong danh mục này khi in hoá đơn ở màn hình thu ngân"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  onBlur={(e) => {
+                    const val = Number(e.target.value);
+                    if (Number.isInteger(val) && val !== cat.vatRate) saveVatRate(cat.id, val);
+                    else e.target.value = String(cat.vatRate);
+                  }}
+                />
+              </td>
               <td>
                 <button className="btn btn-danger" disabled={cat._count.items > 0} onClick={() => remove(cat.id)}>
                   Xoá

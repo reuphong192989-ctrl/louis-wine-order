@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession, SessionPayload } from "./auth";
 
-type Role = "OWNER" | "ADMIN" | "STAFF" | "RECEPTION";
+type Role = "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" | "CASHIER";
 
 export async function requireSession(
   roles?: Role[]

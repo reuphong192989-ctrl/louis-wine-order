@@ -3,8 +3,20 @@
 import { useEffect, useState } from "react";
 
 type Google = { rating: number | null; count: number | null; reviewUrl: string | null };
-type Status = { sheets: boolean; cron: boolean; telegram: boolean; telegramLumia: boolean; qrSecret: boolean; google: Google };
-type Flag = Exclude<keyof Status, "google">;
+type BankAccount = { bank: string; number: string; holder: string } | null;
+type BankAccounts = { noInvoice: BankAccount; invoice: BankAccount };
+type Status = {
+  sheets: boolean;
+  cron: boolean;
+  telegram: boolean;
+  telegramLumia: boolean;
+  qrSecret: boolean;
+  google: Google;
+  bankAccounts: BankAccounts;
+};
+type Flag = Exclude<keyof Status, "google" | "bankAccounts">;
+type BankForm = { bank: string; number: string; holder: string };
+const EMPTY_BANK: BankForm = { bank: "", number: "", holder: "" };
 
 const ROWS: { key: Flag; label: string; hint: string }[] = [
   { key: "sheets", label: "Google Sheets (báo cáo)", hint: "GOOGLE_SHEET_ID + tài khoản dịch vụ" },
@@ -22,6 +34,8 @@ export default function IntegrationsPanel() {
   const [rating, setRating] = useState("");
   const [count, setCount] = useState("");
   const [reviewUrl, setReviewUrl] = useState("");
+  const [noInvoiceAcct, setNoInvoiceAcct] = useState<BankForm>(EMPTY_BANK);
+  const [invoiceAcct, setInvoiceAcct] = useState<BankForm>(EMPTY_BANK);
 
   useEffect(() => {
     fetch("/api/admin/integrations", { cache: "no-store" })
@@ -32,6 +46,10 @@ export default function IntegrationsPanel() {
           setRating(s.google.rating ? String(s.google.rating) : "");
           setCount(s.google.count ? String(s.google.count) : "");
           setReviewUrl(s.google.reviewUrl ?? "");
+        }
+        if (s?.bankAccounts) {
+          setNoInvoiceAcct(s.bankAccounts.noInvoice ?? EMPTY_BANK);
+          setInvoiceAcct(s.bankAccounts.invoice ?? EMPTY_BANK);
         }
       })
       .catch(() => setStatus(null));
@@ -48,7 +66,7 @@ export default function IntegrationsPanel() {
     return data;
   }
 
-  async function run(kind: "export" | "telegram" | "google") {
+  async function run(kind: "export" | "telegram" | "google" | "bank") {
     setBusy(kind);
     setMsg(null);
     try {
@@ -58,6 +76,9 @@ export default function IntegrationsPanel() {
       } else if (kind === "telegram") {
         const d = await post("/api/admin/integrations");
         setMsg({ ok: true, text: `Đã gửi tin thử tới nhóm nhà hàng${d.lumia ? " và nhóm lễ tân Lumia" : ""}. Kiểm tra Telegram.` });
+      } else if (kind === "bank") {
+        await post("/api/admin/integrations", { action: "bank-accounts", noInvoice: noInvoiceAcct, invoice: invoiceAcct });
+        setMsg({ ok: true, text: "Đã lưu 2 tài khoản nhận thanh toán cho màn hình thu ngân." });
       } else {
         const r = rating.trim().replace(",", ".");
         const c = count.trim().replace(/[.,\s]/g, "");

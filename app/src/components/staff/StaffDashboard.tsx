@@ -252,6 +252,11 @@ export default function StaffDashboard({ username, role }: { username: string; r
             Bảng Lumia
           </Link>
           {role !== "STAFF" && (
+            <Link href="/thu-ngan" className="btn btn-secondary">
+              Thu ngân
+            </Link>
+          )}
+          {role !== "STAFF" && (
             <Link href="/admin/categories" className="btn btn-secondary">
               Quay lại Quản trị
             </Link>

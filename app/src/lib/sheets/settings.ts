@@ -22,6 +22,26 @@ export async function setSettings(values: Record<string, string>, username: stri
 
 export type GoogleRating = { rating: number | null; count: number | null; reviewUrl: string | null };
 
+export type BankAccountInfo = { bank: string; number: string; holder: string } | null;
+export type BankAccounts = { noInvoice: BankAccountInfo; invoice: BankAccountInfo };
+
+/**
+ * The 2 accounts the manager configures in Quản trị → Dữ liệu for the cashier
+ * screen: one for transfers that don't need a bill marked "cần xuất hoá đơn"
+ * (for accounting follow-up), one that does. Purely a label picked at payment
+ * time — no real bank integration.
+ */
+export async function getBankAccounts(): Promise<BankAccounts> {
+  const s = await getSettings();
+  const build = (prefix: string): BankAccountInfo => {
+    const bank = s[`${prefix}Bank`] || "";
+    const number = s[`${prefix}Number`] || "";
+    const holder = s[`${prefix}Holder`] || "";
+    return bank || number || holder ? { bank, number, holder } : null;
+  };
+  return { noInvoice: build("bankNoInvoice"), invoice: build("bankInvoice") };
+}
+
 // Rating on Google Maps when this was built (2026-09-29); the manager updates it in Quản trị → Dữ liệu.
 const DEFAULT_GOOGLE_RATING = 4.7;
 

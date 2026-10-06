@@ -10,6 +10,7 @@ const updateSchema = z.object({
   sortOrder: z.number().int().optional(),
   nameEn: z.string().trim().max(120).optional().nullable(),
   nameRu: z.string().trim().max(120).optional().nullable(),
+  vatRate: z.number().int().min(0).max(100).optional(),
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
