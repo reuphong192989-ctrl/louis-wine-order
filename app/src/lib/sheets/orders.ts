@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { appendRow, appendRows, batchUpdateRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
 import { genCode } from "../site/validate";
+import { logCancelledItems } from "./cancelledItems";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -378,6 +379,131 @@ export async function setOrderItemQty(itemId: string, qty: number): Promise<{ or
   return { order: { ...decodeOrder(orderValues), items } };
 }
 
+/** A dish the kitchen has already started (cooking/done) has a real food cost — only a manager may take it back. */
+export function canCancelStartedDish(role: string): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+const STARTED_DISH_ERROR = "Bếp đã bắt đầu làm món này — cần tài khoản quản lý để huỷ.";
+
+/**
+ * Cancels a whole order. Before confirmation it's the plain "Huỷ" on a pending
+ * card. After confirmation (guest changed their mind once it reached the
+ * kitchen) it additionally: refuses a billed order, needs a manager if any dish
+ * is already cooking/done, and logs every dish to CancelledItems so the kitchen
+ * screen flashes the cancellation and the manager report shows it.
+ */
+export async function cancelOrder(
+  id: string,
+  reason: string,
+  by: { username: string; role: string },
+): Promise<{ order: Order } | { error: string; status: number }> {
+  const order = await findOrderById(id);
+  if (!order) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+  if (order.status === "CANCELLED") return { error: "Đơn này đã được huỷ trước đó.", status: 400 };
+  if (order.billNo) return { error: "Bàn đã thanh toán — không huỷ được nữa, liên hệ quản lý.", status: 400 };
+
+  const wasConfirmed = order.status === "CONFIRMED";
+  if (wasConfirmed && order.items.some((it) => it.kitchenStatus !== "PENDING") && !canCancelStartedDish(by.role)) {
+    return { error: "Bếp đã bắt đầu làm món trong đơn này — cần tài khoản quản lý để huỷ.", status: 403 };
+  }
+
+  const updated = await setOrderStatus(id, "CANCELLED", by.username, reason);
+  if (!updated) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+
+  if (wasConfirmed) {
+    const now = updated.cancelledAt ?? new Date().toISOString();
+    await logCancelledItems(
+      order.items.map((it) => ({
+        orderId: order.id,
+        itemId: it.id,
+        tableId: order.tableId,
+        nameSnapshot: it.nameSnapshot,
+        unitPrice: it.unitPrice,
+        qty: it.qty,
+        lineTotal: it.lineTotal,
+        kitchenStatus: it.kitchenStatus,
+        scope: "order" as const,
+        cancelledAt: now,
+        cancelledBy: by.username,
+        cancelReason: reason,
+      })),
+    );
+  }
+  return { order: updated };
+}
+
+/**
+ * Guest takes back one dish (or part of its quantity) from an order staff have
+ * already confirmed. The dish leaves the order — kitchen screen, running bill
+ * and cashier stop showing it — and is logged to CancelledItems for the kitchen
+ * alert and the manager report. Taking back the last dish cancels the order.
+ */
+export async function cancelOrderItem(
+  itemId: string,
+  cancelQty: number | null,
+  reason: string,
+  by: { username: string; role: string },
+): Promise<{ order: Order } | { error: string; status: number }> {
+  const [itemRows, orderRows] = await Promise.all([readAllRows(ORDER_ITEMS_TAB), readAllRows(ORDERS_TAB)]);
+  const itemRow = itemRows.find((r) => r.values.id === itemId);
+  if (!itemRow) return { error: "Không tìm thấy món trong đơn.", status: 404 };
+  const orderRow = orderRows.find((r) => r.values.id === itemRow.values.orderId);
+  if (!orderRow) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+
+  const order = decodeOrder(orderRow.values);
+  const item = decodeOrderItem(itemRow.values);
+  if (order.online) return { error: "Đơn online chỉ huỷ được cả đơn.", status: 400 };
+  if (order.status === "CANCELLED") return { error: "Đơn này đã được huỷ trước đó.", status: 400 };
+  if (order.status !== "CONFIRMED") return { error: "Đơn chưa xác nhận — dùng nút Huỷ trên thẻ đơn đang chờ.", status: 400 };
+  if (order.billNo) return { error: "Bàn đã thanh toán — không huỷ được nữa, liên hệ quản lý.", status: 400 };
+  if (item.kitchenStatus !== "PENDING" && !canCancelStartedDish(by.role)) return { error: STARTED_DISH_ERROR, status: 403 };
+
+  const qty = cancelQty == null ? item.qty : Math.round(cancelQty * 100) / 100;
+  if (!(qty > 0) || qty > item.qty) return { error: "Số lượng huỷ không hợp lệ.", status: 400 };
+
+  const siblings = itemRows.filter((r) => r.values.orderId === order.id);
+  const takesWholeOrder = qty >= item.qty && siblings.length === 1;
+  if (takesWholeOrder) return cancelOrder(order.id, reason, by);
+
+  const remainingQty = Math.round((item.qty - qty) * 100) / 100;
+  let remaining: OrderItemLine[];
+  if (remainingQty <= 0) {
+    await deleteRows(ORDER_ITEMS_TAB, [itemRow.rowNumber]);
+    remaining = siblings.filter((r) => r.rowNumber !== itemRow.rowNumber).map((r) => decodeOrderItem(r.values));
+  } else {
+    const updatedItem = { ...itemRow.values, qty: String(remainingQty), lineTotal: cell.int(Math.round(item.unitPrice * remainingQty)) };
+    await updateRow(ORDER_ITEMS_TAB, itemRow.rowNumber, ORDER_ITEMS_HEADERS, updatedItem);
+    remaining = siblings.map((r) => decodeOrderItem(r.rowNumber === itemRow.rowNumber ? updatedItem : r.values));
+  }
+
+  const orderValues = {
+    ...orderRow.values,
+    totalAmount: cell.int(remaining.reduce((s, it) => s + it.lineTotal, 0)),
+    itemsSummary: buildItemsSummary(remaining),
+  };
+  await updateRow(ORDERS_TAB, orderRow.rowNumber, ORDERS_HEADERS, orderValues);
+
+  await logCancelledItems([
+    {
+      orderId: order.id,
+      itemId: item.id,
+      tableId: order.tableId,
+      nameSnapshot: item.nameSnapshot,
+      unitPrice: item.unitPrice,
+      qty,
+      lineTotal: Math.round(item.unitPrice * qty),
+      kitchenStatus: item.kitchenStatus,
+      scope: "item",
+      cancelledAt: new Date().toISOString(),
+      cancelledBy: by.username,
+      cancelReason: reason,
+    },
+  ]);
+
+  return { order: { ...decodeOrder(orderValues), items: remaining } };
+}
+
 /**
  * Guest moves to another table mid-meal: every open dine-in order of `fromTableId`
  * (pending or confirmed, not yet billed) is re-pointed to `toTableId`, so the
@@ -477,10 +603,8 @@ export async function listOrdersConfirmedBy(username: string, fromIso: string, t
 }
 
 /** Cancelled orders in [fromIso, toIso], for the manager-facing cancellation report. */
-export async function listCancelledOrders(fromIso: string, toIso: string): Promise<Omit<Order, "items">[]> {
-  const rows = await readAllRowsCached(ORDERS_TAB, LIST_TTL_MS);
-  return rows
-    .map((r) => decodeOrder(r.values))
+export async function listCancelledOrders(fromIso: string, toIso: string): Promise<Order[]> {
+  return (await listOrders("CANCELLED", 100000))
     .filter((o) => o.status === "CANCELLED" && o.cancelledAt && o.cancelledAt >= fromIso && o.cancelledAt <= toIso)
     .sort((a, b) => (a.cancelledAt! < b.cancelledAt! ? 1 : -1));
 }

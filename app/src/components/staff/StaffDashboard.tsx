@@ -15,11 +15,34 @@ type BillPreview = {
   tableId: string;
   tableLabel: string;
   checkInAt: string | null;
-  items: { itemId: string; name: string; qty: number; unitPrice: number; lineTotal: number }[];
+  items: BillLine[];
   subtotal: number;
   vatGroups: { rate: number; base: number; amount: number }[];
   totalVat: number;
 };
+type BillLine = {
+  itemId: string;
+  orderId: string;
+  orderCreatedAt: string;
+  kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  name: string;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+const KITCHEN_STATUS_LABEL = { PENDING: "chưa làm", COOKING: "đang làm", DONE: "đã xong" } as const;
+
+/** Running-bill lines grouped by the order ("lượt gọi") they came from, oldest first. */
+function groupByOrder(lines: BillLine[]): { orderId: string; createdAt: string; lines: BillLine[] }[] {
+  const map = new Map<string, { orderId: string; createdAt: string; lines: BillLine[] }>();
+  for (const l of lines) {
+    const g = map.get(l.orderId) ?? { orderId: l.orderId, createdAt: l.orderCreatedAt, lines: [] };
+    g.lines.push(l);
+    map.set(l.orderId, g);
+  }
+  return [...map.values()].sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+}
 
 // Pending work nobody has taken for this long is "overdue": red card + repeat chime.
 const OVERDUE_MS = 2 * 60 * 1000;
@@ -53,6 +76,8 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const [moveFrom, setMoveFrom] = useState<{ tableId: string; label: string } | null>(null);
   const [moveTo, setMoveTo] = useState("");
   const [tableOptions, setTableOptions] = useState<{ tableId: string; label: string }[]>([]);
+  const [itemCancel, setItemCancel] = useState<{ itemId: string; name: string; maxQty: number; qty: string; reason: string; started: boolean } | null>(null);
+  const isManager = role === "OWNER" || role === "ADMIN";
 
   // Poll every few seconds — the realtime substitute for WebSocket push on
   // serverless hosting. Chimes for genuinely new pending orders/calls/bookings,
@@ -317,6 +342,39 @@ export default function StaffDashboard({ username, role }: { username: string; r
     await updateOrder(cancelOrderId, "CANCELLED", reason);
     setCancelOrderId(null);
     setCancelReasonInput("");
+    if (billTableId) loadBill(billTableId);
+    refreshOpenTables();
+  }
+
+  async function confirmItemCancel() {
+    if (!itemCancel) return;
+    const reason = itemCancel.reason.trim();
+    const qty = Number(itemCancel.qty.trim().replace(",", "."));
+    if (!reason) return;
+    if (!Number.isFinite(qty) || qty <= 0 || qty > itemCancel.maxQty) {
+      window.alert(`Số lượng huỷ phải từ lớn hơn 0 đến ${formatQty(itemCancel.maxQty)}.`);
+      return;
+    }
+    markBusy(itemCancel.itemId, true);
+    try {
+      const res = await fetch(`/api/order-items/${itemCancel.itemId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty, reason }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(data?.error ?? "Không huỷ được món — vui lòng thử lại.");
+        return;
+      }
+      setItemCancel(null);
+      if (billTableId) loadBill(billTableId);
+      refreshOpenTables();
+    } catch {
+      window.alert("Mất kết nối — chưa huỷ được món, vui lòng thử lại.");
+    } finally {
+      markBusy(itemCancel.itemId, false);
+    }
   }
 
   async function ackCall(id: string) {
@@ -682,7 +740,14 @@ export default function StaffDashboard({ username, role }: { username: string; r
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>
             {activeOnline.map((o) => (
-              <FulfillmentCard key={o.id} order={o} busy={busyIds.has(o.id)} onAction={(a) => orderWorkflow(o.id, a)} />
+              <FulfillmentCard
+                key={o.id}
+                order={o}
+                busy={busyIds.has(o.id)}
+                onAction={(a) => orderWorkflow(o.id, a)}
+                onCancel={() => openCancelDialog(o.id)}
+                canCancel={isManager || o.items.every((it) => it.kitchenStatus === "PENDING")}
+              />
             ))}
             {activeOnline.length === 0 && <p className="text-muted">Không có đơn online nào đang chờ giao hoặc thu tiền.</p>}
           </div>
@@ -787,32 +852,73 @@ export default function StaffDashboard({ username, role }: { username: string; r
                       <th style={{ textAlign: "right" }}>Thành tiền</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {bill.items.map((l) => (
-                      <tr key={l.itemId}>
-                        <td>
-                          {l.name}
-                          <div className="text-muted" style={{ fontSize: 11 }}>
-                            {formatVnd(l.unitPrice)} / đv
-                          </div>
-                        </td>
-                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                          {formatQty(l.qty)}
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            style={{ fontSize: 11, padding: "1px 6px", height: "auto", marginLeft: 4 }}
-                            disabled={busyIds.has(l.itemId)}
-                            onClick={() => setQtyEdit({ itemId: l.itemId, name: l.name, value: formatQty(l.qty) })}
-                          >
-                            ⚖
-                          </button>
-                        </td>
-                        <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  {groupByOrder(bill.items).map((g) => {
+                    const startedInRound = g.lines.some((l) => l.kitchenStatus !== "PENDING");
+                    return (
+                      <tbody key={g.orderId}>
+                        <tr>
+                          <td colSpan={3} style={{ background: "var(--color-neutral-200)", fontSize: 12, fontWeight: 700 }}>
+                            <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <span>Lượt gọi lúc {formatTime(g.createdAt)}</span>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ fontSize: 11, padding: "1px 6px", height: "auto", color: "var(--color-accent)" }}
+                                disabled={busyIds.has(g.orderId) || (startedInRound && !isManager)}
+                                title={startedInRound && !isManager ? "Bếp đã làm món trong lượt này — cần quản lý huỷ" : undefined}
+                                onClick={() => openCancelDialog(g.orderId)}
+                              >
+                                Huỷ cả lượt
+                              </button>
+                            </span>
+                          </td>
+                        </tr>
+                        {g.lines.map((l) => {
+                          const started = l.kitchenStatus !== "PENDING";
+                          return (
+                            <tr key={l.itemId}>
+                              <td>
+                                {l.name}
+                                <div className="text-muted" style={{ fontSize: 11 }}>
+                                  {formatVnd(l.unitPrice)} / đv ·{" "}
+                                  <span style={{ color: started ? "var(--color-accent)" : undefined }}>Bếp: {KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
+                                </div>
+                              </td>
+                              <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                                {formatQty(l.qty)}
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, padding: "1px 6px", height: "auto", marginLeft: 4 }}
+                                  disabled={busyIds.has(l.itemId)}
+                                  onClick={() => setQtyEdit({ itemId: l.itemId, name: l.name, value: formatQty(l.qty) })}
+                                >
+                                  ⚖
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, padding: "1px 6px", height: "auto", color: "var(--color-accent)" }}
+                                  disabled={busyIds.has(l.itemId) || (started && !isManager)}
+                                  title={started && !isManager ? "Bếp đã làm món này — cần quản lý huỷ" : undefined}
+                                  onClick={() => setItemCancel({ itemId: l.itemId, name: l.name, maxQty: l.qty, qty: formatQty(l.qty), reason: "", started })}
+                                >
+                                  Huỷ
+                                </button>
+                              </td>
+                              <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    );
+                  })}
                 </table>
+                {!isManager && bill.items.some((l) => l.kitchenStatus !== "PENDING") && (
+                  <p className="text-muted" style={{ margin: 0, fontSize: 12 }}>
+                    Món bếp đã làm (đang làm / xong) chỉ tài khoản quản lý huỷ được — báo quản lý nếu khách trả món.
+                  </p>
+                )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>Tiền món</span>
@@ -883,6 +989,58 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 Lưu
               </button>
               <button className="btn btn-secondary" type="button" onClick={() => setQtyEdit(null)}>
+                Đóng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {itemCancel && (
+        <div className="confirm-backdrop" style={{ zIndex: 1100 }} onClick={() => setItemCancel(null)}>
+          <form
+            className="confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmItemCancel();
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>Huỷ món đã xác nhận</div>
+            <div style={{ fontWeight: 700 }}>{itemCancel.name}</div>
+            {itemCancel.started && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-accent)", fontWeight: 700 }}>Bếp đã làm món này — huỷ bằng quyền quản lý.</p>
+            )}
+            <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
+              Món sẽ bị bỏ khỏi bàn, màn hình bếp báo đỏ để dừng làm. Huỷ bớt: nhập số lượng khách trả lại (tối đa {formatQty(itemCancel.maxQty)}).
+            </p>
+            <div className="field" style={{ textAlign: "left" }}>
+              <label style={{ fontSize: 13 }}>Số lượng huỷ</label>
+              <input
+                className="input"
+                inputMode="decimal"
+                value={itemCancel.qty}
+                onChange={(e) => setItemCancel({ ...itemCancel, qty: e.target.value })}
+                required
+              />
+            </div>
+            <div className="field" style={{ textAlign: "left" }}>
+              <label style={{ fontSize: 13 }}>Lý do huỷ (bắt buộc)</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={itemCancel.reason}
+                onChange={(e) => setItemCancel({ ...itemCancel, reason: e.target.value })}
+                placeholder="VD: Khách đổi ý, chờ lâu, gọi nhầm món..."
+                required
+                autoFocus
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button className="btn btn-danger" style={{ flex: 1 }} type="submit" disabled={!itemCancel.reason.trim() || busyIds.has(itemCancel.itemId)}>
+                Xác nhận huỷ món
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setItemCancel(null)}>
                 Đóng
               </button>
             </div>
@@ -991,7 +1149,19 @@ function ClaimBar({
 }
 
 /** Confirmed website order: kitchen progress, handover and payment. */
-function FulfillmentCard({ order: o, busy, onAction }: { order: OrderDTO; busy: boolean; onAction: (a: OrderAction) => void }) {
+function FulfillmentCard({
+  order: o,
+  busy,
+  onAction,
+  onCancel,
+  canCancel,
+}: {
+  order: OrderDTO;
+  busy: boolean;
+  onAction: (a: OrderAction) => void;
+  onCancel: () => void;
+  canCancel: boolean;
+}) {
   const on = o.online!;
   const done = o.items.filter((i) => i.kitchenStatus === "DONE").length;
   const pickup = on.channel === "PICKUP";
@@ -1048,6 +1218,16 @@ function FulfillmentCard({ order: o, busy, onAction }: { order: OrderDTO; busy: 
               Đã nhận chuyển khoản
             </button>
           </>
+        )}
+        {!o.paidAt && !delivered && (
+          <button
+            className="btn btn-danger"
+            disabled={busy || !canCancel}
+            title={canCancel ? undefined : "Bếp đã làm món trong đơn — cần quản lý huỷ"}
+            onClick={onCancel}
+          >
+            Khách huỷ đơn
+          </button>
         )}
       </div>
     </div>

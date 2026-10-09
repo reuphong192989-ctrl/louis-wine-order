@@ -6,7 +6,18 @@ import { genCode } from "./site/validate";
 
 const FALLBACK_VAT_RATE = 8; // item's menu/category was deleted since the order was placed
 
-export type BillLine = { itemId: string; name: string; qty: number; unitPrice: number; lineTotal: number; vatRate: number };
+export type BillLine = {
+  itemId: string;
+  /** Which order ("lượt gọi") the line came from, and when — lets staff take back a whole round. */
+  orderId: string;
+  orderCreatedAt: string;
+  kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  name: string;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  vatRate: number;
+};
 export type VatGroup = { rate: number; base: number; amount: number };
 
 export type TableBillPreview = {
@@ -51,7 +62,7 @@ function buildPreview(tableId: string, tableLabel: string, orders: Order[], vatB
   for (const o of orders) {
     for (const it of o.items) {
       const vatRate = (it.menuItemId ? vatByItem.get(it.menuItemId) : undefined) ?? FALLBACK_VAT_RATE;
-      items.push({ itemId: it.id, name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate });
+      items.push({ itemId: it.id, orderId: o.id, orderCreatedAt: o.createdAt, kitchenStatus: it.kitchenStatus, name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate });
     }
   }
   const subtotal = items.reduce((s, l) => s + l.lineTotal, 0);
