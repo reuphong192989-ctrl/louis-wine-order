@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
-import { deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
+import { cancelOrder, deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
 
 const patchSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("CONFIRMED") }),
@@ -32,12 +32,14 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Trạng thái không hợp lệ." }, { status: 400 });
   }
 
-  const order = await setOrderStatus(
-    id,
-    parsed.data.status,
-    auth.session.username,
-    parsed.data.status === "CANCELLED" ? parsed.data.cancelReason : undefined,
-  );
+  if (parsed.data.status === "CANCELLED") {
+    // Works before AND after confirmation; after it, kitchen-started dishes need a manager.
+    const result = await cancelOrder(id, parsed.data.cancelReason, auth.session);
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ order: result.order });
+  }
+
+  const order = await setOrderStatus(id, parsed.data.status, auth.session.username);
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   return NextResponse.json({ order });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatQty, formatTime } from "@/lib/format";
@@ -15,6 +15,36 @@ const NEXT_STATUS = { PENDING: "COOKING", COOKING: "DONE", DONE: "PENDING" } as 
 
 type ViewMode = "byTable" | "grouped";
 
+type KitchenCancellation = {
+  id: string;
+  tableId: string;
+  tableLabel: string;
+  name: string;
+  qty: number;
+  kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  scope: "item" | "order";
+  cancelledAt: string;
+  cancelledBy: string;
+  cancelReason: string;
+};
+
+// Which cancellations this kitchen screen already acknowledged — survives a page reload.
+const ACK_KEY = "lw-kitchen-acked-cancels";
+function loadAcked(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(ACK_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+}
+function saveAcked(ids: Set<string>) {
+  try {
+    localStorage.setItem(ACK_KEY, JSON.stringify([...ids].slice(-500)));
+  } catch {
+    // storage unavailable — acknowledgements just won't survive a reload
+  }
+}
+
 export default function KitchenDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" }) {
   const router = useRouter();
   const tableNames = useTableNames();
@@ -23,6 +53,34 @@ export default function KitchenDashboard({ username, role }: { username: string;
   const [view, setView] = useState<ViewMode>("byTable");
   const [now, setNow] = useState(() => Date.now());
   const knownOrderIds = useRef<Set<string> | null>(null);
+  const [cancels, setCancels] = useState<KitchenCancellation[]>([]);
+  const [acked, setAcked] = useState<Set<string>>(new Set());
+  const knownCancelIds = useRef<Set<string> | null>(null);
+
+  useEffect(() => setAcked(loadAcked()), []);
+
+  // Dishes taken back after the order reached the kitchen: flash + chime so cooks stop.
+  usePolling(async () => {
+    const res = await fetch("/api/orders/kitchen-cancellations").catch(() => null);
+    if (!res?.ok) return;
+    const list: KitchenCancellation[] = (await res.json()).cancellations;
+    const ids = new Set(list.map((c) => c.id));
+    if (knownCancelIds.current && [...ids].some((id) => !knownCancelIds.current!.has(id))) playAlertSound();
+    knownCancelIds.current = ids;
+    setCancels(list);
+  }, 4_000);
+
+  function ackCancels(ids: string[]) {
+    stopAlertSound();
+    setAcked((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      saveAcked(next);
+      return next;
+    });
+  }
+
+  const unackedCancels = cancels.filter((c) => !acked.has(c.id));
 
   usePolling(async () => {
     const res = await fetch("/api/orders?status=CONFIRMED");
@@ -117,6 +175,30 @@ export default function KitchenDashboard({ username, role }: { username: string;
       </header>
 
       <main className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)" }}>
+        {unackedCancels.length > 0 && (
+          <div role="alert" style={{ background: "#c0141c", color: "#fff", padding: "var(--space-3)", marginBottom: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18 }}>⛔ KHÁCH HUỶ MÓN — DỪNG LÀM</span>
+              <button className="btn btn-secondary" onClick={() => ackCancels(unackedCancels.map((c) => c.id))}>
+                Đã biết tất cả
+              </button>
+            </div>
+            {unackedCancels.map((c) => (
+              <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", padding: "6px 8px" }}>
+                <span style={{ fontSize: 15 }}>
+                  <b>{placeLabel(tableNames, c.tableId)}</b> · {c.name} × <b>{formatQty(c.qty)}</b>
+                  <span style={{ fontSize: 12, opacity: 0.9 }}>
+                    {" "}
+                    — {formatTime(c.cancelledAt)} · {c.cancelReason} ({c.cancelledBy})
+                  </span>
+                </span>
+                <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => ackCancels([c.id])}>
+                  Đã biết
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {view === "grouped" ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
             {grouped.map((g) => (

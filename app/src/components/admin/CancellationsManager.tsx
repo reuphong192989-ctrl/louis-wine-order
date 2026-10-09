@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatVnd } from "@/lib/format";
+import { formatQty, formatVnd } from "@/lib/format";
 
 type Cancellation = {
   id: string;
@@ -13,7 +13,13 @@ type Cancellation = {
   cancelledBy: string | null;
   cancelReason: string | null;
   totalAmount: number;
+  kind: "order" | "item";
+  afterConfirm: boolean;
+  confirmedBy: string | null;
+  dishes: { name: string; qty: number; kitchenStatus: "PENDING" | "COOKING" | "DONE" }[];
 };
+
+const KITCHEN_LABEL = { PENDING: "chưa làm", COOKING: "đang làm", DONE: "đã xong" } as const;
 
 type Preset = "month" | "7d" | "custom";
 const PRESET_LABELS: Record<Preset, string> = { month: "Tháng này", "7d": "7 ngày qua", custom: "Tuỳ chỉnh" };
@@ -80,7 +86,8 @@ export default function CancellationsManager() {
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <h3>Đơn hàng bị huỷ {rows && <span className="tag tag-outline">{rows.length}</span>}</h3>
       <p className="text-muted" style={{ fontSize: 13, marginTop: -8 }}>
-        Mỗi lần nhân viên bấm "Huỷ" trên đơn, lý do bắt buộc nhập và được ghi lại ở đây để đối chiếu.
+        Mỗi lần nhân viên bấm "Huỷ" trên đơn, lý do bắt buộc nhập và được ghi lại ở đây để đối chiếu. Gồm cả đơn bị huỷ
+        sau khi đã xác nhận (đã báo bếp) và từng món khách trả lại — kèm trạng thái bếp lúc huỷ để đối chiếu chi phí.
       </p>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -110,8 +117,10 @@ export default function CancellationsManager() {
               <th>Tài khoản huỷ</th>
               <th>Bàn</th>
               <th>Tầng</th>
+              <th>Loại</th>
+              <th>Món huỷ · bếp lúc huỷ</th>
               <th>Lý do huỷ</th>
-              <th>Giá trị đơn</th>
+              <th>Giá trị huỷ</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +130,18 @@ export default function CancellationsManager() {
                 <td>{r.cancelledBy ?? "—"}</td>
                 <td>{r.online ? CHANNEL_LABEL[r.online] : r.tableLabel}</td>
                 <td className="text-muted">{r.floor ?? "—"}</td>
+                <td style={{ fontSize: 12 }}>
+                  {r.kind === "item" ? "Huỷ món" : "Cả đơn"}
+                  <div className="text-muted">{r.afterConfirm ? `sau khi xác nhận${r.confirmedBy ? ` (${r.confirmedBy})` : ""}` : "trước khi xác nhận"}</div>
+                </td>
+                <td style={{ fontSize: 12 }}>
+                  {r.dishes.map((d, i) => (
+                    <div key={i} style={{ color: d.kitchenStatus !== "PENDING" ? "var(--color-accent)" : undefined }}>
+                      {d.name} × {formatQty(d.qty)}
+                      {r.afterConfirm && <span className="text-muted"> · {KITCHEN_LABEL[d.kitchenStatus]}</span>}
+                    </div>
+                  ))}
+                </td>
                 <td>{r.cancelReason ?? "—"}</td>
                 <td>{formatVnd(r.totalAmount)}</td>
               </tr>
