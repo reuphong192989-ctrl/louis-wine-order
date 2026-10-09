@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatTime, formatVnd } from "@/lib/format";
+import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
-import { playAlertSound, stopAlertSound } from "@/lib/sound";
+import { isAlertSounding, playAlertSound, stopAlertSound } from "@/lib/sound";
 import type { OrderDTO, ReservationDTO } from "@/types";
 
 // Chime and highlight a shuttle pickup this long before its time.
@@ -43,6 +43,9 @@ export default function ReceptionBoard({ username, role }: { username: string; r
   const [busy, setBusy] = useState<string | null>(null);
   const known = useRef<Set<string> | null>(null);
   const alerted = useRef<Set<string>>(new Set());
+  // Ringing only because of a new Lumia order/booking (not a shuttle heads-up) —
+  // silenced once restaurant staff have taken it, wherever they did it from.
+  const ringingForNew = useRef(false);
 
   usePolling(async () => {
     try {
@@ -60,17 +63,29 @@ export default function ReceptionBoard({ username, role }: { username: string; r
 
       // Chime for new Lumia orders / bookings…
       const ids = new Set([...data.orders.map((o) => o.id), ...data.reservations.map((r) => `r:${r.id}`)]);
-      let chime = !!known.current && [...ids].some((id) => !known.current!.has(id));
+      const hasNew = !!known.current && [...ids].some((id) => !known.current!.has(id));
       known.current = ids;
       // …and once per booking when its shuttle pickup is 30 minutes away.
+      let shuttleChime = false;
       for (const r of data.reservations) {
         const mins = r.needShuttle && !r.shuttleDoneAt ? minutesUntil(data.today, r.date, r.pickupTime, t) : null;
         if (mins !== null && mins <= SHUTTLE_ALERT_MIN && !alerted.current.has(r.id)) {
           alerted.current.add(r.id);
-          chime = true;
+          shuttleChime = true;
         }
       }
-      if (chime) playAlertSound();
+      if (hasNew || shuttleChime) {
+        // A shuttle heads-up rings out in full; only a pure "new order/booking" ring may be cut short.
+        ringingForNew.current = !shuttleChime && (ringingForNew.current || !isAlertSounding());
+        playAlertSound();
+      }
+      const stillWaiting =
+        data.orders.some((o) => o.status === "PENDING" && !o.claimedBy) ||
+        data.reservations.some((r) => r.status === "NEW" && !r.claimedBy);
+      if (ringingForNew.current && !stillWaiting && isAlertSounding()) {
+        stopAlertSound();
+        ringingForNew.current = false;
+      }
 
       setOrders(data.orders);
       setReservations(data.reservations);
@@ -227,7 +242,7 @@ export default function ReceptionBoard({ username, role }: { username: string; r
                         {o.online?.phone}
                       </div>
                     </td>
-                    <td style={{ fontSize: 12 }}>{o.items.map((i) => `${i.qty}× ${i.nameSnapshot}`).join(", ")}</td>
+                    <td style={{ fontSize: 12 }}>{o.items.map((i) => `${formatQty(i.qty)}× ${i.nameSnapshot}`).join(", ")}</td>
                     <td style={{ fontWeight: 700, color: st.color }}>{st.label}</td>
                     <td>
                       {formatVnd(o.totalAmount)}

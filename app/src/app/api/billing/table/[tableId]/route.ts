@@ -4,9 +4,9 @@ import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { previewTableBill, finalizeTableBill } from "@/lib/billing";
 
-/** Read-only combined preview for one table (doesn't mark anything as billed). */
+/** Read-only combined preview for one table (doesn't mark anything as billed) — waiters use it as the running bill ("tạm tính"). */
 export const GET = withErrors(async (_req: NextRequest, { params }: { params: Promise<{ tableId: string }> }) => {
-  const auth = await requireSession(["OWNER", "ADMIN", "CASHIER"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "CASHIER"]);
   if ("error" in auth) return auth.error;
 
   const { tableId } = await params;

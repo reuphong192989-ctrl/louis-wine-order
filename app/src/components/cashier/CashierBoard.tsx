@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatTime, formatVnd } from "@/lib/format";
+import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
 import type { TableBillPreview, FinalizedBill } from "@/lib/billing";
@@ -194,7 +194,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     {preview.items.map((l, i) => (
                       <tr key={i}>
                         <td>{l.name}</td>
-                        <td>{l.qty}</td>
+                        <td>{formatQty(l.qty)}</td>
                         <td>{formatVnd(l.unitPrice)}</td>
                         <td>{formatVnd(l.lineTotal)}</td>
                       </tr>

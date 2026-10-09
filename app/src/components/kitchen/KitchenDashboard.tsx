@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatTime } from "@/lib/format";
+import { formatQty, formatTime } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
@@ -132,9 +132,9 @@ export default function KitchenDashboard({ username, role }: { username: string;
                 }}
               >
                 <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>{g.name}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "var(--color-accent)" }}>× {g.qty}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "var(--color-accent)" }}>× {formatQty(g.qty)}</div>
                 <div className="text-muted" style={{ fontSize: 12 }}>
-                  {[...g.tables.entries()].map(([table, qty]) => `${placeLabel(tableNames, table)} (${qty})`).join(", ")}
+                  {[...g.tables.entries()].map(([table, qty]) => `${placeLabel(tableNames, table)} (${formatQty(qty)})`).join(", ")}
                 </div>
               </div>
             ))}
@@ -168,7 +168,7 @@ export default function KitchenDashboard({ username, role }: { username: string;
                       <li key={it.id} style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 13 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                           <span style={{ textDecoration: it.kitchenStatus === "DONE" ? "line-through" : "none" }}>
-                            {it.nameSnapshot} × {it.qty}
+                            {it.nameSnapshot} × {formatQty(it.qty)}
                           </span>
                           <button
                             className={`btn ${it.kitchenStatus === "DONE" ? "btn-secondary" : it.kitchenStatus === "COOKING" ? "btn-primary" : "btn-secondary"}`}

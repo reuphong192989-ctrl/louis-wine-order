@@ -2,7 +2,11 @@ import { randomUUID } from "crypto";
 import { appendRow, readAllRows, cell } from "./core";
 
 const TAB = "TableSwitchLog";
-const HEADERS = ["id", "previousTableId", "newTableId", "username", "role", "createdAt"];
+// kind: "" = a device (tablet/kiosk) was re-pointed at another table;
+// "orders" = a guest's open orders were moved to another table from the staff screen.
+const HEADERS = ["id", "previousTableId", "newTableId", "username", "role", "createdAt", "kind"];
+
+export type TableSwitchKind = "" | "orders";
 
 export type TableSwitchEntry = {
   id: string;
@@ -11,6 +15,7 @@ export type TableSwitchEntry = {
   username: string;
   role: string;
   createdAt: string;
+  kind: TableSwitchKind;
 };
 
 function decode(values: Record<string, string>): TableSwitchEntry {
@@ -21,6 +26,7 @@ function decode(values: Record<string, string>): TableSwitchEntry {
     username: values.username,
     role: values.role,
     createdAt: values.createdAt,
+    kind: (values.kind ?? "") as TableSwitchKind,
   };
 }
 
@@ -36,8 +42,9 @@ export async function logTableSwitch(entry: {
   newTableId: string;
   username: string;
   role: string;
+  kind?: TableSwitchKind;
 }): Promise<TableSwitchEntry> {
-  const record: TableSwitchEntry = { id: randomUUID(), createdAt: new Date().toISOString(), ...entry };
+  const record: TableSwitchEntry = { id: randomUUID(), createdAt: new Date().toISOString(), ...entry, kind: entry.kind ?? "" };
   await appendRow(TAB, HEADERS, {
     id: record.id,
     previousTableId: cell.str(record.previousTableId),
@@ -45,6 +52,7 @@ export async function logTableSwitch(entry: {
     username: record.username,
     role: record.role,
     createdAt: record.createdAt,
+    kind: record.kind,
   });
   return record;
 }
