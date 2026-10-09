@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
 import { appendRow, appendRows, batchUpdateRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
 import { genCode } from "../site/validate";
-import { logCancelledItems } from "./cancelledItems";
+import { logCancelledItems, type CostBearer } from "./cancelledItems";
+import { listAllMenuItems } from "./menuItems";
+import { listCategories } from "./categories";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -386,17 +388,67 @@ export function canCancelStartedDish(role: string): boolean {
 
 const STARTED_DISH_ERROR = "Bếp đã bắt đầu làm món này — cần tài khoản quản lý để huỷ.";
 
+/** Who absorbs dishes the kitchen had already started when they're cancelled anyway. */
+export type CostAssignment = { costBearer: CostBearer; costBearerStaff: string | null } | null;
+
+function costError(started: boolean, cost: CostAssignment): string | null {
+  if (!started) return null;
+  if (!cost) return "Món bếp đã làm — vui lòng chọn ai chịu chi phí (nhà hàng hay nhân viên).";
+  if (cost.costBearer === "STAFF" && !cost.costBearerStaff) return "Vui lòng chọn nhân viên chịu chi phí.";
+  return null;
+}
+
+function costFields(kitchenStatus: KitchenStatus, cost: CostAssignment) {
+  if (kitchenStatus === "PENDING" || !cost) return { costBearer: null, costBearerStaff: null };
+  return { costBearer: cost.costBearer, costBearerStaff: cost.costBearer === "STAFF" ? cost.costBearerStaff : null };
+}
+
+/**
+ * Takes `qty` off one line of an open order: deletes the line when nothing is
+ * left, otherwise lowers its qty; then recomputes the order total/summary.
+ */
+async function takeQtyOffLine(
+  itemRows: SheetRowLike[],
+  orderRow: SheetRowLike,
+  itemRow: SheetRowLike,
+  item: OrderItemLine,
+  qty: number,
+): Promise<{ orderValues: Record<string, string>; remaining: OrderItemLine[] }> {
+  const siblings = itemRows.filter((r) => r.values.orderId === item.orderId);
+  const remainingQty = Math.round((item.qty - qty) * 100) / 100;
+  let remaining: OrderItemLine[];
+  if (remainingQty <= 0) {
+    await deleteRows(ORDER_ITEMS_TAB, [itemRow.rowNumber]);
+    remaining = siblings.filter((r) => r.rowNumber !== itemRow.rowNumber).map((r) => decodeOrderItem(r.values));
+  } else {
+    const updatedItem = { ...itemRow.values, qty: String(remainingQty), lineTotal: cell.int(Math.round(item.unitPrice * remainingQty)) };
+    await updateRow(ORDER_ITEMS_TAB, itemRow.rowNumber, ORDER_ITEMS_HEADERS, updatedItem);
+    remaining = siblings.map((r) => decodeOrderItem(r.rowNumber === itemRow.rowNumber ? updatedItem : r.values));
+  }
+  const orderValues = {
+    ...orderRow.values,
+    totalAmount: cell.int(remaining.reduce((s, it) => s + it.lineTotal, 0)),
+    itemsSummary: buildItemsSummary(remaining),
+  };
+  await updateRow(ORDERS_TAB, orderRow.rowNumber, ORDERS_HEADERS, orderValues);
+  return { orderValues, remaining };
+}
+
+type SheetRowLike = { rowNumber: number; values: Record<string, string> };
+
 /**
  * Cancels a whole order. Before confirmation it's the plain "Huỷ" on a pending
  * card. After confirmation (guest changed their mind once it reached the
- * kitchen) it additionally: refuses a billed order, needs a manager if any dish
- * is already cooking/done, and logs every dish to CancelledItems so the kitchen
- * screen flashes the cancellation and the manager report shows it.
+ * kitchen) it additionally: refuses a billed order, needs a manager — and a
+ * decision on who bears the cost — if any dish is already cooking/done, and
+ * logs every dish to CancelledItems so the kitchen screen flashes the
+ * cancellation and the manager report shows it.
  */
 export async function cancelOrder(
   id: string,
   reason: string,
   by: { username: string; role: string },
+  cost: CostAssignment = null,
 ): Promise<{ order: Order } | { error: string; status: number }> {
   const order = await findOrderById(id);
   if (!order) return { error: "Không tìm thấy đơn hàng.", status: 404 };
@@ -404,9 +456,12 @@ export async function cancelOrder(
   if (order.billNo) return { error: "Bàn đã thanh toán — không huỷ được nữa, liên hệ quản lý.", status: 400 };
 
   const wasConfirmed = order.status === "CONFIRMED";
-  if (wasConfirmed && order.items.some((it) => it.kitchenStatus !== "PENDING") && !canCancelStartedDish(by.role)) {
+  const started = wasConfirmed && order.items.some((it) => it.kitchenStatus !== "PENDING");
+  if (started && !canCancelStartedDish(by.role)) {
     return { error: "Bếp đã bắt đầu làm món trong đơn này — cần tài khoản quản lý để huỷ.", status: 403 };
   }
+  const costErr = costError(started, cost);
+  if (costErr) return { error: costErr, status: 400 };
 
   const updated = await setOrderStatus(id, "CANCELLED", by.username, reason);
   if (!updated) return { error: "Không tìm thấy đơn hàng.", status: 404 };
@@ -427,6 +482,7 @@ export async function cancelOrder(
         cancelledAt: now,
         cancelledBy: by.username,
         cancelReason: reason,
+        ...costFields(it.kitchenStatus, cost),
       })),
     );
   }
@@ -444,6 +500,7 @@ export async function cancelOrderItem(
   cancelQty: number | null,
   reason: string,
   by: { username: string; role: string },
+  cost: CostAssignment = null,
 ): Promise<{ order: Order } | { error: string; status: number }> {
   const [itemRows, orderRows] = await Promise.all([readAllRows(ORDER_ITEMS_TAB), readAllRows(ORDERS_TAB)]);
   const itemRow = itemRows.find((r) => r.values.id === itemId);
@@ -457,32 +514,18 @@ export async function cancelOrderItem(
   if (order.status === "CANCELLED") return { error: "Đơn này đã được huỷ trước đó.", status: 400 };
   if (order.status !== "CONFIRMED") return { error: "Đơn chưa xác nhận — dùng nút Huỷ trên thẻ đơn đang chờ.", status: 400 };
   if (order.billNo) return { error: "Bàn đã thanh toán — không huỷ được nữa, liên hệ quản lý.", status: 400 };
-  if (item.kitchenStatus !== "PENDING" && !canCancelStartedDish(by.role)) return { error: STARTED_DISH_ERROR, status: 403 };
+  const started = item.kitchenStatus !== "PENDING";
+  if (started && !canCancelStartedDish(by.role)) return { error: STARTED_DISH_ERROR, status: 403 };
+  const costErr = costError(started, cost);
+  if (costErr) return { error: costErr, status: 400 };
 
   const qty = cancelQty == null ? item.qty : Math.round(cancelQty * 100) / 100;
   if (!(qty > 0) || qty > item.qty) return { error: "Số lượng huỷ không hợp lệ.", status: 400 };
 
   const siblings = itemRows.filter((r) => r.values.orderId === order.id);
-  const takesWholeOrder = qty >= item.qty && siblings.length === 1;
-  if (takesWholeOrder) return cancelOrder(order.id, reason, by);
+  if (qty >= item.qty && siblings.length === 1) return cancelOrder(order.id, reason, by, cost);
 
-  const remainingQty = Math.round((item.qty - qty) * 100) / 100;
-  let remaining: OrderItemLine[];
-  if (remainingQty <= 0) {
-    await deleteRows(ORDER_ITEMS_TAB, [itemRow.rowNumber]);
-    remaining = siblings.filter((r) => r.rowNumber !== itemRow.rowNumber).map((r) => decodeOrderItem(r.values));
-  } else {
-    const updatedItem = { ...itemRow.values, qty: String(remainingQty), lineTotal: cell.int(Math.round(item.unitPrice * remainingQty)) };
-    await updateRow(ORDER_ITEMS_TAB, itemRow.rowNumber, ORDER_ITEMS_HEADERS, updatedItem);
-    remaining = siblings.map((r) => decodeOrderItem(r.rowNumber === itemRow.rowNumber ? updatedItem : r.values));
-  }
-
-  const orderValues = {
-    ...orderRow.values,
-    totalAmount: cell.int(remaining.reduce((s, it) => s + it.lineTotal, 0)),
-    itemsSummary: buildItemsSummary(remaining),
-  };
-  await updateRow(ORDERS_TAB, orderRow.rowNumber, ORDERS_HEADERS, orderValues);
+  const { orderValues, remaining } = await takeQtyOffLine(itemRows, orderRow, itemRow, item, qty);
 
   await logCancelledItems([
     {
@@ -498,9 +541,81 @@ export async function cancelOrderItem(
       cancelledAt: new Date().toISOString(),
       cancelledBy: by.username,
       cancelReason: reason,
+      ...costFields(item.kitchenStatus, cost),
     },
   ]);
 
+  return { order: { ...decodeOrder(orderValues), items: remaining } };
+}
+
+/**
+ * Guest hands back unused, untouched units before paying (a case of beer only
+ * half drunk, an unopened bottle, cigars, cold towels). Only for categories a
+ * manager marked returnable — never cooked food. Not a cancellation: no kitchen
+ * alert, no waste cost; the units go back to stock and are logged (scope
+ * "return") for the returns report so the bar/stock count can be reconciled.
+ */
+export async function returnOrderItem(
+  itemId: string,
+  returnQty: number,
+  note: string | null,
+  by: { username: string; role: string },
+): Promise<{ order: Order } | { error: string; status: number }> {
+  const [itemRows, orderRows, menuItems, categories] = await Promise.all([
+    readAllRows(ORDER_ITEMS_TAB),
+    readAllRows(ORDERS_TAB),
+    listAllMenuItems(),
+    listCategories(),
+  ]);
+  const itemRow = itemRows.find((r) => r.values.id === itemId);
+  if (!itemRow) return { error: "Không tìm thấy món trong đơn.", status: 404 };
+  const orderRow = orderRows.find((r) => r.values.id === itemRow.values.orderId);
+  if (!orderRow) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+
+  const order = decodeOrder(orderRow.values);
+  const item = decodeOrderItem(itemRow.values);
+  if (order.online) return { error: "Đơn online không trả hàng tại đây.", status: 400 };
+  if (order.status !== "CONFIRMED") return { error: "Chỉ trả lại được hàng của đơn đã xác nhận.", status: 400 };
+  if (order.billNo) return { error: "Bàn đã thanh toán — không trả lại được nữa, liên hệ quản lý.", status: 400 };
+
+  const categoryId = menuItems.find((m) => m.id === item.menuItemId)?.categoryId;
+  const category = categories.find((c) => c.id === categoryId);
+  if (!category?.returnable) {
+    return { error: "Món này không thuộc danh mục được trả lại — nếu khách không dùng, dùng nút Huỷ.", status: 400 };
+  }
+
+  const qty = Math.round(returnQty * 100) / 100;
+  if (!(qty > 0) || qty > item.qty) return { error: "Số lượng trả lại không hợp lệ.", status: 400 };
+
+  const now = new Date().toISOString();
+  const logEntry = {
+    orderId: order.id,
+    itemId: item.id,
+    tableId: order.tableId,
+    nameSnapshot: item.nameSnapshot,
+    unitPrice: item.unitPrice,
+    qty,
+    lineTotal: Math.round(item.unitPrice * qty),
+    kitchenStatus: item.kitchenStatus,
+    scope: "return" as const,
+    cancelledAt: now,
+    cancelledBy: by.username,
+    cancelReason: note || "Khách trả lại (chưa dùng)",
+    costBearer: null,
+    costBearerStaff: null,
+  };
+
+  const siblings = itemRows.filter((r) => r.values.orderId === order.id);
+  if (qty >= item.qty && siblings.length === 1) {
+    // Everything in this order went back unused: close it without a kitchen "cancel" alert.
+    const updated = await setOrderStatus(order.id, "CANCELLED", by.username, `Khách trả lại toàn bộ (chưa dùng)${note ? `: ${note}` : ""}`);
+    await logCancelledItems([logEntry]);
+    if (!updated) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+    return { order: updated };
+  }
+
+  const { orderValues, remaining } = await takeQtyOffLine(itemRows, orderRow, itemRow, item, qty);
+  await logCancelledItems([logEntry]);
   return { order: { ...decodeOrder(orderValues), items: remaining } };
 }
 

@@ -12,6 +12,8 @@ export type BillLine = {
   orderId: string;
   orderCreatedAt: string;
   kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  /** Unused units of this line may be handed back ("Trả lại") instead of cancelled. */
+  returnable: boolean;
   name: string;
   qty: number;
   unitPrice: number;
@@ -43,6 +45,13 @@ export type FinalizedBill = TableBillPreview & {
   printedAt: string;
 };
 
+/** Menu item ids whose category lets guests hand back unused units (beer, wine, cigars, towels…). */
+async function returnableMenuItemIds(): Promise<Set<string>> {
+  const [items, categories] = await Promise.all([listAllMenuItems(), listCategories()]);
+  const returnableCats = new Set(categories.filter((c) => c.returnable).map((c) => c.id));
+  return new Set(items.filter((it) => returnableCats.has(it.categoryId)).map((it) => it.id));
+}
+
 async function vatRateByMenuItemId(): Promise<Map<string, number>> {
   const [items, categories] = await Promise.all([listAllMenuItems(), listCategories()]);
   const catVat = new Map(categories.map((c) => [c.id, c.vatRate]));
@@ -57,12 +66,18 @@ async function openOrdersForTable(tableId: string): Promise<Order[]> {
   return orders.filter((o) => o.tableId === tableId && !o.online && !o.billNo);
 }
 
-function buildPreview(tableId: string, tableLabel: string, orders: Order[], vatByItem: Map<string, number>): TableBillPreview {
+function buildPreview(
+  tableId: string,
+  tableLabel: string,
+  orders: Order[],
+  vatByItem: Map<string, number>,
+  returnable: Set<string>,
+): TableBillPreview {
   const items: BillLine[] = [];
   for (const o of orders) {
     for (const it of o.items) {
       const vatRate = (it.menuItemId ? vatByItem.get(it.menuItemId) : undefined) ?? FALLBACK_VAT_RATE;
-      items.push({ itemId: it.id, orderId: o.id, orderCreatedAt: o.createdAt, kitchenStatus: it.kitchenStatus, name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate });
+      items.push({ itemId: it.id, orderId: o.id, orderCreatedAt: o.createdAt, kitchenStatus: it.kitchenStatus, returnable: !!it.menuItemId && returnable.has(it.menuItemId), name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate });
     }
   }
   const subtotal = items.reduce((s, l) => s + l.lineTotal, 0);
@@ -120,14 +135,15 @@ export async function listOpenTableBills(): Promise<
 
 /** Combined preview for one table — read-only, doesn't touch the orders. */
 export async function previewTableBill(tableId: string): Promise<TableBillPreview | null> {
-  const [orders, tableNames, vatByItem] = await Promise.all([
+  const [orders, tableNames, vatByItem, returnable] = await Promise.all([
     openOrdersForTable(tableId),
     listTableNames(),
     vatRateByMenuItemId(),
+    returnableMenuItemIds(),
   ]);
   if (orders.length === 0) return null;
   const tableLabel = tableNames.find((t) => t.tableId === tableId)?.displayName || tableId;
-  return buildPreview(tableId, tableLabel, orders, vatByItem);
+  return buildPreview(tableId, tableLabel, orders, vatByItem, returnable);
 }
 
 /** Commits: stamps every open order for the table with one shared bill number so they print as a single bill. */

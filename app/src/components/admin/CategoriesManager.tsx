@@ -12,6 +12,7 @@ type CategoryRow = {
   nameEn?: string | null;
   nameRu?: string | null;
   vatRate: number;
+  returnable: boolean;
   _count: { items: number };
 };
 
@@ -119,6 +120,15 @@ export default function CategoriesManager() {
     await load();
   }
 
+  async function saveReturnable(id: string, returnable: boolean) {
+    await fetch(`/api/categories/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnable }),
+    });
+    await load();
+  }
+
   async function remove(id: string) {
     if (!confirm("Xoá danh mục này?")) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
@@ -144,6 +154,9 @@ export default function CategoriesManager() {
             <th>Slug</th>
             <th>Số món</th>
             <th style={{ width: 90 }}>VAT %</th>
+            <th style={{ width: 110 }} title="Khách được trả lại hàng chưa dùng (bia chưa khui, rượu chưa mở, xì gà, khăn lạnh...) trước khi thanh toán">
+              Cho trả lại
+            </th>
             <th></th>
           </tr>
         </thead>
@@ -227,6 +240,14 @@ export default function CategoriesManager() {
                     if (Number.isInteger(val) && val !== cat.vatRate) saveVatRate(cat.id, val);
                     else e.target.value = String(cat.vatRate);
                   }}
+                />
+              </td>
+              <td style={{ textAlign: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={cat.returnable}
+                  title="Cho phép nhân viên ghi nhận khách trả lại hàng chưa dùng thuộc danh mục này"
+                  onChange={(e) => saveReturnable(cat.id, e.target.checked)}
                 />
               </td>
               <td>

@@ -3,10 +3,15 @@ import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { cancelOrder, deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
+import { costAssignmentFields, resolveCostAssignment } from "@/lib/cost-assignment";
 
 const patchSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("CONFIRMED") }),
-  z.object({ status: z.literal("CANCELLED"), cancelReason: z.string().trim().min(1, "Vui lòng nhập lý do huỷ.").max(500) }),
+  z.object({
+    status: z.literal("CANCELLED"),
+    cancelReason: z.string().trim().min(1, "Vui lòng nhập lý do huỷ.").max(500),
+    ...costAssignmentFields,
+  }),
 ]);
 
 /**
@@ -34,7 +39,9 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
 
   if (parsed.data.status === "CANCELLED") {
     // Works before AND after confirmation; after it, kitchen-started dishes need a manager.
-    const result = await cancelOrder(id, parsed.data.cancelReason, auth.session);
+    const resolved = await resolveCostAssignment(parsed.data);
+    if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: 400 });
+    const result = await cancelOrder(id, parsed.data.cancelReason, auth.session, resolved.cost);
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ order: result.order });
   }
