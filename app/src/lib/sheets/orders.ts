@@ -468,6 +468,14 @@ export async function setOrderStatus(
   return { ...next, items };
 }
 
+/** Orders one staff member confirmed in [fromIso, toIso], newest first — their personal "what did I take" history. */
+export async function listOrdersConfirmedBy(username: string, fromIso: string, toIso: string): Promise<Order[]> {
+  const all = await listOrders(undefined, 100000);
+  return all
+    .filter((o) => o.confirmedBy === username && o.confirmedAt && o.confirmedAt >= fromIso && o.confirmedAt <= toIso)
+    .sort((a, b) => (a.confirmedAt! < b.confirmedAt! ? 1 : -1));
+}
+
 /** Cancelled orders in [fromIso, toIso], for the manager-facing cancellation report. */
 export async function listCancelledOrders(fromIso: string, toIso: string): Promise<Omit<Order, "items">[]> {
   const rows = await readAllRowsCached(ORDERS_TAB, LIST_TTL_MS);
