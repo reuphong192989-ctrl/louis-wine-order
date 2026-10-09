@@ -1,6 +1,6 @@
 "use client";
 
-import { formatVnd } from "@/lib/format";
+import { formatQty, formatVnd } from "@/lib/format";
 import { RESTAURANT } from "@/lib/site/constants";
 import type { FinalizedBill } from "@/lib/billing";
 
@@ -71,7 +71,7 @@ export default function InvoicePrint({ bill, printedByLabel }: { bill: Finalized
             <tr key={i}>
               <td style={{ textAlign: "center" }}>{i + 1}</td>
               <td>{l.name}</td>
-              <td style={{ textAlign: "center" }}>{l.qty}</td>
+              <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
               <td style={{ textAlign: "center" }}>phần</td>
               <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
               <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>

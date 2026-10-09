@@ -3,12 +3,23 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatTime, formatVnd } from "@/lib/format";
+import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
-import { playAlertSound, stopAlertSound } from "@/lib/sound";
+import { isAlertSounding, playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import PushBanner from "@/components/shared/PushBanner";
 import type { OrderDTO, ReservationDTO, StaffCallDTO } from "@/types";
+
+type OpenTable = { tableId: string; tableLabel: string; itemCount: number; total: number; oldestCreatedAt: string; staff: string[] };
+type BillPreview = {
+  tableId: string;
+  tableLabel: string;
+  checkInAt: string | null;
+  items: { itemId: string; name: string; qty: number; unitPrice: number; lineTotal: number }[];
+  subtotal: number;
+  vatGroups: { rate: number; base: number; amount: number }[];
+  totalVat: number;
+};
 
 // Pending work nobody has taken for this long is "overdue": red card + repeat chime.
 const OVERDUE_MS = 2 * 60 * 1000;
@@ -30,6 +41,18 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const [connError, setConnError] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonInput, setCancelReasonInput] = useState("");
+  // True while the alarm is ringing for waiting work (not for "kitchen done") — so it
+  // can be silenced on this device as soon as anyone, anywhere, has taken that work.
+  const alarmForWaitingWork = useRef(false);
+  const [openTables, setOpenTables] = useState<OpenTable[]>([]);
+  const [onlyMyTables, setOnlyMyTables] = useState(false);
+  const [billTableId, setBillTableId] = useState<string | null>(null);
+  const [bill, setBill] = useState<BillPreview | null>(null);
+  const [billError, setBillError] = useState<string | null>(null);
+  const [qtyEdit, setQtyEdit] = useState<{ itemId: string; name: string; value: string } | null>(null);
+  const [moveFrom, setMoveFrom] = useState<{ tableId: string; label: string } | null>(null);
+  const [moveTo, setMoveTo] = useState("");
+  const [tableOptions, setTableOptions] = useState<{ tableId: string; label: string }[]>([]);
 
   // Poll every few seconds — the realtime substitute for WebSocket push on
   // serverless hosting. Chimes for genuinely new pending orders/calls/bookings,
@@ -72,6 +95,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
       if (hasNew) {
         playAlertSound();
         chimed = true;
+        alarmForWaitingWork.current = true;
       }
     }
     knownPendingIds.current = nowPendingIds;
@@ -85,6 +109,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
     if (knownReadyOrderIds.current) {
       const hasNewReady = [...nowReadyIds].some((id) => !knownReadyOrderIds.current!.has(id));
       if (hasNewReady && !chimed) {
+        if (!isAlertSounding()) alarmForWaitingWork.current = false;
         playAlertSound();
         chimed = true;
       }
@@ -99,12 +124,119 @@ export default function StaffDashboard({ username, role }: { username: string; r
     else if (overdue && t - lastReminderAt.current >= REMIND_EVERY_MS) {
       playAlertSound();
       lastReminderAt.current = t;
+      alarmForWaitingWork.current = true;
+    }
+
+    // Someone — on this device or another — has already taken/confirmed/handled
+    // everything that was waiting: stop ringing here too instead of finishing 30s.
+    const stillWaiting =
+      nextOrders.some((o) => o.status === "PENDING" && !o.claimedBy) ||
+      nextCalls.some((c) => c.status === "PENDING") ||
+      nextRes.some((r) => r.status === "NEW" && !r.claimedBy);
+    if (alarmForWaitingWork.current && !stillWaiting && isAlertSounding()) {
+      stopAlertSound();
+      alarmForWaitingWork.current = false;
     }
 
     setOrders(nextOrders);
     setCalls(nextCalls);
     setReservations(nextRes);
   }, 4_000);
+
+  // Tables currently being served (confirmed, not yet paid) — the waiter's running-bill list.
+  usePolling(async () => {
+    const res = await fetch("/api/billing/open-tables").catch(() => null);
+    if (res?.ok) setOpenTables((await res.json()).tables);
+  }, 15_000);
+
+  async function loadBill(tableId: string) {
+    setBillError(null);
+    const res = await fetch(`/api/billing/table/${encodeURIComponent(tableId)}`).catch(() => null);
+    const data = res ? await res.json().catch(() => null) : null;
+    if (res?.ok) setBill(data.bill);
+    else {
+      setBill(null);
+      setBillError(data?.error ?? "Không tải được tạm tính — vui lòng thử lại.");
+    }
+  }
+
+  function openBill(tableId: string) {
+    setBillTableId(tableId);
+    setBill(null);
+    loadBill(tableId);
+  }
+
+  async function refreshOpenTables() {
+    const res = await fetch("/api/billing/open-tables").catch(() => null);
+    if (res?.ok) setOpenTables((await res.json()).tables);
+  }
+
+  async function saveQty() {
+    if (!qtyEdit) return;
+    const qty = Number(qtyEdit.value.trim().replace(",", "."));
+    if (!Number.isFinite(qty) || qty <= 0) {
+      window.alert("Số lượng không hợp lệ — ví dụ: 1 hoặc 1,2");
+      return;
+    }
+    markBusy(qtyEdit.itemId, true);
+    try {
+      const res = await fetch(`/api/order-items/${qtyEdit.itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(data?.error ?? "Không sửa được số lượng — vui lòng thử lại.");
+        return;
+      }
+      setOrders((list) => list.map((o) => (o.id === data.order.id ? data.order : o)));
+      setQtyEdit(null);
+      if (billTableId) loadBill(billTableId);
+      refreshOpenTables();
+    } catch {
+      window.alert("Mất kết nối — chưa sửa được số lượng, vui lòng thử lại.");
+    } finally {
+      markBusy(qtyEdit.itemId, false);
+    }
+  }
+
+  async function openMoveDialog(tableId: string, label: string) {
+    setMoveFrom({ tableId, label });
+    setMoveTo("");
+    const res = await fetch("/api/table-switch/options").catch(() => null);
+    if (res?.ok) setTableOptions((await res.json()).options);
+  }
+
+  async function confirmMove() {
+    if (!moveFrom) return;
+    const toTableId = moveTo.trim();
+    if (!toTableId) return;
+    markBusy(`move:${moveFrom.tableId}`, true);
+    try {
+      const res = await fetch("/api/orders/move-table", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromTableId: moveFrom.tableId, toTableId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(data?.error ?? "Không chuyển được bàn — vui lòng thử lại.");
+        return;
+      }
+      window.alert(`Đã chuyển ${data.moved} đơn sang bàn ${tableLabel(tableNames, toTableId)}. Nhớ đổi bàn trên máy tính bảng của khách (nút "Đổi bàn") nếu khách gọi thêm món.`);
+      setMoveFrom(null);
+      if (billTableId === moveFrom.tableId) {
+        setBillTableId(toTableId);
+        loadBill(toTableId);
+      }
+      refreshOpenTables();
+    } catch {
+      window.alert("Mất kết nối — chưa chuyển được bàn, vui lòng thử lại.");
+    } finally {
+      markBusy(`move:${moveFrom.tableId}`, false);
+    }
+  }
 
   function markBusy(id: string, busy: boolean) {
     setBusyIds((s) => {
@@ -456,7 +588,18 @@ export default function StaffDashboard({ username, role }: { username: string; r
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
                     {o.items.map((it) => (
                       <li key={it.id}>
-                        {it.nameSnapshot} × {it.qty} <span className="text-muted">({formatVnd(it.lineTotal)})</span>
+                        {it.nameSnapshot} × {formatQty(it.qty)} <span className="text-muted">({formatVnd(it.lineTotal)})</span>
+                        {!o.online && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            style={{ fontSize: 11, padding: "1px 6px", height: "auto", marginLeft: 4 }}
+                            disabled={busyIds.has(it.id)}
+                            onClick={() => setQtyEdit({ itemId: it.id, name: it.nameSnapshot, value: formatQty(it.qty) })}
+                          >
+                            ⚖ Sửa SL
+                          </button>
+                        )}
                         {it.note && <div style={{ color: "var(--color-accent)", fontSize: 12 }}>Ghi chú: {it.note}</div>}
                       </li>
                     ))}
@@ -481,6 +624,50 @@ export default function StaffDashboard({ username, role }: { username: string; r
               );
             })}
             {pendingOrders.length === 0 && <p className="text-muted">Không có đơn nào đang chờ.</p>}
+          </div>
+        </section>
+
+        <hr className="hr" />
+
+        <section>
+          <h3 style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            Bàn đang phục vụ — tạm tính
+            {openTables.length > 0 && <span className="tag tag-accent-2">{openTables.length} bàn</span>}
+            <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+              <button className={`btn ${onlyMyTables ? "btn-secondary" : "btn-primary"}`} style={{ fontSize: 12 }} onClick={() => setOnlyMyTables(false)}>
+                Tất cả bàn
+              </button>
+              <button className={`btn ${onlyMyTables ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: 12 }} onClick={() => setOnlyMyTables(true)}>
+                Bàn tôi phục vụ
+              </button>
+            </span>
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 }}>
+            {openTables
+              .filter((t) => !onlyMyTables || t.staff.includes(username))
+              .map((t) => (
+                <div key={t.tableId} style={{ border: "2px solid var(--color-divider)", background: "var(--color-neutral-100)", padding: "var(--space-3)", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>Bàn {t.tableLabel}</span>
+                    <span className="text-muted" style={{ fontSize: 12 }}>từ {formatTime(t.oldestCreatedAt)}</span>
+                  </div>
+                  <div style={{ fontSize: 13 }}>
+                    {t.itemCount} món · <b>{formatVnd(t.total)}</b> <span className="text-muted">(chưa VAT)</span>
+                  </div>
+                  {t.staff.length > 0 && <div className="text-muted" style={{ fontSize: 12 }}>Phục vụ: {t.staff.join(", ")}</div>}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => openBill(t.tableId)}>
+                      Xem tạm tính
+                    </button>
+                    <button className="btn btn-secondary" disabled={busyIds.has(`move:${t.tableId}`)} onClick={() => openMoveDialog(t.tableId, t.tableLabel)}>
+                      Chuyển bàn
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {openTables.filter((t) => !onlyMyTables || t.staff.includes(username)).length === 0 && (
+              <p className="text-muted">{onlyMyTables ? "Bạn chưa phục vụ bàn nào đang mở." : "Chưa có bàn nào đang phục vụ."}</p>
+            )}
           </div>
         </section>
 
@@ -567,6 +754,173 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 Xác nhận huỷ
               </button>
               <button className="btn btn-secondary" type="button" onClick={() => setCancelOrderId(null)}>
+                Đóng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {billTableId && (
+        <div className="confirm-backdrop" onClick={() => setBillTableId(null)}>
+          <div className="confirm-dialog" style={{ width: 520, maxHeight: "90vh", overflowY: "auto", textAlign: "left" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>
+              Tạm tính — Bàn {bill?.tableLabel ?? tableLabel(tableNames, billTableId)}
+            </div>
+            {billError && <p style={{ color: "var(--color-accent)", margin: 0 }}>{billError}</p>}
+            {!bill && !billError && <p className="text-muted" style={{ margin: 0 }}>Đang tải...</p>}
+            {bill && (
+              <>
+                {bill.checkInAt && (
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Vào bàn lúc {formatTime(bill.checkInAt)}
+                  </div>
+                )}
+                <table className="table" style={{ fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <th>Món</th>
+                      <th style={{ textAlign: "center" }}>SL</th>
+                      <th style={{ textAlign: "right" }}>Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bill.items.map((l) => (
+                      <tr key={l.itemId}>
+                        <td>
+                          {l.name}
+                          <div className="text-muted" style={{ fontSize: 11 }}>
+                            {formatVnd(l.unitPrice)} / đv
+                          </div>
+                        </td>
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {formatQty(l.qty)}
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            style={{ fontSize: 11, padding: "1px 6px", height: "auto", marginLeft: 4 }}
+                            disabled={busyIds.has(l.itemId)}
+                            onClick={() => setQtyEdit({ itemId: l.itemId, name: l.name, value: formatQty(l.qty) })}
+                          >
+                            ⚖
+                          </button>
+                        </td>
+                        <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Tiền món</span>
+                    <span>{formatVnd(bill.subtotal)}</span>
+                  </div>
+                  {bill.vatGroups.map((g) => (
+                    <div key={g.rate} style={{ display: "flex", justifyContent: "space-between" }} className="text-muted">
+                      <span>VAT {g.rate}%</span>
+                      <span>{formatVnd(g.amount)}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>
+                    <span>Tạm tính</span>
+                    <span>{formatVnd(bill.subtotal + bill.totalVat)}</span>
+                  </div>
+                </div>
+                <p className="text-muted" style={{ margin: 0, fontSize: 12 }}>
+                  Chỉ để báo khách số tiền đã dùng — chưa gồm giảm giá (nếu có). Bill chính thức do thu ngân in khi khách thanh toán.
+                </p>
+              </>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+              <button className="btn btn-secondary" type="button" onClick={() => loadBill(billTableId)}>
+                Làm mới
+              </button>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={() => openMoveDialog(billTableId, bill?.tableLabel ?? tableLabel(tableNames, billTableId))}
+              >
+                Chuyển bàn
+              </button>
+              <button className="btn btn-primary" style={{ marginLeft: "auto" }} type="button" onClick={() => setBillTableId(null)}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qtyEdit && (
+        <div className="confirm-backdrop" style={{ zIndex: 1100 }} onClick={() => setQtyEdit(null)}>
+          <form
+            className="confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveQty();
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>Sửa số lượng</div>
+            <div style={{ fontWeight: 700 }}>{qtyEdit.name}</div>
+            <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
+              Món tính theo kg / phần: nhập số thực tế sau khi cân, ví dụ <b>1,2</b> (= 1,2 kg). Thành tiền tự tính lại.
+            </p>
+            <div className="field">
+              <input
+                className="input"
+                inputMode="decimal"
+                value={qtyEdit.value}
+                onChange={(e) => setQtyEdit({ ...qtyEdit, value: e.target.value })}
+                autoFocus
+                required
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} type="submit" disabled={!qtyEdit.value.trim() || busyIds.has(qtyEdit.itemId)}>
+                Lưu
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setQtyEdit(null)}>
+                Đóng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {moveFrom && (
+        <div className="confirm-backdrop" style={{ zIndex: 1100 }} onClick={() => setMoveFrom(null)}>
+          <form
+            className="confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmMove();
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>
+              Chuyển bàn {moveFrom.label}
+            </div>
+            <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
+              Toàn bộ món của bàn này (kể cả món bếp đang làm) chuyển sang bàn mới — màn hình bếp, tạm tính và thu ngân tự cập nhật theo.
+              Nếu bàn mới đang có khách, các món sẽ gộp chung một bill.
+            </p>
+            <div className="field">
+              <select className="input" value={moveTo} onChange={(e) => setMoveTo(e.target.value)} required autoFocus>
+                <option value="">— Chọn bàn mới —</option>
+                {tableOptions
+                  .filter((o) => o.tableId !== moveFrom.tableId)
+                  .map((o) => (
+                    <option key={o.tableId} value={o.tableId}>
+                      {o.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} type="submit" disabled={!moveTo || busyIds.has(`move:${moveFrom.tableId}`)}>
+                Xác nhận chuyển
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setMoveFrom(null)}>
                 Đóng
               </button>
             </div>

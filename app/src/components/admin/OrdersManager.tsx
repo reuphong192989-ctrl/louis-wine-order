@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatVnd } from "@/lib/format";
+import { formatQty, formatVnd } from "@/lib/format";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO } from "@/types";
 
@@ -162,7 +162,7 @@ export default function OrdersManager() {
               <td style={{ fontWeight: 700 }}>{tableLabel(tableNames, o.tableId)}</td>
               <td className="text-muted">{formatDateTime(o.createdAt)}</td>
               <td>{STATUS_LABEL[o.status]}</td>
-              <td style={{ fontSize: 12 }}>{o.items.map((it) => `${it.nameSnapshot} x${it.qty}`).join(", ")}</td>
+              <td style={{ fontSize: 12 }}>{o.items.map((it) => `${it.nameSnapshot} x${formatQty(it.qty)}`).join(", ")}</td>
               <td style={{ fontWeight: 700 }}>{formatVnd(o.totalAmount)}</td>
               <td>
                 <button className="btn btn-danger" disabled={busyIds.has(o.id)} onClick={() => removeOrder(o)}>

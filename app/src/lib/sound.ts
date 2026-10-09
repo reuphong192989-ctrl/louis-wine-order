@@ -57,6 +57,10 @@ export function playAlertSound() {
   }
 }
 
+export function isAlertSounding(): boolean {
+  return alarmTimer !== null;
+}
+
 /** Cuts the alarm short — call this the moment staff acts on whatever it was
  * ringing for (ack/confirm/cancel/claim), so it doesn't keep blaring for the
  * rest of its 30s window after someone's already looking at it. */

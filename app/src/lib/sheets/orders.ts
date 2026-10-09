@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { appendRow, appendRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
+import { appendRow, appendRows, batchUpdateRows, deleteRows, readAllRows, readAllRowsCached, readTabsCached, updateRow, cell } from "./core";
 import { genCode } from "../site/validate";
 
 const ORDERS_TAB = "Orders";
@@ -190,7 +190,8 @@ function decodeOrderItem(values: Record<string, string>): OrderItemLine {
     menuItemId: cell.strOrNull(values.menuItemId),
     nameSnapshot: values.nameSnapshot,
     unitPrice: cell.toInt(values.unitPrice),
-    qty: cell.toInt(values.qty),
+    // Not toInt: weighed items (e.g. fish by the kg) store a fractional qty like "1.2".
+    qty: Number(values.qty) || 0,
     lineTotal: cell.toInt(values.lineTotal),
     kitchenStatus: (values.kitchenStatus || "PENDING") as KitchenStatus,
     note: cell.strOrNull(values.note ?? ""),
@@ -341,6 +342,58 @@ export async function setOrderItemStatus(itemId: string, kitchenStatus: KitchenS
     .filter((it) => it.orderId === orderId);
 
   return { ...decodeOrder(orderRow.values), items };
+}
+
+/**
+ * Staff corrects a line's quantity — mainly for items sold by weight, where the
+ * guest orders "1" and the real weight (e.g. 1.2 kg) is only known after the
+ * fish is weighed. Recomputes the line total and the order total. Dine-in
+ * orders only (website orders carry discount/shipping math), and never after
+ * the order has been billed or cancelled.
+ */
+export async function setOrderItemQty(itemId: string, qty: number): Promise<{ order: Order } | { error: string; status: number }> {
+  const [itemRows, orderRows] = await Promise.all([readAllRows(ORDER_ITEMS_TAB), readAllRows(ORDERS_TAB)]);
+  const itemRow = itemRows.find((r) => r.values.id === itemId);
+  if (!itemRow) return { error: "Không tìm thấy món trong đơn.", status: 404 };
+  const orderRow = orderRows.find((r) => r.values.id === itemRow.values.orderId);
+  if (!orderRow) return { error: "Không tìm thấy đơn hàng.", status: 404 };
+
+  const order = decodeOrder(orderRow.values);
+  if (order.online) return { error: "Đơn online không sửa số lượng tại đây — vui lòng huỷ và đặt lại.", status: 400 };
+  if (order.status === "CANCELLED") return { error: "Đơn đã huỷ.", status: 400 };
+  if (order.billNo) return { error: "Bàn đã thanh toán, không sửa được nữa.", status: 400 };
+
+  const unitPrice = cell.toInt(itemRow.values.unitPrice);
+  const lineTotal = Math.round(unitPrice * qty);
+  const updatedItem = { ...itemRow.values, qty: String(qty), lineTotal: cell.int(lineTotal) };
+  await updateRow(ORDER_ITEMS_TAB, itemRow.rowNumber, ORDER_ITEMS_HEADERS, updatedItem);
+
+  const items = itemRows
+    .filter((r) => r.values.orderId === order.id)
+    .map((r) => decodeOrderItem(r.rowNumber === itemRow.rowNumber ? updatedItem : r.values));
+  const totalAmount = items.reduce((s, it) => s + it.lineTotal, 0);
+  const orderValues = { ...orderRow.values, totalAmount: cell.int(totalAmount), itemsSummary: buildItemsSummary(items) };
+  await updateRow(ORDERS_TAB, orderRow.rowNumber, ORDERS_HEADERS, orderValues);
+
+  return { order: { ...decodeOrder(orderValues), items } };
+}
+
+/**
+ * Guest moves to another table mid-meal: every open dine-in order of `fromTableId`
+ * (pending or confirmed, not yet billed) is re-pointed to `toTableId`, so the
+ * kitchen screen, the running bill and the cashier all follow the guest. If the
+ * new table already has open orders they simply end up on one combined bill.
+ */
+export async function moveOpenTableOrders(fromTableId: string, toTableId: string): Promise<number> {
+  const rows = await readAllRows(ORDERS_TAB);
+  const updates = rows
+    .filter((r) => {
+      const o = decodeOrder(r.values);
+      return o.tableId === fromTableId && !o.online && !o.billNo && (o.status === "PENDING" || o.status === "CONFIRMED");
+    })
+    .map((r) => ({ rowNumber: r.rowNumber, record: { ...r.values, tableId: toTableId } }));
+  if (updates.length) await batchUpdateRows(ORDERS_TAB, ORDERS_HEADERS, updates);
+  return updates.length;
 }
 
 /** Permanently deletes one order and all of its line items. Irreversible — owner-only. */
