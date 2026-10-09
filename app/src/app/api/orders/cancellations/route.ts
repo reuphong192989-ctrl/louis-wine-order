@@ -28,6 +28,14 @@ export const GET = withErrors(async (req: NextRequest) => {
     return rest.length > 0 && /^\d+$/.test(first) ? first : null;
   };
 
+  // Who bears the cost of an after-confirmation whole-order cancel is stored on its CancelledItems rows.
+  const bearerByOrder = new Map<string, { costBearer: string | null; costBearerStaff: string | null }>();
+  for (const c of cancelledItems) {
+    if (c.scope === "order" && c.costBearer && !bearerByOrder.has(c.orderId)) {
+      bearerByOrder.set(c.orderId, { costBearer: c.costBearer, costBearerStaff: c.costBearerStaff });
+    }
+  }
+
   const orderRows = orders.map((o) => ({
     id: o.id,
     kind: "order" as const,
@@ -42,6 +50,10 @@ export const GET = withErrors(async (req: NextRequest) => {
     afterConfirm: !!o.confirmedAt,
     confirmedBy: o.confirmedBy,
     dishes: o.items.map((it) => ({ name: it.nameSnapshot, qty: it.qty, kitchenStatus: it.kitchenStatus })),
+    // Value (at menu price) of dishes the kitchen had already started — the waste to account for.
+    wasteValue: o.confirmedAt ? o.items.filter((it) => it.kitchenStatus !== "PENDING").reduce((s, it) => s + it.lineTotal, 0) : 0,
+    costBearer: bearerByOrder.get(o.id)?.costBearer ?? null,
+    costBearerStaff: bearerByOrder.get(o.id)?.costBearerStaff ?? null,
   }));
 
   // Whole-order cancels are already listed above; here only single dishes taken back from a still-open order.
@@ -61,6 +73,9 @@ export const GET = withErrors(async (req: NextRequest) => {
       afterConfirm: true,
       confirmedBy: null,
       dishes: [{ name: c.nameSnapshot, qty: c.qty, kitchenStatus: c.kitchenStatus }],
+      wasteValue: c.kitchenStatus !== "PENDING" ? c.lineTotal : 0,
+      costBearer: c.costBearer,
+      costBearerStaff: c.costBearerStaff,
     }));
 
   const cancellations = [...orderRows, ...itemRows].sort((a, b) => ((a.cancelledAt ?? "") < (b.cancelledAt ?? "") ? 1 : -1));

@@ -4,9 +4,17 @@ import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, 
 const TAB = "Categories";
 // nameEn / nameRu: optional translations for foreign guests (empty = built-in dictionary, then Vietnamese).
 // vatRate: % applied to this category's items on a cashier-printed bill (internal use only, not an e-invoice).
-const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate"];
+// returnable: guests may hand back unused, untouched units (unopened beer/wine, cigars,
+// cold towels) before paying — "true"/"false"; empty = guessed from the name (see below).
+const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate", "returnable"];
 
 const DEFAULT_VAT_RATE = 8;
+
+// Until a manager sets the flag explicitly, drinks/tobacco/towels are returnable and food is not.
+const RETURNABLE_BY_NAME = /bia|rượu|vang|nước|đồ uống|cigar|xì gà|thuốc|khăn/i;
+function defaultReturnable(name: string): boolean {
+  return RETURNABLE_BY_NAME.test(name);
+}
 
 export type Category = {
   id: string;
@@ -16,6 +24,7 @@ export type Category = {
   nameEn: string | null;
   nameRu: string | null;
   vatRate: number;
+  returnable: boolean;
 };
 
 function decode(values: Record<string, string>): Category {
@@ -27,6 +36,7 @@ function decode(values: Record<string, string>): Category {
     nameEn: cell.strOrNull(values.nameEn ?? ""),
     nameRu: cell.strOrNull(values.nameRu ?? ""),
     vatRate: values.vatRate === "" || values.vatRate == null ? DEFAULT_VAT_RATE : cell.toInt(values.vatRate),
+    returnable: values.returnable === "true" ? true : values.returnable === "false" ? false : defaultReturnable(values.name),
   };
 }
 
@@ -57,6 +67,7 @@ export async function createCategory(input: { name: string; slug: string; sortOr
     nameEn: null,
     nameRu: null,
     vatRate: DEFAULT_VAT_RATE,
+    returnable: defaultReturnable(input.name),
   };
   await appendRow(TAB, HEADERS, {
     id: category.id,
@@ -66,13 +77,14 @@ export async function createCategory(input: { name: string; slug: string; sortOr
     nameEn: "",
     nameRu: "",
     vatRate: cell.int(category.vatRate),
+    returnable: "",
   });
   return category;
 }
 
 export async function updateCategory(
   id: string,
-  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null; vatRate?: number }
+  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null; vatRate?: number; returnable?: boolean }
 ): Promise<Category | null> {
   const rows = await readAllRows(TAB);
   const row = rows.find((r) => r.values.id === id);
@@ -85,6 +97,7 @@ export async function updateCategory(
     nameEn: patch.nameEn === undefined ? current.nameEn : patch.nameEn || null,
     nameRu: patch.nameRu === undefined ? current.nameRu : patch.nameRu || null,
     vatRate: patch.vatRate ?? current.vatRate,
+    returnable: patch.returnable ?? current.returnable,
   };
   await updateRow(TAB, row.rowNumber, HEADERS, {
     id: next.id,
@@ -94,6 +107,8 @@ export async function updateCategory(
     nameEn: cell.str(next.nameEn),
     nameRu: cell.str(next.nameRu),
     vatRate: cell.int(next.vatRate),
+    // Keep "" (name-based default) until someone actually changes the flag.
+    returnable: patch.returnable === undefined ? row.values.returnable ?? "" : cell.bool(next.returnable),
   });
   return next;
 }

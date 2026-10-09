@@ -17,7 +17,26 @@ type Cancellation = {
   afterConfirm: boolean;
   confirmedBy: string | null;
   dishes: { name: string; qty: number; kitchenStatus: "PENDING" | "COOKING" | "DONE" }[];
+  wasteValue: number;
+  costBearer: "RESTAURANT" | "STAFF" | null;
+  costBearerStaff: string | null;
 };
+
+/** Waste = dishes the kitchen had already started when cancelled, split by who bears the cost. */
+function summarizeWaste(rows: Cancellation[]) {
+  let total = 0;
+  let restaurant = 0;
+  let unassigned = 0;
+  const byStaff = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.wasteValue) continue;
+    total += r.wasteValue;
+    if (r.costBearer === "STAFF" && r.costBearerStaff) byStaff.set(r.costBearerStaff, (byStaff.get(r.costBearerStaff) ?? 0) + r.wasteValue);
+    else if (r.costBearer === "RESTAURANT") restaurant += r.wasteValue;
+    else unassigned += r.wasteValue;
+  }
+  return { total, restaurant, unassigned, byStaff: [...byStaff.entries()].sort((a, b) => b[1] - a[1]) };
+}
 
 const KITCHEN_LABEL = { PENDING: "chưa làm", COOKING: "đang làm", DONE: "đã xong" } as const;
 
@@ -109,6 +128,25 @@ export default function CancellationsManager() {
       {loading && <p className="text-muted">Đang tải...</p>}
       {!loading && rows && rows.length === 0 && <p className="text-muted">Không có đơn nào bị huỷ trong khoảng thời gian này.</p>}
 
+      {!loading && rows && rows.length > 0 && (() => {
+        const w = summarizeWaste(rows);
+        return (
+          <div style={{ border: "2px solid var(--color-divider)", background: "var(--color-neutral-100)", padding: "var(--space-3)", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontWeight: 800 }}>Chi phí hao hụt — món bếp đã làm nhưng bị huỷ: {formatVnd(w.total)}</div>
+            <div style={{ fontSize: 13 }}>
+              🏠 Nhà hàng chịu: <b>{formatVnd(w.restaurant)}</b>
+              {w.byStaff.map(([u, v]) => (
+                <span key={u}>
+                  {" "}· 👤 {u} chịu: <b>{formatVnd(v)}</b>
+                </span>
+              ))}
+              {w.unassigned > 0 && <span className="text-muted"> · Chưa phân bổ (dữ liệu cũ): {formatVnd(w.unassigned)}</span>}
+            </div>
+            <div className="text-muted" style={{ fontSize: 12 }}>Tính theo giá bán trên menu. Món huỷ khi bếp chưa làm không tính hao hụt.</div>
+          </div>
+        );
+      })()}
+
       {!loading && rows && rows.length > 0 && (
         <table className="table">
           <thead>
@@ -121,6 +159,7 @@ export default function CancellationsManager() {
               <th>Món huỷ · bếp lúc huỷ</th>
               <th>Lý do huỷ</th>
               <th>Giá trị huỷ</th>
+              <th>Hao hụt · ai chịu</th>
             </tr>
           </thead>
           <tbody>
@@ -144,6 +183,18 @@ export default function CancellationsManager() {
                 </td>
                 <td>{r.cancelReason ?? "—"}</td>
                 <td>{formatVnd(r.totalAmount)}</td>
+                <td style={{ fontSize: 12 }}>
+                  {r.wasteValue > 0 ? (
+                    <>
+                      <b style={{ color: "var(--color-accent)" }}>{formatVnd(r.wasteValue)}</b>
+                      <div>
+                        {r.costBearer === "STAFF" ? `Nhân viên: ${r.costBearerStaff}` : r.costBearer === "RESTAURANT" ? "Nhà hàng" : "Chưa phân bổ"}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -25,6 +25,7 @@ type BillLine = {
   orderId: string;
   orderCreatedAt: string;
   kitchenStatus: "PENDING" | "COOKING" | "DONE";
+  returnable: boolean;
   name: string;
   qty: number;
   unitPrice: number;
@@ -32,6 +33,43 @@ type BillLine = {
 };
 
 const KITCHEN_STATUS_LABEL = { PENDING: "chưa làm", COOKING: "đang làm", DONE: "đã xong" } as const;
+
+type CostChoice = { bearer: "" | "RESTAURANT" | "STAFF"; staff: string };
+type CostFields = { costBearer: "RESTAURANT" | "STAFF"; costBearerStaff: string | null };
+const EMPTY_COST: CostChoice = { bearer: "", staff: "" };
+
+function toCostFields(c: CostChoice): CostFields | undefined {
+  if (c.bearer === "RESTAURANT") return { costBearer: "RESTAURANT", costBearerStaff: null };
+  if (c.bearer === "STAFF" && c.staff) return { costBearer: "STAFF", costBearerStaff: c.staff };
+  return undefined;
+}
+
+/** "Ai chịu chi phí?" — shown to a manager cancelling dishes the kitchen already started. */
+function CostBearerPicker({ value, onChange, staffUsers }: { value: CostChoice; onChange: (c: CostChoice) => void; staffUsers: string[] }) {
+  return (
+    <div className="field" style={{ textAlign: "left", border: "1px solid var(--color-accent)", padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ fontSize: 13, fontWeight: 700 }}>Món bếp đã làm — ai chịu chi phí? (bắt buộc)</label>
+      <label style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center" }}>
+        <input type="radio" checked={value.bearer === "RESTAURANT"} onChange={() => onChange({ bearer: "RESTAURANT", staff: "" })} />
+        Nhà hàng chịu (ghi nhận hao hụt)
+      </label>
+      <label style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center" }}>
+        <input type="radio" checked={value.bearer === "STAFF"} onChange={() => onChange({ bearer: "STAFF", staff: value.staff })} />
+        Nhân viên chịu (lỗi ghi sai / phục vụ sai)
+      </label>
+      {value.bearer === "STAFF" && (
+        <select className="input" value={value.staff} onChange={(e) => onChange({ bearer: "STAFF", staff: e.target.value })} required>
+          <option value="">— Chọn nhân viên —</option>
+          {staffUsers.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
 
 /** Running-bill lines grouped by the order ("lượt gọi") they came from, oldest first. */
 function groupByOrder(lines: BillLine[]): { orderId: string; createdAt: string; lines: BillLine[] }[] {
@@ -78,6 +116,11 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const [tableOptions, setTableOptions] = useState<{ tableId: string; label: string }[]>([]);
   const [itemCancel, setItemCancel] = useState<{ itemId: string; name: string; maxQty: number; qty: string; reason: string; started: boolean } | null>(null);
   const isManager = role === "OWNER" || role === "ADMIN";
+  // Manager cancelling a dish the kitchen already started must say who absorbs the cost.
+  const [cost, setCost] = useState<CostChoice>(EMPTY_COST);
+  const [cancelOrderStarted, setCancelOrderStarted] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<string[]>([]);
+  const [returnDraft, setReturnDraft] = useState<{ itemId: string; name: string; maxQty: number; qty: string; note: string } | null>(null);
 
   // Poll every few seconds — the realtime substitute for WebSocket push on
   // serverless hosting. Chimes for genuinely new pending orders/calls/bookings,
@@ -310,14 +353,14 @@ export default function StaffDashboard({ username, role }: { username: string; r
     }
   }
 
-  async function updateOrder(id: string, status: "CONFIRMED" | "CANCELLED", cancelReason?: string) {
+  async function updateOrder(id: string, status: "CONFIRMED" | "CANCELLED", cancelReason?: string, costFields?: CostFields) {
     stopAlertSound();
     markBusy(id, true);
     try {
       const res = await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(status === "CANCELLED" ? { status, cancelReason } : { status }),
+        body: JSON.stringify(status === "CANCELLED" ? { status, cancelReason, ...costFields } : { status }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -330,16 +373,40 @@ export default function StaffDashboard({ username, role }: { username: string; r
     }
   }
 
+  async function loadStaffUsers() {
+    if (staffUsers.length) return;
+    const res = await fetch("/api/users").catch(() => null);
+    if (res?.ok) setStaffUsers(((await res.json()).users as { username: string }[]).map((u) => u.username));
+  }
+
   function openCancelDialog(id: string) {
+    const started =
+      !!bill?.items.some((l) => l.orderId === id && l.kitchenStatus !== "PENDING") ||
+      !!orders.find((o) => o.id === id && o.status === "CONFIRMED")?.items.some((it) => it.kitchenStatus !== "PENDING");
+    setCancelOrderStarted(started);
+    setCost(EMPTY_COST);
+    if (started && isManager) loadStaffUsers();
     setCancelOrderId(id);
     setCancelReasonInput("");
+  }
+
+  function openItemCancel(l: BillLine) {
+    const started = l.kitchenStatus !== "PENDING";
+    setCost(EMPTY_COST);
+    if (started && isManager) loadStaffUsers();
+    setItemCancel({ itemId: l.itemId, name: l.name, maxQty: l.qty, qty: formatQty(l.qty), reason: "", started });
   }
 
   async function confirmCancelOrder() {
     if (!cancelOrderId) return;
     const reason = cancelReasonInput.trim();
     if (!reason) return;
-    await updateOrder(cancelOrderId, "CANCELLED", reason);
+    const costFields = cancelOrderStarted ? toCostFields(cost) : undefined;
+    if (cancelOrderStarted && !costFields) {
+      window.alert("Món bếp đã làm — chọn ai chịu chi phí (nhà hàng hay nhân viên nào).");
+      return;
+    }
+    await updateOrder(cancelOrderId, "CANCELLED", reason, costFields);
     setCancelOrderId(null);
     setCancelReasonInput("");
     if (billTableId) loadBill(billTableId);
@@ -355,12 +422,17 @@ export default function StaffDashboard({ username, role }: { username: string; r
       window.alert(`Số lượng huỷ phải từ lớn hơn 0 đến ${formatQty(itemCancel.maxQty)}.`);
       return;
     }
+    const costFields = itemCancel.started ? toCostFields(cost) : undefined;
+    if (itemCancel.started && !costFields) {
+      window.alert("Món bếp đã làm — chọn ai chịu chi phí (nhà hàng hay nhân viên nào).");
+      return;
+    }
     markBusy(itemCancel.itemId, true);
     try {
       const res = await fetch(`/api/order-items/${itemCancel.itemId}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qty, reason }),
+        body: JSON.stringify({ qty, reason, ...costFields }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -374,6 +446,35 @@ export default function StaffDashboard({ username, role }: { username: string; r
       window.alert("Mất kết nối — chưa huỷ được món, vui lòng thử lại.");
     } finally {
       markBusy(itemCancel.itemId, false);
+    }
+  }
+
+  async function confirmReturn() {
+    if (!returnDraft) return;
+    const qty = Number(returnDraft.qty.trim().replace(",", "."));
+    if (!Number.isFinite(qty) || qty <= 0 || qty > returnDraft.maxQty) {
+      window.alert(`Số lượng trả lại phải từ lớn hơn 0 đến ${formatQty(returnDraft.maxQty)}.`);
+      return;
+    }
+    markBusy(returnDraft.itemId, true);
+    try {
+      const res = await fetch(`/api/order-items/${returnDraft.itemId}/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty, note: returnDraft.note.trim() || null }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(data?.error ?? "Không ghi nhận được hàng trả lại — vui lòng thử lại.");
+        return;
+      }
+      setReturnDraft(null);
+      if (billTableId) loadBill(billTableId);
+      refreshOpenTables();
+    } catch {
+      window.alert("Mất kết nối — chưa ghi nhận được, vui lòng thử lại.");
+    } finally {
+      markBusy(returnDraft.itemId, false);
     }
   }
 
@@ -817,6 +918,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 autoFocus
               />
             </div>
+            {cancelOrderStarted && isManager && <CostBearerPicker value={cost} onChange={setCost} staffUsers={staffUsers} />}
             <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
               <button className="btn btn-danger" style={{ flex: 1 }} type="submit" disabled={!cancelReasonInput.trim() || busyIds.has(cancelOrderId)}>
                 Xác nhận huỷ
@@ -901,10 +1003,22 @@ export default function StaffDashboard({ username, role }: { username: string; r
                                   style={{ fontSize: 11, padding: "1px 6px", height: "auto", color: "var(--color-accent)" }}
                                   disabled={busyIds.has(l.itemId) || (started && !isManager)}
                                   title={started && !isManager ? "Bếp đã làm món này — cần quản lý huỷ" : undefined}
-                                  onClick={() => setItemCancel({ itemId: l.itemId, name: l.name, maxQty: l.qty, qty: formatQty(l.qty), reason: "", started })}
+                                  onClick={() => openItemCancel(l)}
                                 >
                                   Huỷ
                                 </button>
+                                {l.returnable && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    style={{ fontSize: 11, padding: "1px 6px", height: "auto" }}
+                                    disabled={busyIds.has(l.itemId)}
+                                    title="Khách trả lại hàng chưa dùng (chưa khui / còn nguyên)"
+                                    onClick={() => setReturnDraft({ itemId: l.itemId, name: l.name, maxQty: l.qty, qty: "1", note: "" })}
+                                  >
+                                    ↩ Trả lại
+                                  </button>
+                                )}
                               </td>
                               <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
                             </tr>
@@ -1036,11 +1150,60 @@ export default function StaffDashboard({ username, role }: { username: string; r
                 autoFocus
               />
             </div>
+            {itemCancel.started && isManager && <CostBearerPicker value={cost} onChange={setCost} staffUsers={staffUsers} />}
             <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
               <button className="btn btn-danger" style={{ flex: 1 }} type="submit" disabled={!itemCancel.reason.trim() || busyIds.has(itemCancel.itemId)}>
                 Xác nhận huỷ món
               </button>
               <button className="btn btn-secondary" type="button" onClick={() => setItemCancel(null)}>
+                Đóng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {returnDraft && (
+        <div className="confirm-backdrop" style={{ zIndex: 1100 }} onClick={() => setReturnDraft(null)}>
+          <form
+            className="confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmReturn();
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>Khách trả lại hàng chưa dùng</div>
+            <div style={{ fontWeight: 700 }}>{returnDraft.name}</div>
+            <p className="text-muted" style={{ margin: 0, fontSize: 13 }}>
+              Chỉ nhận lại hàng <b>còn nguyên</b> (bia chưa khui, rượu chưa mở nắp, xì gà nguyên điếu, khăn chưa dùng). Trừ khỏi bill và
+              mang hàng về quầy bar/kho ngay. Tối đa {formatQty(returnDraft.maxQty)}.
+            </p>
+            <div className="field" style={{ textAlign: "left" }}>
+              <label style={{ fontSize: 13 }}>Số lượng trả lại</label>
+              <input
+                className="input"
+                inputMode="decimal"
+                value={returnDraft.qty}
+                onChange={(e) => setReturnDraft({ ...returnDraft, qty: e.target.value })}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="field" style={{ textAlign: "left" }}>
+              <label style={{ fontSize: 13 }}>Ghi chú (không bắt buộc)</label>
+              <input
+                className="input"
+                value={returnDraft.note}
+                onChange={(e) => setReturnDraft({ ...returnDraft, note: e.target.value })}
+                placeholder="VD: thùng 24 lon, uống 15, trả 9"
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} type="submit" disabled={!returnDraft.qty.trim() || busyIds.has(returnDraft.itemId)}>
+                Xác nhận trả lại
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setReturnDraft(null)}>
                 Đóng
               </button>
             </div>

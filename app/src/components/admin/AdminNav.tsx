@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/admin/table-names", label: "Đổi tên bàn" },
   { href: "/admin/staff-review", label: "Đánh giá nhân viên" },
   { href: "/admin/cancellations", label: "Đơn bị huỷ" },
+  { href: "/admin/returns", label: "Hàng trả lại" },
   { href: "/admin/reservations", label: "Đặt bàn" },
   { href: "/admin/reviews", label: "Đánh giá khách" },
   { href: "/admin/lumia-qr", label: "QR phòng Lumia" },

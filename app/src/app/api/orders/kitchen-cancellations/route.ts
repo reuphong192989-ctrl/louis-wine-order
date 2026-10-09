@@ -19,7 +19,8 @@ export const GET = withErrors(async () => {
   const nameMap = new Map(tableNames.map((t) => [t.tableId, t.displayName]));
 
   return NextResponse.json({
-    cancellations: items.map((c) => ({
+    // Returned unused units (beer, cigars…) are not something the kitchen needs to stop.
+    cancellations: items.filter((c) => c.scope !== "return").map((c) => ({
       id: c.id,
       tableId: c.tableId,
       tableLabel: nameMap.get(c.tableId) || c.tableId,
