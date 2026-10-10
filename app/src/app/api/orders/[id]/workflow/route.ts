@@ -29,8 +29,8 @@ export const POST = withErrors(async (req: NextRequest, { params }: { params: Pr
   if (!parsed.success) return NextResponse.json({ error: "Thao tác không hợp lệ." }, { status: 400 });
 
   const a = parsed.data;
-  if (a.action === "bill" && a.method === "TRANSFER" && !a.bankAccountKey) {
-    return NextResponse.json({ error: "Vui lòng chọn tài khoản nhận chuyển khoản." }, { status: 400 });
+  if (a.action === "bill" && a.method === "TRANSFER" && a.bankAccountKey !== "invoice") {
+    return NextResponse.json({ error: "Chuyển khoản chỉ nhận vào tài khoản công ty (có xuất hoá đơn). Khách không lấy hoá đơn thì thanh toán tiền mặt." }, { status: 400 });
   }
 
   let action: Parameters<typeof applyOrderWorkflow>[1];

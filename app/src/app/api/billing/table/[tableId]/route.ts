@@ -33,8 +33,9 @@ export const POST = withErrors(async (req: NextRequest, { params }: { params: Pr
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." }, { status: 400 });
   }
-  if (parsed.data.method === "TRANSFER" && !parsed.data.bankAccountKey) {
-    return NextResponse.json({ error: "Vui lòng chọn tài khoản nhận chuyển khoản." }, { status: 400 });
+  // Transfers go only to the company account (with a VAT invoice); no invoice → cash.
+  if (parsed.data.method === "TRANSFER" && parsed.data.bankAccountKey !== "invoice") {
+    return NextResponse.json({ error: "Chuyển khoản chỉ nhận vào tài khoản công ty (có xuất hoá đơn). Khách không lấy hoá đơn thì thanh toán tiền mặt." }, { status: 400 });
   }
 
   const result = await finalizeTableBill(decodeURIComponent(tableId), { ...parsed.data, printedBy: auth.session.username });
