@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
-import TransferQr from "./TransferQr";
+import TransferQr, { useVietQr } from "./TransferQr";
 import { mergeBillLines } from "@/lib/bill-lines";
 import type { TableBillPreview, FinalizedBill } from "@/lib/billing";
 
@@ -119,18 +119,23 @@ export default function CashierBoard({ username, role }: { username: string; rol
   const discountValue = Math.max(0, Number(discountAmount) || 0);
   const payable = preview ? Math.max(0, preview.subtotal - discountValue + preview.totalVat) : 0;
 
+  // Paid by transfer → the same VietQR shown on screen is also printed on the paper bill.
+  const paidAccount =
+    finalizedBill?.paymentMethod === "TRANSFER" && finalizedBill.bankAccountKey && bankAccounts
+      ? finalizedBill.bankAccountKey === "invoice"
+        ? bankAccounts.invoice
+        : bankAccounts.noInvoice
+      : null;
+  const transferNote = finalizedBill ? `${finalizedBill.billNo} Ban ${finalizedBill.tableLabel}` : "";
+  const printQr = useVietQr(paidAccount, finalizedBill?.totalAmount ?? 0, transferNote);
+  const qrPending = !!paidAccount && !!printQr.bin && !printQr.src;
+
   if (finalizedBill) {
-    const paidAccount =
-      finalizedBill.paymentMethod === "TRANSFER" && finalizedBill.bankAccountKey && bankAccounts
-        ? finalizedBill.bankAccountKey === "invoice"
-          ? bankAccounts.invoice
-          : bankAccounts.noInvoice
-        : null;
     return (
       <div>
         <div className="no-print" style={{ display: "flex", gap: 8, padding: "var(--space-4)", justifyContent: "center" }}>
-          <button className="btn btn-primary" onClick={() => window.print()}>
-            In hoá đơn (A5)
+          <button className="btn btn-primary" onClick={() => window.print()} disabled={qrPending}>
+            {qrPending ? "Đang tạo mã QR..." : "In hoá đơn (A5)"}
           </button>
           <button className="btn btn-secondary" onClick={backToWorklist}>
             Xong, quay lại
@@ -141,12 +146,16 @@ export default function CashierBoard({ username, role }: { username: string; rol
             <TransferQr
               account={paidAccount}
               amount={finalizedBill.totalAmount}
-              note={`${finalizedBill.billNo} Ban ${finalizedBill.tableLabel}`}
+              note={transferNote}
               title={finalizedBill.bankAccountKey === "invoice" ? "Chuyển khoản — có xuất hoá đơn" : "Chuyển khoản"}
             />
           </div>
         )}
-        <InvoicePrint bill={finalizedBill} printedByLabel={username} />
+        <InvoicePrint
+          bill={finalizedBill}
+          printedByLabel={username}
+          transfer={paidAccount && printQr.src ? { account: paidAccount, note: transferNote, qrSrc: printQr.src } : null}
+        />
       </div>
     );
   }

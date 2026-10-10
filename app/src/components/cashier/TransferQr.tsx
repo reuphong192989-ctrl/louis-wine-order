@@ -5,23 +5,38 @@ import QRCode from "qrcode";
 import { formatVnd } from "@/lib/format";
 import { buildVietQrPayload, findBankBin } from "@/lib/vietqr";
 
-type Account = { bank: string; number: string; holder: string };
+export type TransferAccount = { bank: string; number: string; holder: string };
 
-/** VietQR for the chosen account with the exact amount and a transfer note pre-filled — guest scans it with any banking app. */
-export default function TransferQr({ account, amount, note, title }: { account: Account; amount: number; note: string; title: string }) {
+/**
+ * VietQR image (data URL) for an account with the exact amount and note — built locally,
+ * no third-party QR service. `src` is null while generating or when the bank isn't recognised.
+ */
+export function useVietQr(account: TransferAccount | null, amount: number, note: string) {
   const [src, setSrc] = useState<string | null>(null);
-  const bin = findBankBin(account.bank);
+  const bin = account ? findBankBin(account.bank) : null;
+  const accountNo = account?.number ?? "";
 
   useEffect(() => {
-    if (!bin || !account.number) {
+    if (!bin || !accountNo) {
       setSrc(null);
       return;
     }
-    const payload = buildVietQrPayload({ bin, accountNo: account.number, amount, note });
+    let live = true;
+    const payload = buildVietQrPayload({ bin, accountNo, amount, note });
     QRCode.toDataURL(payload, { margin: 1, width: 360, errorCorrectionLevel: "M" })
-      .then(setSrc)
-      .catch(() => setSrc(null));
-  }, [bin, account.number, amount, note]);
+      .then((s) => live && setSrc(s))
+      .catch(() => live && setSrc(null));
+    return () => {
+      live = false;
+    };
+  }, [bin, accountNo, amount, note]);
+
+  return { src, bin };
+}
+
+/** VietQR for the chosen account with the exact amount and a transfer note pre-filled — guest scans it with any banking app. */
+export default function TransferQr({ account, amount, note, title }: { account: TransferAccount; amount: number; note: string; title: string }) {
+  const { src, bin } = useVietQr(account, amount, note);
 
   if (!bin) {
     return (
