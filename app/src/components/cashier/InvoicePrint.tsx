@@ -5,6 +5,7 @@ import { COMPANY, RESTAURANT } from "@/lib/site/constants";
 import { mergeBillLines } from "@/lib/bill-lines";
 import { vndInWords } from "@/lib/vnd-words";
 import type { FinalizedBill } from "@/lib/billing";
+import type { TransferAccount } from "./TransferQr";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -23,10 +24,19 @@ function formatCheckIn(checkIn: string | null, printedAt: string): string {
 /**
  * A5 printed bill: logo + company/restaurant identity, bill meta, items (the same
  * dish ordered in several rounds merged into one line), totals with the amount
- * in words, and how it was paid. No QR on paper — the cashier screen shows it.
+ * in words, and how it was paid. Paid by transfer → the VietQR (exact amount + note)
+ * is printed too, so the guest can scan it from the paper bill.
  * VAT here is for internal use; an official VAT e-invoice is issued separately.
  */
-export default function InvoicePrint({ bill, printedByLabel }: { bill: FinalizedBill; printedByLabel: string }) {
+export default function InvoicePrint({
+  bill,
+  printedByLabel,
+  transfer = null,
+}: {
+  bill: FinalizedBill;
+  printedByLabel: string;
+  transfer?: { account: TransferAccount; note: string; qrSrc: string } | null;
+}) {
   const lines = mergeBillLines(bill.items);
   const paidBy =
     bill.paymentMethod === "TRANSFER"
@@ -138,6 +148,24 @@ export default function InvoicePrint({ bill, printedByLabel }: { bill: Finalized
       </table>
       <div className="inv-words">Bằng chữ: {vndInWords(bill.totalAmount)}</div>
       <div className="inv-paid">Hình thức thanh toán: {paidBy}</div>
+
+      {transfer && (
+        <div className="inv-qr">
+          <img src={transfer.qrSrc} alt="Mã QR chuyển khoản" className="inv-qr-img" />
+          <div className="inv-qr-info">
+            <div className="inv-qr-title">Quét mã để chuyển khoản</div>
+            <div>{transfer.account.bank}</div>
+            <div>
+              STK: <b>{transfer.account.number}</b>
+            </div>
+            <div>Chủ TK: {transfer.account.holder}</div>
+            <div>
+              Số tiền: <b>{formatVnd(bill.totalAmount)}</b>
+            </div>
+            <div>Nội dung: {transfer.note}</div>
+          </div>
+        </div>
+      )}
 
       <div className="inv-thanks">Cảm ơn Quý khách. Hẹn gặp lại!</div>
       <div className="inv-note">

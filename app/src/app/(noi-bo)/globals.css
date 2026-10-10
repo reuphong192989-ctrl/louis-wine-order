@@ -360,5 +360,18 @@ select.input { cursor: pointer; }
 }
 .inv-words { font-style: italic; margin-top: 2px; }
 .inv-paid { margin-top: 4px; }
+.inv-qr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 6px;
+  border: 1px solid #7c2128;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.inv-qr-img { width: 30mm; height: 30mm; flex: none; image-rendering: pixelated; }
+.inv-qr-info { font-size: 10px; line-height: 1.4; }
+.inv-qr-title { font-weight: 800; font-size: 11px; color: #7c2128; }
 .inv-thanks { text-align: center; font-style: italic; font-weight: 700; margin-top: 10px; }
 .inv-note { text-align: center; font-size: 9px; color: #555; margin-top: 2px; }
