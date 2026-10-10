@@ -18,7 +18,7 @@ export const RESTAURANT = {
 
 /** Legal entity printed on the cashier's bill (same as on the company's VAT e-invoices). */
 export const COMPANY = {
-  restaurantName: "HẦM RƯỢU LOUIS – ĐÀ NẴNG",
+  restaurantName: "LOUIS WINE ĐÀ NẴNG",
   legalName: "CÔNG TY CỔ PHẦN SỰ KIỆN VÀ ẨM THỰC LOUIS – CHI NHÁNH ĐÀ NẴNG",
   taxCode: "0106384204-001",
 };
