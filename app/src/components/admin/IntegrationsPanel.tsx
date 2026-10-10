@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { VN_BANKS, findBankBin } from "@/lib/vietqr";
 
 type Google = { rating: number | null; count: number | null; reviewUrl: string | null };
 type BankAccount = { bank: string; number: string; holder: string } | null;
@@ -17,6 +18,23 @@ type Status = {
 type Flag = Exclude<keyof Status, "google" | "bankAccounts">;
 type BankForm = { bank: string; number: string; holder: string };
 const EMPTY_BANK: BankForm = { bank: "", number: "", holder: "" };
+
+function BankAccountFields({ title, value, onChange }: { title: string; value: BankForm; onChange: (v: BankForm) => void }) {
+  const bin = findBankBin(value.bank);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 13, fontWeight: 700 }}>{title}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.4fr", gap: 8 }}>
+        <input className="input" list="vn-banks" placeholder="Ngân hàng (chọn trong danh sách)" value={value.bank} onChange={(e) => onChange({ ...value, bank: e.target.value })} />
+        <input className="input" placeholder="Số tài khoản" value={value.number} onChange={(e) => onChange({ ...value, number: e.target.value })} inputMode="numeric" />
+        <input className="input" placeholder="Tên chủ tài khoản" value={value.holder} onChange={(e) => onChange({ ...value, holder: e.target.value })} />
+      </div>
+      <span style={{ fontSize: 12, color: bin ? "var(--color-accent-2-700)" : "var(--color-accent)" }}>
+        {value.bank ? (bin ? "✓ Tạo được mã QR chuyển khoản cho tài khoản này" : "⚠ Không nhận ra ngân hàng — chọn đúng tên trong danh sách để tạo được mã QR") : ""}
+      </span>
+    </div>
+  );
+}
 
 const ROWS: { key: Flag; label: string; hint: string }[] = [
   { key: "sheets", label: "Google Sheets (báo cáo)", hint: "GOOGLE_SHEET_ID + tài khoản dịch vụ" },
@@ -126,6 +144,26 @@ export default function IntegrationsPanel() {
         <button className="btn btn-secondary" disabled={busy !== null || !status?.telegram} onClick={() => run("telegram")}>
           {busy === "telegram" ? "Đang gửi..." : "Gửi thử Telegram"}
         </button>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--color-border, #ddd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        <strong style={{ fontSize: 14 }}>Tài khoản nhận chuyển khoản (màn hình thu ngân hiện mã QR)</strong>
+        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+          Khi khách chuyển khoản, thu ngân chọn 1 trong 2 tài khoản — màn hình hiện mã QR có sẵn đúng số tiền của bàn để khách quét.
+          Kiểm tra kỹ số tài khoản trước khi lưu.
+        </p>
+        <datalist id="vn-banks">
+          {VN_BANKS.map((b) => (
+            <option key={b.bin} value={b.name} />
+          ))}
+        </datalist>
+        <BankAccountFields title="Khách CẦN xuất hoá đơn (tài khoản công ty)" value={invoiceAcct} onChange={setInvoiceAcct} />
+        <BankAccountFields title="Khách KHÔNG xuất hoá đơn" value={noInvoiceAcct} onChange={setNoInvoiceAcct} />
+        <div>
+          <button className="btn btn-primary" disabled={busy !== null || !status} onClick={() => run("bank")}>
+            {busy === "bank" ? "Đang lưu..." : "Lưu tài khoản ngân hàng"}
+          </button>
+        </div>
       </div>
 
       <div style={{ borderTop: "1px solid var(--color-border, #ddd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>

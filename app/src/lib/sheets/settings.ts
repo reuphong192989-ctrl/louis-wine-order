@@ -31,15 +31,28 @@ export type BankAccounts = { noInvoice: BankAccountInfo; invoice: BankAccountInf
  * (for accounting follow-up), one that does. Purely a label picked at payment
  * time — no real bank integration.
  */
+// Accounts given by the owner on 2026-10-10 — used until a manager saves others in Quản trị.
+const DEFAULT_BANK_ACCOUNTS: { noInvoice: NonNullable<BankAccountInfo>; invoice: NonNullable<BankAccountInfo> } = {
+  invoice: {
+    bank: "SeABank - Ngân hàng TMCP Đông Nam Á",
+    number: "3567979",
+    holder: "CONG TY CO PHAN SU KIEN VA AM THUC LOUIS - CN DA NANG",
+  },
+  noInvoice: { bank: "VIB - Ngân hàng TMCP Quốc tế Việt Nam", number: "082006666", holder: "NGUYEN QUANG DUY" },
+};
+
 export async function getBankAccounts(): Promise<BankAccounts> {
   const s = await getSettings();
-  const build = (prefix: string): BankAccountInfo => {
+  const build = (prefix: string, fallback: NonNullable<BankAccountInfo>): BankAccountInfo => {
     const bank = s[`${prefix}Bank`] || "";
     const number = s[`${prefix}Number`] || "";
     const holder = s[`${prefix}Holder`] || "";
-    return bank || number || holder ? { bank, number, holder } : null;
+    return bank || number || holder ? { bank, number, holder } : fallback;
   };
-  return { noInvoice: build("bankNoInvoice"), invoice: build("bankInvoice") };
+  return {
+    noInvoice: build("bankNoInvoice", DEFAULT_BANK_ACCOUNTS.noInvoice),
+    invoice: build("bankInvoice", DEFAULT_BANK_ACCOUNTS.invoice),
+  };
 }
 
 // Rating on Google Maps when this was built (2026-09-29); the manager updates it in Quản trị → Dữ liệu.

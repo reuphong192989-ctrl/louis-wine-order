@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
+import TransferQr from "./TransferQr";
+import { mergeBillLines } from "@/lib/bill-lines";
 import type { TableBillPreview, FinalizedBill } from "@/lib/billing";
 
 type OpenTable = { tableId: string; tableLabel: string; orderCount: number; itemCount: number; total: number; oldestCreatedAt: string };
@@ -77,7 +79,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
       const account = bankAccountKey && bankAccounts ? (bankAccountKey === "invoice" ? bankAccounts.invoice : bankAccounts.noInvoice) : null;
       const bankAccountLabel =
         method === "TRANSFER" && account
-          ? `${account.bank} · ${account.number} · ${account.holder} (${bankAccountKey === "invoice" ? "cần xuất hoá đơn" : "không xuất hoá đơn"})`
+          ? `${account.bank.split(" - ")[0]} · ${account.number}${bankAccountKey === "invoice" ? " (xuất hoá đơn)" : ""}`
           : null;
       const res = await fetch(`/api/billing/table/${encodeURIComponent(selectedTableId)}`, {
         method: "POST",
@@ -112,7 +114,18 @@ export default function CashierBoard({ username, role }: { username: string; rol
     router.refresh();
   }
 
+  const selectedAccount =
+    method === "TRANSFER" && bankAccountKey && bankAccounts ? (bankAccountKey === "invoice" ? bankAccounts.invoice : bankAccounts.noInvoice) : null;
+  const discountValue = Math.max(0, Number(discountAmount) || 0);
+  const payable = preview ? Math.max(0, preview.subtotal - discountValue + preview.totalVat) : 0;
+
   if (finalizedBill) {
+    const paidAccount =
+      finalizedBill.paymentMethod === "TRANSFER" && finalizedBill.bankAccountKey && bankAccounts
+        ? finalizedBill.bankAccountKey === "invoice"
+          ? bankAccounts.invoice
+          : bankAccounts.noInvoice
+        : null;
     return (
       <div>
         <div className="no-print" style={{ display: "flex", gap: 8, padding: "var(--space-4)", justifyContent: "center" }}>
@@ -123,6 +136,16 @@ export default function CashierBoard({ username, role }: { username: string; rol
             Xong, quay lại
           </button>
         </div>
+        {paidAccount && (
+          <div className="no-print" style={{ display: "flex", justifyContent: "center", padding: "0 var(--space-4) var(--space-4)" }}>
+            <TransferQr
+              account={paidAccount}
+              amount={finalizedBill.totalAmount}
+              note={`${finalizedBill.billNo} Ban ${finalizedBill.tableLabel}`}
+              title={finalizedBill.bankAccountKey === "invoice" ? "Chuyển khoản — có xuất hoá đơn" : "Chuyển khoản"}
+            />
+          </div>
+        )}
         <InvoicePrint bill={finalizedBill} printedByLabel={username} />
       </div>
     );
@@ -191,7 +214,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.items.map((l, i) => (
+                    {mergeBillLines(preview.items).map((l, i) => (
                       <tr key={i}>
                         <td>{l.name}</td>
                         <td>{formatQty(l.qty)}</td>
@@ -201,7 +224,28 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     ))}
                   </tbody>
                 </table>
-                <div style={{ fontWeight: 700 }}>Tổng cộng (chưa thuế/chiết khấu): {formatVnd(preview.subtotal)}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 360 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Tiền món</span>
+                    <span>{formatVnd(preview.subtotal)}</span>
+                  </div>
+                  {discountValue > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Chiết khấu</span>
+                      <span>-{formatVnd(discountValue)}</span>
+                    </div>
+                  )}
+                  {preview.vatGroups.map((g) => (
+                    <div key={g.rate} style={{ display: "flex", justifyContent: "space-between" }} className="text-muted">
+                      <span>VAT {g.rate}%</span>
+                      <span>{formatVnd(g.amount)}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 18, color: "var(--color-accent)" }}>
+                    <span>Khách thanh toán</span>
+                    <span>{formatVnd(payable)}</span>
+                  </div>
+                </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <div className="field" style={{ width: 120 }}>
@@ -239,10 +283,21 @@ export default function CashierBoard({ username, role }: { username: string; rol
                         Cần xuất hoá đơn: <BankAccountCard info={bankAccounts?.invoice ?? null} tag="cần xuất hoá đơn" />
                       </label>
                     </div>
-                    <p className="text-muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
-                      Khách chuyển khoản xong, anh/chị đưa mã QR chuyển khoản của tài khoản tương ứng cho khách quét.
-                    </p>
                   </div>
+                )}
+
+                {selectedAccount && (
+                  <TransferQr
+                    account={selectedAccount}
+                    amount={payable}
+                    note={`Thanh toan ban ${preview.tableLabel}`}
+                    title={bankAccountKey === "invoice" ? "Quét để chuyển khoản — có xuất hoá đơn" : "Quét để chuyển khoản"}
+                  />
+                )}
+                {method === "TRANSFER" && (
+                  <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+                    Cho khách quét mã trên màn hình. Chỉ bấm &quot;Xác nhận &amp; In hoá đơn&quot; sau khi đã thấy tiền về tài khoản.
+                  </p>
                 )}
 
                 <button className="btn btn-primary" disabled={busy} onClick={confirmAndPrint}>

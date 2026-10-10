@@ -16,6 +16,13 @@ export const RESTAURANT = {
   lng: 108.2354253,
 };
 
+/** Legal entity printed on the cashier's bill (same as on the company's VAT e-invoices). */
+export const COMPANY = {
+  restaurantName: "LOUIS WINE ĐÀ NẴNG",
+  legalName: "CÔNG TY CỔ PHẦN SỰ KIỆN VÀ ẨM THỰC LOUIS – CHI NHÁNH ĐÀ NẴNG",
+  taxCode: "0106384204-001",
+};
+
 // Google place id of "Louis Wine Đà Nẵng" (from the share link above).
 const PLACE_ID = "0x31421987dc6e9127:0xf7cb90b96a6a9555";
 
