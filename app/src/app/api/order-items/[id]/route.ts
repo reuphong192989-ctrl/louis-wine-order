@@ -28,7 +28,7 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
     return NextResponse.json({ error: qtyParsed.error.issues[0]?.message ?? "Số lượng không hợp lệ." }, { status: 400 });
   }
 
-  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "KITCHEN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = statusSchema.safeParse(body);

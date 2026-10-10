@@ -5,6 +5,7 @@ import CashierBoard from "@/components/cashier/CashierBoard";
 export default async function CashierPage() {
   const session = await getSession();
   if (!session) redirect("/staff/login");
+  if (session.role === "KITCHEN") redirect("/kitchen");
   // Billing is scoped to Quản lý/Chủ sở hữu/Thu ngân — plain nhân viên don't take payment.
   if (session.role === "STAFF" || session.role === "RECEPTION") {
     return (

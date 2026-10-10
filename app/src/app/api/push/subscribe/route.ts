@@ -11,7 +11,7 @@ const subscribeSchema = z.object({
 
 /** Registers this browser/device to receive OS-level push alerts (new orders/calls/bookings, kitchen done). */
 export const POST = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "RECEPTION"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "RECEPTION", "KITCHEN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = subscribeSchema.safeParse(await req.json().catch(() => null));
@@ -32,7 +32,7 @@ export const POST = withErrors(async (req: NextRequest) => {
 const unsubscribeSchema = z.object({ endpoint: z.string().url() });
 
 export const DELETE = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "RECEPTION"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "RECEPTION", "KITCHEN"]);
   if ("error" in auth) return auth.error;
 
   const parsed = unsubscribeSchema.safeParse(await req.json().catch(() => null));

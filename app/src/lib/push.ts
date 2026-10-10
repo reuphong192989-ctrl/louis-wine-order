@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import type { Role } from "./sheets/users";
 import { deletePushSubscriptionByEndpoint, listPushSubscriptions } from "./sheets/pushSubscriptions";
+import { listUsers } from "./sheets/users";
 
 let configured = false;
 function vapidReady(): boolean {
@@ -26,8 +27,13 @@ export async function notifyPush(
 ): Promise<void> {
   if (!vapidReady()) return;
 
-  const subs = await listPushSubscriptions();
-  const targets = subs.filter((s) => roles.includes(s.role));
+  const [subs, users] = await Promise.all([listPushSubscriptions(), listUsers()]);
+  // Use the account's current role (it may have been changed since the device subscribed); deleted accounts get nothing.
+  const roleOf = new Map(users.map((u) => [u.username, u.role]));
+  const targets = subs.filter((s) => {
+    const role = roleOf.get(s.username);
+    return role !== undefined && roles.includes(role);
+  });
   if (targets.length === 0) return;
 
   const data = JSON.stringify({ title: payload.title, body: payload.body, tag: payload.tag, url: payload.url });

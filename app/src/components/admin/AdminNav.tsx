@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/admin/categories", label: "Danh mục" },
   { href: "/admin/items", label: "Món ăn" },
   { href: "/admin/reports", label: "Doanh thu" },
+  { href: "/thu-ngan/bao-cao", label: "Báo cáo hoá đơn" },
   { href: "/admin/table-log", label: "Nhật ký bàn" },
   { href: "/admin/table-names", label: "Đổi tên bàn" },
   { href: "/admin/staff-review", label: "Đánh giá nhân viên" },
