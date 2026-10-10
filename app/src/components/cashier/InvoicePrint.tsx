@@ -52,6 +52,9 @@ export default function InvoicePrint({
         }
       `}</style>
 
+      {/* Large faint logo behind the bill (repeated on every printed page). */}
+      <img src="/images/logo.png" alt="" aria-hidden className="inv-watermark" />
+
       <div className="inv-head">
         <img src="/images/logo.png" alt="Louis" className="inv-logo" />
         <div className="inv-company">

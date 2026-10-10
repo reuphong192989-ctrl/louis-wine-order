@@ -26,19 +26,16 @@ export type BankAccountInfo = { bank: string; number: string; holder: string } |
 export type BankAccounts = { noInvoice: BankAccountInfo; invoice: BankAccountInfo };
 
 /**
- * The 2 accounts the manager configures in Quản trị → Dữ liệu for the cashier
- * screen: one for transfers that don't need a bill marked "cần xuất hoá đơn"
- * (for accounting follow-up), one that does. Purely a label picked at payment
- * time — no real bank integration.
+ * Transfer account shown on the cashier screen / printed bill. Since 2026-10-10 the owner's
+ * rule is: transfers go ONLY to the company account (and get a VAT invoice); a guest who
+ * doesn't need an invoice pays cash. `noInvoice` is kept in the type for old bills but is
+ * always null now — the personal account is never offered again, even if one was saved.
  */
-// Accounts given by the owner on 2026-10-10 — used until a manager saves others in Quản trị.
-const DEFAULT_BANK_ACCOUNTS: { noInvoice: NonNullable<BankAccountInfo>; invoice: NonNullable<BankAccountInfo> } = {
-  invoice: {
-    bank: "SeABank - Ngân hàng TMCP Đông Nam Á",
-    number: "3567979",
-    holder: "CONG TY CO PHAN SU KIEN VA AM THUC LOUIS - CN DA NANG",
-  },
-  noInvoice: { bank: "VIB - Ngân hàng TMCP Quốc tế Việt Nam", number: "082006666", holder: "NGUYEN QUANG DUY" },
+// Company account given by the owner on 2026-10-10 — used until a manager saves another in Quản trị.
+const DEFAULT_COMPANY_ACCOUNT: NonNullable<BankAccountInfo> = {
+  bank: "SeABank - Ngân hàng TMCP Đông Nam Á",
+  number: "3567979",
+  holder: "CONG TY CO PHAN SU KIEN VA AM THUC LOUIS - CN DA NANG",
 };
 
 export async function getBankAccounts(): Promise<BankAccounts> {
@@ -49,10 +46,7 @@ export async function getBankAccounts(): Promise<BankAccounts> {
     const holder = s[`${prefix}Holder`] || "";
     return bank || number || holder ? { bank, number, holder } : fallback;
   };
-  return {
-    noInvoice: build("bankNoInvoice", DEFAULT_BANK_ACCOUNTS.noInvoice),
-    invoice: build("bankInvoice", DEFAULT_BANK_ACCOUNTS.invoice),
-  };
+  return { noInvoice: null, invoice: build("bankInvoice", DEFAULT_COMPANY_ACCOUNT) };
 }
 
 // Rating on Google Maps when this was built (2026-09-29); the manager updates it in Quản trị → Dữ liệu.

@@ -52,7 +52,6 @@ export default function IntegrationsPanel() {
   const [rating, setRating] = useState("");
   const [count, setCount] = useState("");
   const [reviewUrl, setReviewUrl] = useState("");
-  const [noInvoiceAcct, setNoInvoiceAcct] = useState<BankForm>(EMPTY_BANK);
   const [invoiceAcct, setInvoiceAcct] = useState<BankForm>(EMPTY_BANK);
 
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function IntegrationsPanel() {
           setReviewUrl(s.google.reviewUrl ?? "");
         }
         if (s?.bankAccounts) {
-          setNoInvoiceAcct(s.bankAccounts.noInvoice ?? EMPTY_BANK);
           setInvoiceAcct(s.bankAccounts.invoice ?? EMPTY_BANK);
         }
       })
@@ -95,7 +93,7 @@ export default function IntegrationsPanel() {
         const d = await post("/api/admin/integrations");
         setMsg({ ok: true, text: `Đã gửi tin thử tới nhóm nhà hàng${d.lumia ? " và nhóm lễ tân Lumia" : ""}. Kiểm tra Telegram.` });
       } else if (kind === "bank") {
-        await post("/api/admin/integrations", { action: "bank-accounts", noInvoice: noInvoiceAcct, invoice: invoiceAcct });
+        await post("/api/admin/integrations", { action: "bank-accounts", noInvoice: EMPTY_BANK, invoice: invoiceAcct });
         setMsg({ ok: true, text: "Đã lưu 2 tài khoản nhận thanh toán cho màn hình thu ngân." });
       } else {
         const r = rating.trim().replace(",", ".");
@@ -149,8 +147,8 @@ export default function IntegrationsPanel() {
       <div style={{ borderTop: "1px solid var(--color-border, #ddd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <strong style={{ fontSize: 14 }}>Tài khoản nhận chuyển khoản (màn hình thu ngân hiện mã QR)</strong>
         <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
-          Khi khách chuyển khoản, thu ngân chọn 1 trong 2 tài khoản — màn hình hiện mã QR có sẵn đúng số tiền của bàn để khách quét.
-          Kiểm tra kỹ số tài khoản trước khi lưu.
+          Chuyển khoản chỉ nhận vào tài khoản công ty và luôn xuất hoá đơn; khách không lấy hoá đơn thì thanh toán tiền mặt. Màn hình
+          thu ngân và hoá đơn in hiện mã QR có sẵn đúng số tiền. Kiểm tra kỹ số tài khoản trước khi lưu.
         </p>
         <datalist id="vn-banks">
           {VN_BANKS.map((b) => (
@@ -158,7 +156,6 @@ export default function IntegrationsPanel() {
           ))}
         </datalist>
         <BankAccountFields title="Khách CẦN xuất hoá đơn (tài khoản công ty)" value={invoiceAcct} onChange={setInvoiceAcct} />
-        <BankAccountFields title="Khách KHÔNG xuất hoá đơn" value={noInvoiceAcct} onChange={setNoInvoiceAcct} />
         <div>
           <button className="btn btn-primary" disabled={busy !== null || !status} onClick={() => run("bank")}>
             {busy === "bank" ? "Đang lưu..." : "Lưu tài khoản ngân hàng"}

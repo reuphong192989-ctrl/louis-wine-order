@@ -273,12 +273,28 @@ export default function CashierBoard({ username, role }: { username: string; rol
 
                 <div className="field">
                   <label>Phương thức thanh toán</label>
-                  <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input type="radio" checked={method === "CASH"} onChange={() => setMethod("CASH")} /> Tiền mặt
+                      <input
+                        type="radio"
+                        checked={method === "CASH"}
+                        onChange={() => {
+                          setMethod("CASH");
+                          setBankAccountKey(null);
+                        }}
+                      />{" "}
+                      Tiền mặt (không xuất hoá đơn)
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input type="radio" checked={method === "TRANSFER"} onChange={() => setMethod("TRANSFER")} /> Chuyển khoản
+                      <input
+                        type="radio"
+                        checked={method === "TRANSFER"}
+                        onChange={() => {
+                          setMethod("TRANSFER");
+                          setBankAccountKey("invoice");
+                        }}
+                      />{" "}
+                      Chuyển khoản — tài khoản công ty, có xuất hoá đơn
                     </label>
                   </div>
                 </div>
@@ -286,16 +302,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
                 {method === "TRANSFER" && (
                   <div className="field">
                     <label>Tài khoản nhận chuyển khoản</label>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="radio" checked={bankAccountKey === "no_invoice"} onChange={() => setBankAccountKey("no_invoice")} />
-                        Không xuất hoá đơn: <BankAccountCard info={bankAccounts?.noInvoice ?? null} tag="không xuất hoá đơn" />
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="radio" checked={bankAccountKey === "invoice"} onChange={() => setBankAccountKey("invoice")} />
-                        Cần xuất hoá đơn: <BankAccountCard info={bankAccounts?.invoice ?? null} tag="cần xuất hoá đơn" />
-                      </label>
-                    </div>
+                    <BankAccountCard info={bankAccounts?.invoice ?? null} tag="tài khoản công ty" />
                   </div>
                 )}
 
