@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatQty, formatTime } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import { playAlertSound, stopAlertSound } from "@/lib/sound";
+import PushBanner from "@/components/shared/PushBanner";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { OrderDTO } from "@/types";
 
@@ -45,7 +46,7 @@ function saveAcked(ids: Set<string>) {
   }
 }
 
-export default function KitchenDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" }) {
+export default function KitchenDashboard({ username, role }: { username: string; role: "OWNER" | "ADMIN" | "STAFF" | "KITCHEN" }) {
   const router = useRouter();
   const tableNames = useTableNames();
   const [orders, setOrders] = useState<OrderDTO[]>([]);
@@ -139,7 +140,7 @@ export default function KitchenDashboard({ username, role }: { username: string;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push(role === "STAFF" ? "/staff/login" : "/admin/login");
+    router.push(role === "OWNER" || role === "ADMIN" ? "/admin/login" : "/staff/login");
     router.refresh();
   }
 
@@ -157,22 +158,26 @@ export default function KitchenDashboard({ username, role }: { username: string;
           </button>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <Link href="/staff" className="btn btn-secondary">
-            Màn hình nhân viên
-          </Link>
-          {role !== "STAFF" && (
+          {/* The fixed kitchen display account stays on this screen only. */}
+          {role !== "KITCHEN" && (
+            <Link href="/staff" className="btn btn-secondary">
+              Màn hình nhân viên
+            </Link>
+          )}
+          {(role === "OWNER" || role === "ADMIN") && (
             <Link href="/admin/categories" className="btn btn-secondary">
               Quay lại Quản trị
             </Link>
           )}
           <span className="text-muted" style={{ fontSize: 13 }}>
-            {username} ({role === "OWNER" ? "Chủ sở hữu" : role === "ADMIN" ? "Quản lý" : "Nhân viên"})
+            {username} ({role === "OWNER" ? "Chủ sở hữu" : role === "ADMIN" ? "Quản lý" : role === "KITCHEN" ? "Màn hình bếp" : "Nhân viên"})
           </span>
           <button className="btn btn-secondary" onClick={logout}>
             Đăng xuất
           </button>
         </div>
       </header>
+      {role === "KITCHEN" && <PushBanner />}
 
       <main className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)" }}>
         {unackedCancels.length > 0 && (

@@ -7,6 +7,7 @@ export default async function StaffPage() {
   if (!session) redirect("/staff/login");
   if (session.role === "RECEPTION") redirect("/le-tan");
   if (session.role === "CASHIER") redirect("/thu-ngan");
+  if (session.role === "KITCHEN") redirect("/kitchen");
 
   return <StaffDashboard username={session.username} role={session.role} />;
 }

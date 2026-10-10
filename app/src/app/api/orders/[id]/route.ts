@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { cancelOrder, deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
+import { notifyPush } from "@/lib/push";
 import { costAssignmentFields, resolveCostAssignment } from "@/lib/cost-assignment";
 
 const patchSchema = z.discriminatedUnion("status", [
@@ -46,8 +47,22 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
     return NextResponse.json({ order: result.order });
   }
 
+  const before = await findOrderById(id);
   const order = await setOrderStatus(id, parsed.data.status, auth.session.username);
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
+
+  // The kitchen display account is only alerted once staff have confirmed the order.
+  if (before?.status === "PENDING" && order.status === "CONFIRMED") {
+    const dishes = order.items.reduce((n, it) => n + it.qty, 0);
+    after(() =>
+      notifyPush(["KITCHEN"], {
+        title: "Đơn mới vào bếp",
+        body: `${order.online ? order.tableId : `Bàn ${order.tableId}`} — ${dishes} món (xác nhận bởi ${auth.session.username})`,
+        tag: `lwo-kitchen-${order.id}`,
+        url: "/kitchen",
+      }),
+    );
+  }
 
   return NextResponse.json({ order });
 });

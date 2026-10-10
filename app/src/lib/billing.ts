@@ -3,6 +3,7 @@ import { listAllMenuItems } from "./sheets/menuItems";
 import { listCategories } from "./sheets/categories";
 import { listTableNames } from "./sheets/tableNames";
 import { genCode } from "./site/validate";
+import { appendBill } from "./sheets/bills";
 
 const FALLBACK_VAT_RATE = 8; // item's menu/category was deleted since the order was placed
 
@@ -52,7 +53,7 @@ async function returnableMenuItemIds(): Promise<Set<string>> {
   return new Set(items.filter((it) => returnableCats.has(it.categoryId)).map((it) => it.id));
 }
 
-async function vatRateByMenuItemId(): Promise<Map<string, number>> {
+export async function vatRateByMenuItemId(): Promise<Map<string, number>> {
   const [items, categories] = await Promise.all([listAllMenuItems(), listCategories()]);
   const catVat = new Map(categories.map((c) => [c.id, c.vatRate]));
   const map = new Map<string, number>();
@@ -172,6 +173,28 @@ export async function finalizeTableBill(
   }
 
   const totalAmount = Math.max(0, preview.subtotal - input.discountAmount + preview.totalVat);
+  const printedAt = new Date().toISOString();
+
+  // Keep the printed figures (discount, VAT, total) for the daily/weekly bill report.
+  await appendBill({
+    billNo,
+    tableId: preview.tableId,
+    tableLabel: preview.tableLabel,
+    checkInAt: preview.checkInAt,
+    paidAt: printedAt,
+    cashier: input.printedBy,
+    guestCount: input.guestCount,
+    itemCount: Math.round(preview.items.reduce((n, l) => n + l.qty, 0) * 100) / 100,
+    subtotal: preview.subtotal,
+    discount: input.discountAmount,
+    vat: preview.totalVat,
+    total: totalAmount,
+    method: input.method,
+    bankAccountKey: input.bankAccountKey,
+    bankAccountLabel: input.bankAccountLabel,
+    orderIds: preview.orderIds,
+  }).catch((e) => console.error("appendBill failed", e));
+
   return {
     bill: {
       ...preview,
@@ -183,7 +206,7 @@ export async function finalizeTableBill(
       bankAccountKey: input.bankAccountKey,
       bankAccountLabel: input.bankAccountLabel,
       printedBy: input.printedBy,
-      printedAt: new Date().toISOString(),
+      printedAt,
     },
   };
 }

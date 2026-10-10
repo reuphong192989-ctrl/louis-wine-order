@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
@@ -166,6 +167,9 @@ export default function CashierBoard({ username, role }: { username: string; rol
         <div className="order-logo">LOUIS WINE</div>
         <h3 style={{ margin: 0 }}>Màn hình thu ngân</h3>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/thu-ngan/bao-cao" className="btn btn-secondary">
+            Báo cáo hoá đơn
+          </Link>
           <span className="text-muted" style={{ fontSize: 13 }}>
             {username} ({role === "OWNER" ? "Chủ sở hữu" : role === "ADMIN" ? "Quản lý" : role === "CASHIER" ? "Thu ngân" : "Nhân viên"})
           </span>

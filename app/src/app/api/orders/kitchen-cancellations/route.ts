@@ -8,7 +8,7 @@ const WINDOW_MS = 3 * 3600 * 1000;
 
 /** Dishes taken back after confirmation in the last few hours — the kitchen screen flashes these so cooks stop. */
 export const GET = withErrors(async () => {
-  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "KITCHEN"]);
   if ("error" in auth) return auth.error;
 
   const now = Date.now();

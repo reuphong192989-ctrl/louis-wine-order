@@ -7,7 +7,7 @@ import { deleteUser, findUserById, listUsers, updateUser } from "@/lib/sheets/us
 
 const updateSchema = z.object({
   password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự").optional(),
-  role: z.enum(["ADMIN", "STAFF", "RECEPTION", "CASHIER"]).optional(),
+  role: z.enum(["ADMIN", "STAFF", "RECEPTION", "CASHIER", "KITCHEN"]).optional(),
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

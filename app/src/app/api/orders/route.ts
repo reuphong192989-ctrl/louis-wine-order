@@ -72,10 +72,11 @@ export const POST = withErrors(async (req: NextRequest) => {
 
 /** Staff / admin: list recent orders, optionally filtered by status. */
 export const GET = withErrors(async (req: NextRequest) => {
-  const auth = await requireSession(["OWNER", "ADMIN", "STAFF"]);
+  const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "KITCHEN"]);
   if ("error" in auth) return auth.error;
 
-  const status = req.nextUrl.searchParams.get("status") as OrderStatus | null;
+  // The kitchen display only ever sees orders staff have already confirmed.
+  const status = auth.session.role === "KITCHEN" ? "CONFIRMED" : (req.nextUrl.searchParams.get("status") as OrderStatus | null);
   const orders = await listOrders(status ?? undefined);
   return NextResponse.json({ orders });
 });

@@ -6,7 +6,7 @@ const HEADERS = ["id", "username", "passwordHash", "role"];
 
 // RECEPTION = Lumia Apartment front desk: only the Lumia board (/le-tan).
 // CASHIER = thu ngân: only the cashier board (/thu-ngan) — collects payment and prints bills.
-export type Role = "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" | "CASHIER";
+export type Role = "OWNER" | "ADMIN" | "STAFF" | "RECEPTION" | "CASHIER" | "KITCHEN";
 
 export type SheetUser = {
   id: string;
