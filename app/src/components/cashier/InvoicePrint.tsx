@@ -171,9 +171,6 @@ export default function InvoicePrint({
       )}
 
       <div className="inv-thanks">Cảm ơn Quý khách. Hẹn gặp lại!</div>
-      <div className="inv-note">
-        Đặt bàn: {RESTAURANT.hotline.replace(/\s/g, ".")} · Hoá đơn GTGT (nếu cần) được xuất riêng theo yêu cầu của Quý khách.
-      </div>
     </div>
   );
 }
