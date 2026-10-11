@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
+import { fetchWithTimeout, useConnectionHealth } from "@/lib/connection";
 import { isAlertSounding, playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import PushBanner from "@/components/shared/PushBanner";
@@ -99,7 +100,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
   const knownPendingIds = useRef<Set<string> | null>(null);
   const knownReadyOrderIds = useRef<Set<string> | null>(null);
   const lastReminderAt = useRef(0);
-  const [connError, setConnError] = useState(false);
+  const { lost: connError, reportOk, reportFail } = useConnectionHealth();
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonInput, setCancelReasonInput] = useState("");
   // True while the alarm is ringing for waiting work (not for "kitchen done") — so it
@@ -128,9 +129,9 @@ export default function StaffDashboard({ username, role }: { username: string; r
   usePolling(async () => {
     let responses: Response[];
     try {
-      responses = await Promise.all([fetch("/api/orders"), fetch("/api/staff-calls"), fetch("/api/reservations")]);
+      responses = await Promise.all([fetchWithTimeout("/api/orders"), fetchWithTimeout("/api/staff-calls"), fetchWithTimeout("/api/reservations")]);
     } catch {
-      setConnError(true); // offline — keep showing the last known lists
+      reportFail(); // offline/timeout — keep showing the last known lists; banner only after repeated failures
       return;
     }
     if (responses.some((r) => r.status === 401)) {
@@ -141,14 +142,14 @@ export default function StaffDashboard({ username, role }: { username: string; r
     if (responses.some((r) => !r.ok)) {
       // Server hiccup: keep the last lists and don't touch the chime baseline,
       // otherwise cards would vanish and every pending item would re-chime.
-      setConnError(true);
+      reportFail();
       return;
     }
     const [ordersRes, callsRes, resRes] = responses;
     const nextOrders: OrderDTO[] = (await ordersRes.json()).orders;
     const nextCalls: StaffCallDTO[] = (await callsRes.json()).calls;
     const nextRes: ReservationDTO[] = (await resRes.json()).reservations;
-    setConnError(false);
+    reportOk();
     const t = Date.now();
     setNow(t);
 

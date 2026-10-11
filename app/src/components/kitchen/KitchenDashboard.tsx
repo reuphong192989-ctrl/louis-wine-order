@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatQty, formatTime } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
+import { fetchWithTimeout, useConnectionHealth } from "@/lib/connection";
 import { playAlertSound, stopAlertSound } from "@/lib/sound";
 import PushBanner from "@/components/shared/PushBanner";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
@@ -57,12 +58,13 @@ export default function KitchenDashboard({ username, role }: { username: string;
   const [cancels, setCancels] = useState<KitchenCancellation[]>([]);
   const [acked, setAcked] = useState<Set<string>>(new Set());
   const knownCancelIds = useRef<Set<string> | null>(null);
+  const { lost: connError, reportOk, reportFail } = useConnectionHealth();
 
   useEffect(() => setAcked(loadAcked()), []);
 
   // Dishes taken back after the order reached the kitchen: flash + chime so cooks stop.
   usePolling(async () => {
-    const res = await fetch("/api/orders/kitchen-cancellations").catch(() => null);
+    const res = await fetchWithTimeout("/api/orders/kitchen-cancellations").catch(() => null);
     if (!res?.ok) return;
     const list: KitchenCancellation[] = (await res.json()).cancellations;
     const ids = new Set(list.map((c) => c.id));
@@ -84,8 +86,25 @@ export default function KitchenDashboard({ username, role }: { username: string;
   const unackedCancels = cancels.filter((c) => !acked.has(c.id));
 
   usePolling(async () => {
-    const res = await fetch("/api/orders?status=CONFIRMED");
-    const nextOrders: OrderDTO[] = res.ok ? (await res.json()).orders : [];
+    let res: Response;
+    try {
+      res = await fetchWithTimeout("/api/orders?status=CONFIRMED");
+    } catch {
+      reportFail(); // offline/timeout — keep the last known list on screen
+      return;
+    }
+    if (res.status === 401) {
+      // Session expired: never leave a silently stale kitchen screen.
+      router.push(role === "OWNER" || role === "ADMIN" ? "/admin/login" : "/staff/login");
+      return;
+    }
+    if (!res.ok) {
+      // Server hiccup: keep the last list (an empty list would look like "no orders").
+      reportFail();
+      return;
+    }
+    const nextOrders: OrderDTO[] = (await res.json()).orders;
+    reportOk();
 
     const activeIds = new Set(nextOrders.filter((o) => o.items.some((it) => it.kitchenStatus !== "DONE")).map((o) => o.id));
     if (knownOrderIds.current) {
@@ -180,6 +199,11 @@ export default function KitchenDashboard({ username, role }: { username: string;
       {role === "KITCHEN" && <PushBanner />}
 
       <main className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)" }}>
+        {connError && (
+          <div role="alert" style={{ background: "var(--color-accent)", color: "#fff", padding: "var(--space-2) var(--space-3)", fontWeight: 700, marginBottom: "var(--space-4)" }}>
+            ⚠ Mất kết nối tới máy chủ — đang thử lại. Danh sách bên dưới có thể chưa cập nhật; gọi nhân viên nếu kéo dài.
+          </div>
+        )}
         {unackedCancels.length > 0 && (
           <div role="alert" style={{ background: "#c0141c", color: "#fff", padding: "var(--space-3)", marginBottom: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
