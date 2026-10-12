@@ -15,6 +15,32 @@ export type CartLine = {
 
 type OrderStatus = "idle" | "sending" | "sent" | "error";
 
+const MAX_QTY = 999; // same ceiling the orders API enforces
+
+/** Type a quantity directly (1–999). While editing, an empty box is allowed; on blur it snaps back to the real value. */
+function QtyInput({ value, onCommit }: { value: number; onCommit: (qty: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      className="input"
+      style={{ width: 48, textAlign: "center", fontSize: 14, padding: "4px 0", minHeight: 0 }}
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      aria-label="SL"
+      value={draft ?? String(value)}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
+        setDraft(digits);
+        const n = Number(digits);
+        if (digits !== "" && n >= 1) onCommit(Math.min(n, MAX_QTY));
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
 export default function CartDrawer({
   open,
   onClose,
@@ -24,6 +50,7 @@ export default function CartDrawer({
   errorMessage,
   onInc,
   onDec,
+  onSetQty,
   onNoteChange,
   onSubmit,
   t,
@@ -36,6 +63,7 @@ export default function CartDrawer({
   errorMessage: string | null;
   onInc: (itemId: string) => void;
   onDec: (itemId: string) => void;
+  onSetQty: (itemId: string, qty: number) => void;
   onNoteChange: (itemId: string, note: string) => void;
   onSubmit: () => void;
   t: OrderDict["drawer"];
@@ -73,7 +101,7 @@ export default function CartDrawer({
                   <button className="cart-qty-btn" onClick={() => onDec(line.itemId)} aria-label={t.dec}>
                     –
                   </button>
-                  <span style={{ width: 20, textAlign: "center", fontSize: 13 }}>{line.qty}</span>
+                  <QtyInput value={line.qty} onCommit={(n) => onSetQty(line.itemId, n)} />
                   <button className="cart-qty-btn" onClick={() => onInc(line.itemId)} aria-label={t.inc}>
                     +
                   </button>

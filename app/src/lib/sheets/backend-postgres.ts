@@ -1,4 +1,4 @@
-import { Pool, type PoolClient } from "pg";
+import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from "pg";
 import type { SheetRow } from "./backend-sheets";
 
 /**
@@ -23,9 +23,36 @@ function pool(): Pool {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("Thiếu biến môi trường DATABASE_URL (cấu hình PostgreSQL).");
     // Serverless functions: keep each instance's pool small; use a pooled (PgBouncer) URL in production.
-    g.__louisPgPool = new Pool({ connectionString, max: Number(process.env.DATABASE_POOL_MAX) || 5 });
+    const p = new Pool({
+      connectionString,
+      max: Number(process.env.DATABASE_POOL_MAX) || 5,
+      // Retire idle connections before the database/pooler closes them on us, fail fast instead of hanging,
+      // and keep TCP alive so a quiet restaurant hour doesn't leave dead sockets in the pool.
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
+      keepAlive: true,
+    });
+    // A server-closed idle connection emits 'error' on the pool; with no listener Node treats it as an
+    // uncaught exception and the serverless instance dies mid-request (what staff saw as "mất kết nối").
+    p.on("error", (e) => console.error("[pg] idle client error:", e.message));
+    g.__louisPgPool = p;
   }
   return g.__louisPgPool;
+}
+
+const TRANSIENT = /Connection terminated|ECONNRESET|ETIMEDOUT|EPIPE|server closed the connection|timeout exceeded when trying to connect/i;
+function isTransient(e: unknown): boolean {
+  return TRANSIENT.test(e instanceof Error ? e.message : String(e));
+}
+
+/** Idempotent query (read, delete-by-id, IF NOT EXISTS…): retried once if the pooled connection was dead. */
+async function q<T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]): Promise<QueryResult<T>> {
+  try {
+    return await pool().query<T>(text, params);
+  } catch (e) {
+    if (!isTransient(e)) throw e;
+    return pool().query<T>(text, params);
+  }
 }
 
 const headerCache = (g.__louisPgHeaders ??= new Map<string, string[]>());
@@ -47,8 +74,7 @@ CREATE INDEX IF NOT EXISTS app_rows_tab_id_idx ON app_rows (tab, id);
 
 async function ready(): Promise<void> {
   if (!g.__louisPgReady) {
-    g.__louisPgReady = pool()
-      .query(DDL)
+    g.__louisPgReady = q(DDL)
       .then(() => undefined)
       .catch((e) => {
         g.__louisPgReady = undefined;
@@ -58,11 +84,28 @@ async function ready(): Promise<void> {
   return g.__louisPgReady;
 }
 
-async function withTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
-  await ready();
+async function beginTx(): Promise<PoolClient> {
   const c = await pool().connect();
   try {
     await c.query("BEGIN");
+    return c;
+  } catch (e) {
+    c.release(e as Error); // passing an error destroys this client instead of returning a dead one to the pool
+    throw e;
+  }
+}
+
+async function withTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
+  await ready();
+  // Only opening the transaction is retried (nothing has been written yet); `fn` itself is never re-run.
+  let c: PoolClient;
+  try {
+    c = await beginTx();
+  } catch (e) {
+    if (!isTransient(e)) throw e;
+    c = await beginTx();
+  }
+  try {
     const out = await fn(c);
     await c.query("COMMIT");
     return out;
@@ -79,7 +122,8 @@ async function rememberHeaders(tab: string, headers: string[], c?: PoolClient): 
   const known = headerCache.get(tab);
   if (known && headers.every((h) => known.includes(h))) return;
   const merged = [...(known ?? []), ...headers.filter((h) => !(known ?? []).includes(h))];
-  const res = await (c ?? pool()).query<{ headers: string[] }>(
+  const run = c ? c.query.bind(c) : q;
+  const res = await run<{ headers: string[] }>(
     `INSERT INTO app_tabs (tab, headers) VALUES ($1, $2::jsonb)
      ON CONFLICT (tab) DO UPDATE SET headers = (
        SELECT jsonb_agg(h) FROM (
@@ -97,7 +141,7 @@ async function rememberHeaders(tab: string, headers: string[], c?: PoolClient): 
 async function headersFor(tab: string): Promise<string[]> {
   const known = headerCache.get(tab);
   if (known) return known;
-  const res = await pool().query<{ headers: string[] }>("SELECT headers FROM app_tabs WHERE tab = $1", [tab]);
+  const res = await q<{ headers: string[] }>("SELECT headers FROM app_tabs WHERE tab = $1", [tab]);
   const headers = res.rows[0]?.headers ?? [];
   headerCache.set(tab, headers);
   return headers;
@@ -113,7 +157,7 @@ export async function readAllRows(tab: string): Promise<SheetRow[]> {
   await ready();
   const [headers, res] = await Promise.all([
     headersFor(tab),
-    pool().query<{ id: string; data: Record<string, string> }>("SELECT id, data FROM app_rows WHERE tab = $1 ORDER BY id", [tab]),
+    q<{ id: string; data: Record<string, string> }>("SELECT id, data FROM app_rows WHERE tab = $1 ORDER BY id", [tab]),
   ]);
   return res.rows.map((r) => {
     const values: Record<string, string> = {};
@@ -157,7 +201,7 @@ export async function appendRows(tab: string, headers: string[], records: Record
 
 export async function clearTabData(tab: string): Promise<void> {
   await ready();
-  await pool().query("DELETE FROM app_rows WHERE tab = $1", [tab]);
+  await q("DELETE FROM app_rows WHERE tab = $1", [tab]);
 }
 
 export async function updateRow(tab: string, rowNumber: number, headers: string[], record: Record<string, string>): Promise<void> {
@@ -190,13 +234,13 @@ export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
 export async function deleteRows(tab: string, rowNumbers: number[]): Promise<void> {
   if (rowNumbers.length === 0) return;
   await ready();
-  await pool().query("DELETE FROM app_rows WHERE tab = $1 AND id = ANY($2::bigint[])", [tab, rowNumbers]);
+  await q("DELETE FROM app_rows WHERE tab = $1 AND id = ANY($2::bigint[])", [tab, rowNumbers]);
 }
 
 /** Connectivity check for /api/health — also creates the tables if they don't exist yet. */
 export async function ping(): Promise<void> {
   await ready();
-  await pool().query("SELECT 1");
+  await q("SELECT 1");
 }
 
 /** Closes the pool — for standalone scripts only. */

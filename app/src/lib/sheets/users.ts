@@ -30,8 +30,13 @@ export async function listUsers(): Promise<SheetUser[]> {
 }
 
 export async function findUserByUsername(username: string): Promise<SheetUser | null> {
-  const all = await listUsers();
-  return all.find((u) => u.username === username) ?? null;
+  return pickUserByUsername(await listUsers(), username);
+}
+
+/** Exact match wins; otherwise ignore case (tablets/phones auto-capitalise the first letter: "Staff" vs "staff"). */
+export function pickUserByUsername<T extends { username: string }>(all: T[], username: string): T | null {
+  const lower = username.trim().toLowerCase();
+  return all.find((u) => u.username === username) ?? all.find((u) => u.username.toLowerCase() === lower) ?? null;
 }
 
 export async function findUserById(id: string): Promise<SheetUser | null> {

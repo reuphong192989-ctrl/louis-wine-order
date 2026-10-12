@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
+import { fetchWithTimeout } from "@/lib/connection";
 import { loadCart, saveCart, clearCart, type CartMap } from "@/lib/cart-storage";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
 import type { CategoryDTO, MenuItemDTO } from "@/types";
@@ -230,6 +231,10 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
     });
   }
 
+  function setQty(itemId: string, qty: number) {
+    setCart((c) => (c[itemId] ? { ...c, [itemId]: { ...c[itemId], qty } } : c));
+  }
+
   function setItemNote(itemId: string, note: string) {
     setCart((c) => (c[itemId] ? { ...c, [itemId]: { ...c[itemId], note } } : c));
   }
@@ -259,14 +264,18 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
     setOrderStatus("sending");
     setOrderError(null);
     try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tableId,
-          items: cartLines.map((l) => ({ menuItemId: l.itemId, qty: l.qty, note: l.note.trim() || undefined })),
-        }),
-      });
+      const res = await fetchWithTimeout(
+        "/api/orders",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tableId,
+            items: cartLines.map((l) => ({ menuItemId: l.itemId, qty: l.qty, note: l.note.trim() || undefined })),
+          }),
+        },
+        20_000, // never leave the guest on "Đang gửi…" forever; the cart is kept so they can resend
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(lang === "vi" ? data.error || t.sendFailed : t.sendFailed);
       lastOrderIdRef.current = data.order.id;
@@ -457,6 +466,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
         errorMessage={orderError}
         onInc={(id) => changeQty(id, 1)}
         onDec={(id) => changeQty(id, -1)}
+        onSetQty={setQty}
         onNoteChange={setItemNote}
         onSubmit={submitOrder}
         t={t.drawer}

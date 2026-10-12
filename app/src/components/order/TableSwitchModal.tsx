@@ -137,7 +137,7 @@ export default function TableSwitchModal({
 
         <div className="field">
           <label>Tên đăng nhập nhân viên</label>
-          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" />
         </div>
         <div className="field">
           <label>Mật khẩu</label>

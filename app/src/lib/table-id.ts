@@ -11,6 +11,16 @@ export function normalizeTableId(raw: string): string {
   return `T${Number(m[1])}-${String(Number(m[2])).padStart(2, "0")}`;
 }
 
+const tablesOnFloor = (floor: number, count: number) =>
+  Array.from({ length: count }, (_, i) => `T${floor}-${String(i + 1).padStart(2, "0")}`);
+
+/**
+ * The tables that physically exist (Oct 2026): floor 3 shared banquet hall (2 zones), floor 4 eight VIP rooms,
+ * floor 5 five rooms (3 Platinum + 2 VIP). Codes stay stable; friendly room names are set in Quản trị → Tên bàn
+ * (TableNames), so renaming rooms later needs no code change. Add a floor/room here if the venue grows.
+ */
+export const OFFICIAL_TABLE_IDS: readonly string[] = [...tablesOnFloor(3, 2), ...tablesOnFloor(4, 8), ...tablesOnFloor(5, 5)];
+
 /** Label shown after "Bàn " when a table has no custom name: "T2-05" → "05 · Tầng 2". */
 export function defaultTableLabel(tableId: string): string {
   const m = /^T(\d+)-(\d+)$/.exec(tableId);
