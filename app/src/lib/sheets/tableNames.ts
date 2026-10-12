@@ -4,7 +4,7 @@ import { listAllOrdersRaw } from "./orders";
 import { listStaffCalls } from "./staffCalls";
 import { listTableSwitchLog } from "./tableSwitchLog";
 
-import { defaultTableLabel, normalizeTableId } from "../table-id";
+import { defaultTableLabel, normalizeTableId, OFFICIAL_TABLE_IDS } from "../table-id";
 const TAB = "TableNames";
 const HEADERS = ["id", "tableId", "displayName", "updatedBy", "updatedAt"];
 
@@ -84,12 +84,11 @@ export async function listKnownTableIds(): Promise<string[]> {
 
 /** Every table a staff device could switch to, with a friendly label where one is set — powers the quick-pick list in the table-switch modal so staff tap a room instead of typing a raw code. */
 export async function listSwitchOptions(): Promise<{ tableId: string; label: string }[]> {
-  const [names, knownIds] = await Promise.all([listTableNames(), listKnownTableIds()]);
+  const names = await listTableNames();
   const nameMap = new Map(names.map((n) => [n.tableId, n.displayName]));
-  // Tables that have a printed QR card (Tầng 2–5, bàn 01–15) are always offered.
-  const printed: string[] = [];
-  for (let f = 2; f <= 5; f++) for (let t = 1; t <= 15; t++) printed.push(`T${f}-${String(t).padStart(2, "0")}`);
-  const ids = new Set([...printed, ...knownIds.map(normalizeTableId), ...names.map((n) => n.tableId)]);
+  // Only the real tables, plus any table a manager gave a custom name. Codes seen in old orders/test data are
+  // deliberately not offered (they made the list show rooms that don't exist); staff can still type any code manually.
+  const ids = new Set([...OFFICIAL_TABLE_IDS, ...names.map((n) => normalizeTableId(n.tableId))]);
   return [...ids]
     .map((tableId) => ({ tableId, label: nameMap.get(tableId) || defaultTableLabel(tableId) }))
     .sort((a, b) => a.tableId.localeCompare(b.tableId, "vi", { numeric: true }));

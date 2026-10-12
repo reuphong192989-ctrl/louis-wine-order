@@ -64,7 +64,7 @@ export default function LoginForm({ title, redirectTo }: { title: string; redire
 
         <div className="field">
           <label>Tên đăng nhập</label>
-          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
+          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" />
         </div>
         <div className="field">
           <label>Mật khẩu</label>
