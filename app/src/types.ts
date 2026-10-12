@@ -43,6 +43,8 @@ export type OrderItemDTO = {
   lineTotal: number;
   kitchenStatus: "PENDING" | "COOKING" | "DONE";
   note: string | null;
+  /** Bill section the dish was ordered under; only FOOD goes to the kitchen. Missing (old orders) = FOOD. */
+  section?: "FOOD" | "DRINK" | "OTHER";
 };
 
 export type OrderDTO = {

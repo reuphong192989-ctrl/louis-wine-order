@@ -88,7 +88,8 @@ export default function KitchenDashboard({ username, role }: { username: string;
   usePolling(async () => {
     let res: Response;
     try {
-      res = await fetchWithTimeout("/api/orders?status=CONFIRMED");
+      // section=food: the kitchen screen shows food only (the kitchen account is always filtered server-side too).
+      res = await fetchWithTimeout("/api/orders?status=CONFIRMED&section=food");
     } catch {
       reportFail(); // offline/timeout — keep the last known list on screen
       return;

@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { listCancelledItems } from "@/lib/sheets/cancelledItems";
 import { listTableNames } from "@/lib/sheets/tableNames";
+import { needsKitchen } from "@/lib/kitchen";
 
 import { defaultTableLabel } from "@/lib/table-id";
 const WINDOW_MS = 3 * 3600 * 1000;
@@ -20,8 +21,9 @@ export const GET = withErrors(async () => {
   const nameMap = new Map(tableNames.map((t) => [t.tableId, t.displayName]));
 
   return NextResponse.json({
-    // Returned unused units (beer, cigars…) are not something the kitchen needs to stop.
-    cancellations: items.filter((c) => c.scope !== "return").map((c) => ({
+    // Returned unused units (beer, cigars…) are not something the kitchen needs to stop,
+    // and neither is a cancelled drink — the kitchen only makes food.
+    cancellations: items.filter((c) => c.scope !== "return" && needsKitchen(c)).map((c) => ({
       id: c.id,
       tableId: c.tableId,
       tableLabel: nameMap.get(c.tableId) || defaultTableLabel(c.tableId),

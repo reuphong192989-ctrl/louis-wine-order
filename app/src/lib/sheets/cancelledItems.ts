@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { appendRows, readAllRowsCached, cell } from "./core";
+import type { BillGroup } from "../bill-math";
 
 const TAB = "CancelledItems";
 // One row per dish taken back AFTER staff had confirmed the order (i.e. after it
@@ -26,6 +27,9 @@ const HEADERS = [
   "cancelReason",
   "costBearer",
   "costBearerStaff",
+  // Bill section of the dish (FOOD / DRINK / OTHER) — the kitchen only gets "stop cooking" alerts for food.
+  // Appended Oct 2026; empty (older rows) = FOOD.
+  "section",
 ];
 
 export type CancelScope = "item" | "order" | "return";
@@ -47,6 +51,7 @@ export type CancelledItem = {
   cancelReason: string;
   costBearer: CostBearer | null;
   costBearerStaff: string | null;
+  section: BillGroup;
 };
 
 function decode(v: Record<string, string>): CancelledItem {
@@ -66,6 +71,7 @@ function decode(v: Record<string, string>): CancelledItem {
     cancelReason: v.cancelReason,
     costBearer: (cell.strOrNull(v.costBearer ?? "") as CostBearer | null),
     costBearerStaff: cell.strOrNull(v.costBearerStaff ?? ""),
+    section: v.section === "DRINK" || v.section === "OTHER" ? v.section : "FOOD",
   };
 }
 
@@ -90,6 +96,7 @@ export async function logCancelledItems(entries: Omit<CancelledItem, "id">[]): P
       cancelReason: e.cancelReason,
       costBearer: cell.str(e.costBearer),
       costBearerStaff: cell.str(e.costBearerStaff),
+      section: e.section,
     })),
   );
 }

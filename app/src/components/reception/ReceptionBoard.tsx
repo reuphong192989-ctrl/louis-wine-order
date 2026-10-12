@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatQty, formatTime, formatVnd } from "@/lib/format";
 import { usePolling } from "@/lib/use-polling";
+import { kitchenAllDone } from "@/lib/kitchen";
 import { isAlertSounding, playAlertSound, stopAlertSound } from "@/lib/sound";
 import type { OrderDTO, ReservationDTO } from "@/types";
 
@@ -24,7 +25,7 @@ function orderStage(o: OrderDTO): { label: string; color: string } {
   if (o.status === "PENDING") return { label: "Chờ nhà hàng xác nhận", color: "var(--color-accent)" };
   if (o.fulfillment === "DELIVERED") return { label: "Đã giao tới phòng", color: "var(--color-accent-2-700)" };
   if (o.fulfillment === "DELIVERING") return { label: "🛵 Đang mang tới", color: "var(--color-accent-2-700)" };
-  const allDone = o.items.length > 0 && o.items.every((i) => i.kitchenStatus === "DONE");
+  const allDone = kitchenAllDone(o.items); // drinks need no cooking, so only the food lines are waited on
   return { label: allDone ? "Món đã xong, chuẩn bị giao" : "Bếp đang làm", color: "var(--color-neutral-700)" };
 }
 

@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { cancelOrder, deleteOrder, findOrderById, setOrderStatus } from "@/lib/sheets/orders";
 import { notifyPush } from "@/lib/push";
+import { needsKitchen } from "@/lib/kitchen";
 import { costAssignmentFields, resolveCostAssignment } from "@/lib/cost-assignment";
 
 const patchSchema = z.discriminatedUnion("status", [
@@ -52,8 +53,10 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   // The kitchen display account is only alerted once staff have confirmed the order.
-  if (before?.status === "PENDING" && order.status === "CONFIRMED") {
-    const dishes = order.items.reduce((n, it) => n + it.qty, 0);
+  // Only food reaches the kitchen: an order of drinks/cigars alone doesn't ring the kitchen at all.
+  const foodLines = order.items.filter(needsKitchen);
+  if (before?.status === "PENDING" && order.status === "CONFIRMED" && foodLines.length > 0) {
+    const dishes = foodLines.reduce((n, it) => n + it.qty, 0);
     after(() =>
       notifyPush(["KITCHEN"], {
         title: "Đơn mới vào bếp",
