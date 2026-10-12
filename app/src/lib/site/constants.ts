@@ -4,7 +4,7 @@ export const RESTAURANT = {
   hotline: "0789 94 93 93",
   hotlineRaw: "0789949393",
   address: "93 Nguyễn Đình Thi, Phường Hòa Xuân, TP. Đà Nẵng",
-  hours: "10:00 – 21:30 hằng ngày",
+  hours: "10:00 – 22:00 hằng ngày",
   // Kitchen hours (VN time). Guests seated before closing may stay on; no new food orders after it.
   kitchenOpen: "10:00",
   kitchenClose: "21:30",

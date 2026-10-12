@@ -27,7 +27,7 @@ const vi = {
   },
   restaurant: {
     address: "93 Nguyễn Đình Thi, Phường Hòa Xuân, TP. Đà Nẵng",
-    hours: "10:00 – 21:30 hằng ngày",
+    hours: "10:00 – 22:00 hằng ngày",
     hoursNote: "Bếp nhận gọi món đến 21:30. Khách vào trước giờ này vẫn có thể ngồi lại muộn hơn.",
   },
   nav: {
@@ -332,7 +332,7 @@ const en: Dict = {
   },
   restaurant: {
     address: "93 Nguyen Dinh Thi, Hoa Xuan Ward, Da Nang",
-    hours: "Daily 10:00 – 21:30",
+    hours: "Daily 10:00 – 22:00",
     hoursNote: "Last food order at 21:30. Guests seated before then are welcome to stay later.",
   },
   nav: {
@@ -635,7 +635,7 @@ const ru: Dict = {
   },
   restaurant: {
     address: "93 Nguyen Dinh Thi, р-н Хоа Суан, Дананг",
-    hours: "Ежедневно 10:00 – 21:30",
+    hours: "Ежедневно 10:00 – 22:00",
     hoursNote: "Последний заказ на кухню в 21:30. Гости, пришедшие раньше, могут остаться дольше.",
   },
   nav: {

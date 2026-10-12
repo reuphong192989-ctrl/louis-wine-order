@@ -49,8 +49,8 @@ export async function getBankAccounts(): Promise<BankAccounts> {
   return { noInvoice: null, invoice: build("bankInvoice", DEFAULT_COMPANY_ACCOUNT) };
 }
 
-// Rating on Google Maps when this was built (2026-09-29); the manager updates it in Quản trị → Dữ liệu.
-const DEFAULT_GOOGLE_RATING = 4.7;
+// Fallback Google Maps rating (4.3 as given by the owner, 2026-10-13); a value saved in Quản trị → Dữ liệu overrides it.
+const DEFAULT_GOOGLE_RATING = 4.3;
 
 /** Google Maps rating typed in by the manager (no Google API / billing needed). Never throws. */
 export async function getGoogleRating(): Promise<GoogleRating> {
