@@ -8,11 +8,11 @@ import { Bus, Wine } from "lucide-react";
 import { RoomPicker } from "./RoomPicker";
 import { DICTS, fmt } from "@/lib/site/i18n";
 
-// 10:00 … 21:00 — the kitchen takes its last order at 21:30.
+// 10:00 … 21:30 — the kitchen closes at 22:00 (RESTAURANT.lastBooking).
 const SLOTS: string[] = [];
 for (let h = 10; h <= 21; h++) {
   SLOTS.push(`${String(h).padStart(2, "0")}:00`);
-  if (h < 21) SLOTS.push(`${String(h).padStart(2, "0")}:30`);
+  SLOTS.push(`${String(h).padStart(2, "0")}:30`);
 }
 
 // Staff read bookings in Vietnamese: the form shows translated labels but submits these values.

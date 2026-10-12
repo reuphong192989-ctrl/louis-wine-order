@@ -15,7 +15,7 @@ import { categoryName, dishText, searchKey } from "@/lib/site/menu-i18n";
 
 // Sent to staff as-is, so the stored value stays Vietnamese; only the label is translated.
 const ASAP = "Càng sớm càng tốt";
-const SLOTS = ["11:00", "11:30", "12:00", "12:30", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00"];
+const SLOTS = ["11:00", "11:30", "12:00", "12:30", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"];
 
 export function MenuOrder({ menu }: { menu: MenuCategoryDTO[] }) {
   const { cart, cartCount, cartSubtotal, setQty, clearCart, lumia, ready, lang, t } = useApp();

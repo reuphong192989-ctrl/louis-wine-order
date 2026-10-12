@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const channel = body.channel as OnlineChannel;
     if (!CHANNELS.includes(channel)) return bad(msg.channel);
 
-    // Kitchen 10:00–21:30: after closing no online orders; before opening only scheduled ones ("Lúc 11:00").
+    // Kitchen 10:00–22:00: after closing no online orders; before opening only scheduled ones ("Lúc 11:00").
     const now = nowTimeVN();
     const scheduled = typeof body.scheduledTime === "string" && body.scheduledTime.startsWith("Lúc ");
     if (now >= RESTAURANT.kitchenClose || (now < RESTAURANT.kitchenOpen && !scheduled)) return bad(msg.kitchenClosed);
