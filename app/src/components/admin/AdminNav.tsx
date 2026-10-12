@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 const LINKS = [
   { href: "/admin/categories", label: "Danh mục" },
   { href: "/admin/items", label: "Món ăn" },
+  { href: "/admin/menu-import", label: "Nhập Book1" },
   { href: "/admin/reports", label: "Doanh thu" },
   { href: "/thu-ngan/bao-cao", label: "Báo cáo hoá đơn" },
   { href: "/admin/table-log", label: "Nhật ký bàn" },

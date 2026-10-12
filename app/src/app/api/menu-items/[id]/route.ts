@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
-import { menuItemInputSchema, resolvePriceFields, resolveTranslations } from "@/lib/validation";
+import { menuItemInputSchema, resolveBillFields, resolvePriceFields, resolveTranslations } from "@/lib/validation";
 import { deleteMenuItem, findMenuItemById, updateMenuItem } from "@/lib/sheets/menuItems";
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -37,6 +37,8 @@ export const PUT = withErrors(async (req: NextRequest, { params }: { params: Pro
     sortOrder: existing.sortOrder,
     // Quick toggles in the item list don't send translations — keep the stored ones.
     ...resolveTranslations(parsed.data, existing),
+    // Same for VAT / bill section / unit: a quick toggle that doesn't send them must not wipe them.
+    ...resolveBillFields(parsed.data, existing),
   });
 
   return NextResponse.json({ item });

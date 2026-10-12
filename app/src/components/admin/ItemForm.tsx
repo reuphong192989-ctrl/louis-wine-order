@@ -21,6 +21,9 @@ export type ItemFormValues = {
   noteEn: string;
   nameRu: string;
   noteRu: string;
+  vatRate: string; // "" = follow the category's VAT
+  group: "" | "FOOD" | "DRINK" | "OTHER"; // "" = follow the category's group
+  unit: string; // "" = "phần" on the bill
 };
 
 function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string): ItemFormValues {
@@ -40,6 +43,9 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
       noteEn: "",
       nameRu: "",
       noteRu: "",
+      vatRate: "",
+      group: "",
+      unit: "",
     };
   }
   // Pre-fill with the saved translation, or the built-in one so it can be reviewed and saved.
@@ -59,6 +65,9 @@ function initialValues(item: AdminMenuItemDTO | null, defaultCategoryId: string)
     noteEn: item.noteEn || builtIn.noteEn || "",
     nameRu: item.nameRu || builtIn.nameRu || "",
     noteRu: item.noteRu || builtIn.noteRu || "",
+    vatRate: item.vatRate != null ? String(item.vatRate) : "",
+    group: item.group ?? "",
+    unit: item.unit ?? "",
   };
 }
 
@@ -126,6 +135,9 @@ export default function ItemForm({
       noteEn: values.noteEn.trim() || null,
       nameRu: values.nameRu.trim() || null,
       noteRu: values.noteRu.trim() || null,
+      vatRate: values.vatRate.trim() === "" ? null : Number(values.vatRate),
+      group: values.group || null,
+      unit: values.unit.trim() || null,
     };
 
     setSaving(true);
@@ -257,6 +269,36 @@ export default function ItemForm({
           />
         )}
       </div>
+
+      <fieldset style={{ border: "1px solid var(--color-divider)", padding: "var(--space-3)", display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <legend style={{ fontSize: 13, fontWeight: 700 }}>Hoá đơn (để trống = theo danh mục)</legend>
+        <div className="field" style={{ width: 120 }}>
+          <label>VAT %</label>
+          <input
+            className="input"
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            placeholder="theo danh mục"
+            value={values.vatRate}
+            onChange={(e) => set("vatRate", e.target.value)}
+          />
+        </div>
+        <div className="field" style={{ width: 150 }}>
+          <label>Nhóm trên hoá đơn</label>
+          <select className="input" value={values.group} onChange={(e) => set("group", e.target.value as ItemFormValues["group"])}>
+            <option value="">Theo danh mục</option>
+            <option value="FOOD">Đồ ăn</option>
+            <option value="DRINK">Đồ uống</option>
+            <option value="OTHER">Khác</option>
+          </select>
+        </div>
+        <div className="field" style={{ width: 130 }}>
+          <label>Đơn vị tính</label>
+          <input className="input" maxLength={20} placeholder="phần" value={values.unit} onChange={(e) => set("unit", e.target.value)} />
+        </div>
+      </fieldset>
 
       <div className="field">
         <label>Link ảnh món (dán URL ảnh đã có sẵn trên mạng)</label>

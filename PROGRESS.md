@@ -1,6 +1,8 @@
 # Cập nhật tháng 10 — phản hồi giám sát + Book1.xlsx
 
-Trạng thái: **M1 đã lên production (13/10) và kiểm chứng**: 15 bàn, giờ 10–22h, điểm 4.3. **M2 đã code + kiểm thử, chờ duyệt gộp** (nhánh `feat/m2-cashier-bill`). M3–M4 chưa làm.
+Trạng thái: **M1, M2 đã lên production (13/10)**. M1 kiểm chứng trên trang thật (15 bàn, giờ 10–22h, điểm 4.3); M2 smoke test (trang công khai 200, API cần đăng nhập 401) nhưng chưa thử được thao tác thu ngân thật vì thiếu tài khoản. **M3 đã code + kiểm thử, chờ duyệt gộp** (nhánh `feat/m3-item-vat-book1`). M4 chưa làm.
+M3 gồm: VAT / nhóm / đơn vị riêng từng món (cột mới `MenuItems.vatRate|group|unit`, trống = theo danh mục / "phần"); form sửa món có 3 ô mới; bill in đơn vị thật; công cụ **Quản trị → Nhập Book1** (xem trước → áp dụng → hoàn tác, nhật ký tab `MenuImportLog`; không đổi giá, không xoá món). Dữ liệu: `src/data/book1-menu.json` (207 món, từ Book1.xlsx). Test: `npm run check:bill|check:import|check:import-db`.
+Đối chiếu Book1 ↔ menu thật (13/10): 205/207 món trùng tên và giá; chỉ 2 món mới (Nước chanh, Trà gừng). Danh mục lẫn VAT/nhóm: Nước Ngọt (Nước Suối 8%), Charge phí (2 phụ phí rượu 10%), Khác (Cơm trắng, Rau thêm là Đồ ăn).
 M2 gồm: bill tạm (phiếu tạm tính), chiết khấu % hoặc đ, VAT tính sau chiết khấu, tên khách (cột mới `Bills.customerName`, `Bills.discountPercent`), bill nhóm Đồ ăn/Đồ uống/Khác (cột mới `Categories.group`, trống = đoán theo tên), cột "Nhóm" ở Quản trị → Danh mục. Test: `npm run check:bill`.
 Lưu ý: preview Vercel KHÔNG có biến môi trường (chỉ production có) nên không thử chức năng được trên preview.
 Quyết định đã chốt: bếp chỉ hiện Đồ ăn · VAT tính trên giá sau chiết khấu · nhập Book1 sau khi sao lưu · giao từng mốc.

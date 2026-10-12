@@ -127,7 +127,7 @@ export default function InvoicePrint({
                   <td style={{ textAlign: "center" }}>{++rowNo}</td>
                   <td>{l.name}</td>
                   <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
-                  <td style={{ textAlign: "center" }}>phần</td>
+                  <td style={{ textAlign: "center" }}>{l.unit || "phần"}</td>
                   <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
                   <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
                   <td style={{ textAlign: "center" }}>{l.vatRate}%</td>

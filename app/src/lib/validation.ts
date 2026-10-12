@@ -19,7 +19,23 @@ export const menuItemInputSchema = z.object({
   noteEn: z.string().trim().max(500).optional().nullable(),
   nameRu: z.string().trim().max(200).optional().nullable(),
   noteRu: z.string().trim().max(500).optional().nullable(),
+  // Bill overrides — omitted (undefined) keeps the stored value, null/"" clears it (= follow the category / "phần").
+  vatRate: z.number().int().min(0).max(100).optional().nullable(),
+  group: z.enum(["FOOD", "DRINK", "OTHER"]).optional().nullable(),
+  unit: z.string().trim().max(20).optional().nullable(),
 });
+
+/** VAT %, bill section and unit to store: what the form sent, or the existing values for fields it didn't send. */
+export function resolveBillFields(
+  input: MenuItemInput,
+  existing?: { vatRate: number | null; group: "FOOD" | "DRINK" | "OTHER" | null; unit: string | null },
+): { vatRate: number | null; group: "FOOD" | "DRINK" | "OTHER" | null; unit: string | null } {
+  return {
+    vatRate: input.vatRate === undefined ? (existing?.vatRate ?? null) : input.vatRate,
+    group: input.group === undefined ? (existing?.group ?? null) : input.group,
+    unit: input.unit === undefined ? (existing?.unit ?? null) : input.unit || null,
+  };
+}
 
 type TranslationKey = "nameEn" | "noteEn" | "nameRu" | "noteRu";
 

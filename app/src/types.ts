@@ -18,6 +18,10 @@ export type MenuItemDTO = {
 
 export type AdminMenuItemDTO = MenuItemDTO & {
   category: { id: string; slug: string; name: string };
+  /** Bill overrides; null = follow the category (VAT / section) or "phần" (unit). */
+  vatRate?: number | null;
+  group?: "FOOD" | "DRINK" | "OTHER" | null;
+  unit?: string | null;
 };
 
 export type CategoryDTO = {

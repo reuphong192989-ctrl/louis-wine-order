@@ -1,0 +1,1658 @@
+[
+ {
+  "group": "FOOD",
+  "name": "Bơ Louis",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Pate Louis",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Ngô nếp mini Điện Biên",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chả mực thượng hạng",
+  "unit": "Phần",
+  "price": 268000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chả giò hải sản",
+  "unit": "Phần",
+  "price": 238000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chả bò chiên",
+  "unit": "Phần",
+  "price": 188000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đậu hũ non chả bông",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đậu khuôn chiên",
+  "unit": "Phần",
+  "price": 88000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Khoai tây chiên",
+  "unit": "Phần",
+  "price": 78000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bánh mỳ bơ tỏi",
+  "unit": "Phần",
+  "price": 68000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bánh mỳ (giỏ)",
+  "unit": "Phần",
+  "price": 78000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đậu phộng húng lìu",
+  "unit": "Phần",
+  "price": 88000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bánh phồng cá biển",
+  "unit": "Phần",
+  "price": 38000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Khoai tây nghiền",
+  "unit": "Phần",
+  "price": 68000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Kim chi",
+  "unit": "Phần",
+  "price": 50000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gan Ngỗng Pháp Nướng",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bò Fuji Nhật nướng",
+  "unit": "Phần",
+  "price": 488000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá tuyết Pháp nướng",
+  "unit": "Phần",
+  "price": 468000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sườn cừu nướng",
+  "unit": "Phần",
+  "price": 368000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bò Tomahawk nướng - Dát vàng (Signature)",
+  "unit": "Phần",
+  "price": null,
+  "vat": 8,
+  "note": "2.680.000 - 3.080.000đ"
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá hồi áp chảo",
+  "unit": "Phần",
+  "price": 368000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đồ Nguội Phô mai tổng hợp đặc biệt",
+  "unit": "Phần",
+  "price": 628000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đồ nguội tổng hợp",
+  "unit": "Phần",
+  "price": 528000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Phô mai tổng hợp",
+  "unit": "Phần",
+  "price": 428000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Phô mai Nga xông khói",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Heo Iberico 36 tháng",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Xúc xích Ba Lan",
+  "unit": "Phần",
+  "price": 228000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cánh ngỗng Nga xông khói",
+  "unit": "Phần",
+  "price": 388000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Ô Liu",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gỏi bò Louis",
+  "unit": "Phần",
+  "price": 268000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Salad Rau Càng Cua Bò Tái",
+  "unit": "Phần",
+  "price": 228000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Salad cá hồi",
+  "unit": "Phần",
+  "price": 268000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gỏi Lươn chuối rừng",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cổ hũ dừa tôm áp chảo",
+  "unit": "Phần",
+  "price": 248000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Salad hoa quả theo mùa",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Salad dầu giấm",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gỏi sứa xoài xanh",
+  "unit": "Phần",
+  "price": 198000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup bào ngư thịt cua",
+  "unit": "Phần",
+  "price": 298000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup Bào ngư hầm trái bí",
+  "unit": "Phần",
+  "price": 275000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup hải sản trứng cá chuồn Nhật",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup bí đỏ kem tươi",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup rau dền trứng bắc thảo",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Soup hải sản tóc tiên",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gà H'Mông",
+  "unit": "Con",
+  "price": 538000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gà tre",
+  "unit": "Con",
+  "price": 428000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gà ta",
+  "unit": "Con",
+  "price": 538000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gà Đông Tảo",
+  "unit": "Kg",
+  "price": 698000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Vịt Trời",
+  "unit": "Con",
+  "price": 438000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chim câu",
+  "unit": "Con",
+  "price": 198000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sườn non nướng BBQ",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bò cháy tỏi tiêu xanh",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Ếch Chui Rơm",
+  "unit": "Phần",
+  "price": 218000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sashimi tổng hợp",
+  "unit": "Phần",
+  "price": 688000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sashimi cá hồi",
+  "unit": "Phần",
+  "price": 388000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chân giò chiên Filipin",
+  "unit": "Phần",
+  "price": 388000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đuôi lợn luộc",
+  "unit": "Phần",
+  "price": 268000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bò Lúc Lắc",
+  "unit": "Phần",
+  "price": 288000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Gà đen tiềm trái dừa",
+  "unit": "Phần",
+  "price": 228000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm sú hấp trái dừa",
+  "unit": "Phần",
+  "price": null,
+  "vat": 8,
+  "note": "Đang cập nhật"
+ },
+ {
+  "group": "FOOD",
+  "name": "Mực một nắng nướng",
+  "unit": "Phần",
+  "price": 368000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Mực khô nướng",
+  "unit": "Phần",
+  "price": 388000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm một nắng nướng",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bò một nắng Lào",
+  "unit": "Phần",
+  "price": 268000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá chuồn mít",
+  "unit": "Phần",
+  "price": 248000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Bơn Hàn Quốc",
+  "unit": "Kg",
+  "price": 1850000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Mú (song / mú)",
+  "unit": "Kg",
+  "price": 699000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Chim Trắng",
+  "unit": "Kg",
+  "price": 769000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Tầm",
+  "unit": "Kg",
+  "price": 799000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Chìa Vôi",
+  "unit": "Kg",
+  "price": 959000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Nâu",
+  "unit": "Kg",
+  "price": 1350000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Lăng/kg",
+  "unit": "Kg",
+  "price": 499000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Hồi Na Uy /Kg",
+  "unit": "Kg",
+  "price": 1180000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cá Chình Suối",
+  "unit": "Kg",
+  "price": 1650000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sò Huyết Thường",
+  "unit": "Kg",
+  "price": 779000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Ghẹ Đỏ",
+  "unit": "Kg",
+  "price": 1099000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm Tít",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Ốc Hương",
+  "unit": "Kg",
+  "price": 1190000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sò Dương / Kg",
+  "unit": "Kg",
+  "price": 650000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Hàu Sữa (6-8 con/1kg)",
+  "unit": "Kg",
+  "price": 249000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cua KingCrab(Kg)",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm Hùm Baby",
+  "unit": "Kg",
+  "price": 1880000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cua Gạch",
+  "unit": "Kg",
+  "price": 1100000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cua Thịt",
+  "unit": "Kg",
+  "price": 1199000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm Sú",
+  "unit": "Kg",
+  "price": 1050000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm Càng Xanh",
+  "unit": "Kg",
+  "price": 1180000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Ghẹ Xanh",
+  "unit": "Kg",
+  "price": 1190000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bọ Biển",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Bào Ngư hấp miến tỏi",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Đang cập nhật"
+ },
+ {
+  "group": "FOOD",
+  "name": "Bào Ngư Úc Nhập Khẩu",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Ốc Vòi Voi",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Tôm Hùm Bông",
+  "unit": "Kg",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Bào Ngư Hàn Quốc",
+  "unit": "Kg",
+  "price": 1850000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu hải sản chua cay",
+  "unit": "Phần",
+  "price": 548000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu baba rượu vang",
+  "unit": "Phần",
+  "price": 1080000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu gà nhúng lá giang",
+  "unit": "Phần",
+  "price": 568000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu riêu cua bắp bò sườn sụn",
+  "unit": "Phần",
+  "price": 568000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu Cháo Chim Câu",
+  "unit": "Phần",
+  "price": 568000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu Cá Chua Cay",
+  "unit": "Phần",
+  "price": 538000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Lẩu Ếch Măng Cay",
+  "unit": "Phần",
+  "price": 388000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cải thìa xào nấm đông cô",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Củ quả luộc chấm kho quẹt",
+  "unit": "Phần",
+  "price": 138000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bông bí xào tỏi",
+  "unit": "Phần",
+  "price": 108000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Mùng tơi xào tỏi",
+  "unit": "Phần",
+  "price": 88000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Rau muống xào tỏi",
+  "unit": "Phần",
+  "price": 88000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Rau rừng xào tỏi",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Rau rừng luộc kho quẹt",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Bông Cải Xanh Xào Hải Sản",
+  "unit": "Phần",
+  "price": 218000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cà Tím Om Thịt",
+  "unit": "Phần",
+  "price": 158000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Măng Trúc Yên Tử Xào Tỏi",
+  "unit": "Phần",
+  "price": 108000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Nấm Xào Thập Cẩm Hải Sản",
+  "unit": "Phần",
+  "price": 218000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Khổ Qua",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm chiên hải sản",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm chiên cá mặn - Ruốc Bông",
+  "unit": "Phần",
+  "price": 188000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm Chiên Trái Dứa",
+  "unit": "Phần",
+  "price": 217999,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm Chiên Trứng",
+  "unit": "Phần",
+  "price": 88000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm Chiên Dưa Bò",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm Chiên Cá Dứa",
+  "unit": "Phần",
+  "price": null,
+  "vat": 8,
+  "note": "Thời giá"
+ },
+ {
+  "group": "FOOD",
+  "name": "Cháo hải sản",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cháo thịt bò bằm",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cháo hàu",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Mỳ xào hải sản",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Mỳ xào bò",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Miến xào hải sản",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Xôi cốm Louis",
+  "unit": "Phần",
+  "price": 230000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh nghêu nấu chua",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh Cá Nấu Dưa Cay Trung Hoa",
+  "unit": "Phần",
+  "price": 328000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh rau dền tôm tươi",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh nghêu mùng tơi",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh cải thịt băm",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh cua mùng tơi",
+  "unit": "Phần",
+  "price": 148000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh Khổ Qua Cá Viên",
+  "unit": "Phần",
+  "price": 188000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Khổ qua xào đậu hũ cà rốt",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cà tím xào",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Chả nấm kho xì dầu",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh bí đỏ nấu nấm",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Canh rong biển đậu hũ non",
+  "unit": "Phần",
+  "price": 98000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Nấm đùi gà chiên giòn",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cải thìa xào nấm",
+  "unit": "Phần",
+  "price": 128000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Đậu phụ hấp nấm đông cô",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Rau củ chiên giòn Tempura",
+  "unit": "Phần",
+  "price": 168000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Hoa Quả theo mùa",
+  "unit": "Phần",
+  "price": 385000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Sữa chua hạt",
+  "unit": "Phần",
+  "price": 35000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Cơm trắng",
+  "unit": "Phần",
+  "price": 50000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "FOOD",
+  "name": "Rau thêm",
+  "unit": "Phần",
+  "price": 30000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Ngọc Linh Trường Sinh VIP 23°",
+  "unit": "Chai",
+  "price": 2980000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Ngọc Linh Trường Sinh 19,5°",
+  "unit": "Chai",
+  "price": 1080000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Ngọc Linh Trường Sinh 23°",
+  "unit": "Chai",
+  "price": 2680000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Sâm trường sinh LEGACY",
+  "unit": "Chai",
+  "price": 8260000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Rượu Sâm Ngọc Linh Trimico",
+  "unit": "Chai",
+  "price": 990000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Carparo 15.5% (RV127)",
+  "unit": "Chai",
+  "price": 2900000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Three Dreamers (RV404)",
+  "unit": "Chai",
+  "price": 2600000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Anthonij Rupert Syrah (RV275)",
+  "unit": "Chai",
+  "price": 2380000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Vang F Gold",
+  "unit": "Chai",
+  "price": 2380000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Calera De Tango Gran Reserva (RV403)",
+  "unit": "Chai",
+  "price": 1280000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Calera De Tango Limited Edition (RV413)",
+  "unit": "Chai",
+  "price": 1280000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Pavo No.2 Shiraz (RV299)",
+  "unit": "Chai",
+  "price": 1180000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "La Carminaia Vino Rosso (RV406)",
+  "unit": "Chai",
+  "price": 1080000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Larus Vino Rosso (RV339)",
+  "unit": "Chai",
+  "price": 1080000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Hyperion Primitivo DOCG (RV412)",
+  "unit": "Chai",
+  "price": 880000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Veo Ultreia Cabernet Sauvigno (RV409)",
+  "unit": "Chai",
+  "price": 728000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Santa Carolina Reserva De Familia Trắng (RV255)",
+  "unit": "Chai",
+  "price": 1180000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Crozes Hermitage Les Hauts D'Eole Trắng (RV277)",
+  "unit": "Chai",
+  "price": 1120000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Le Mortelle Vivia Trắng (RV278)",
+  "unit": "Chai",
+  "price": 880000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Errazuriz Sauvignon Blanc Trắng (RV336)",
+  "unit": "Chai",
+  "price": 880000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Errazuriz Chardonnay D.O. Región De Aconcagua",
+  "unit": "Chai",
+  "price": 880000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Crozes Hermitage Grand Classique Trắng (RV276)",
+  "unit": "Chai",
+  "price": 780000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Legende Bordeaux Trắng (RV281)",
+  "unit": "Chai",
+  "price": 680000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Pavo No.1 Chardonnay Trắng (RV297)",
+  "unit": "Chai",
+  "price": 580000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Donelli Rose (RV300)",
+  "unit": "Chai",
+  "price": 580000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Donelli Prosecco (RV301)",
+  "unit": "Chai",
+  "price": 580000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Donelli Lambrusco Grasparossa (RV302)",
+  "unit": "Chai",
+  "price": 480000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Tavernello Vino Bianco D'Italia Trắng (RV340)",
+  "unit": "Chai",
+  "price": 300000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Heineken Bạc Cao",
+  "unit": "Lon",
+  "price": 35000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Heineken Bạc Lùn",
+  "unit": "Lon",
+  "price": 32000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Heineken 0.0%",
+  "unit": "Lon",
+  "price": 35000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Tiger Bạc Cao",
+  "unit": "Lon",
+  "price": 30000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Tiger Bạc Lùn",
+  "unit": "Lon",
+  "price": 28000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Larue",
+  "unit": "Lon",
+  "price": 25000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Sài Gòn",
+  "unit": "Lon",
+  "price": 22000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Huda",
+  "unit": "Lon",
+  "price": 25000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Heineken Pháp",
+  "unit": "Chai",
+  "price": 60000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Corona Extra",
+  "unit": "Chai",
+  "price": 45000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Bia Hoegaarden Trắng",
+  "unit": "Chai",
+  "price": 45000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Pepsi",
+  "unit": "Lon",
+  "price": 20000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Soda",
+  "unit": "Lon",
+  "price": 20000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Nước Suối",
+  "unit": "Lon",
+  "price": 15000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "7 Up",
+  "unit": "Lon",
+  "price": 20000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Nước chanh",
+  "unit": "Ly",
+  "price": 35000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "DRINK",
+  "name": "Trà gừng",
+  "unit": "Ly",
+  "price": 28000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Barber Pole",
+  "unit": "Điếu",
+  "price": 800000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Black Market",
+  "unit": "Điếu",
+  "price": 750000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Cao Thunder Smoke",
+  "unit": "Điếu",
+  "price": 750000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Angelenos",
+  "unit": "Điếu",
+  "price": 750000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Montecristo",
+  "unit": "Điếu",
+  "price": 750000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Thuốc Esse Change",
+  "unit": "Điếu",
+  "price": 75000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Thuốc Ngựa Trắng",
+  "unit": "Điếu",
+  "price": 45000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Thuốc Mèo demi",
+  "unit": "Điếu",
+  "price": 30000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Thuốc 555 Việt",
+  "unit": "Điếu",
+  "price": 60000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Thuốc 555 Bạc",
+  "unit": "Điếu",
+  "price": 45000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí karaoke phòng Pla",
+  "unit": "/3h",
+  "price": 1000000,
+  "vat": 8,
+  "note": "Phát sinh + thêm phí"
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí karaoke phòng Vip",
+  "unit": "/3h",
+  "price": 500000,
+  "vat": 8,
+  "note": "Phát sinh + thêm phí"
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí rượu ngâm",
+  "unit": "Lít",
+  "price": 200000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí rượu mạnh, rượu vang",
+  "unit": "Chai",
+  "price": 250000,
+  "vat": 10,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí đồ ăn ngoài",
+  "unit": "Phần",
+  "price": 100000,
+  "vat": 8,
+  "note": ""
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí dịch vụ sảnh tiệc",
+  "unit": "Lần",
+  "price": 1500000,
+  "vat": 8,
+  "note": "Phát sinh + thêm phí"
+ },
+ {
+  "group": "OTHER",
+  "name": "Phụ phí decor tổ chức sự kiện",
+  "unit": "Lần",
+  "price": null,
+  "vat": 8,
+  "note": "Thoả thuận"
+ },
+ {
+  "group": "OTHER",
+  "name": "Khăn lạnh",
+  "unit": "Cái",
+  "price": 5000,
+  "vat": 8,
+  "note": ""
+ }
+]
