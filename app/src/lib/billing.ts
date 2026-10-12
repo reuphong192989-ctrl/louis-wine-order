@@ -24,8 +24,10 @@ export type BillLine = {
   unitPrice: number;
   lineTotal: number;
   vatRate: number;
-  /** Section of the printed bill: Đồ ăn / Đồ uống / Khác (from the item's category). */
+  /** Section of the printed bill: Đồ ăn / Đồ uống / Khác (the dish's own setting, else its category's). */
   group: BillGroup;
+  /** Unit printed on the bill (Chai, Lon, Kg…); null = "phần". */
+  unit: string | null;
 };
 
 export type TableBillPreview = {
@@ -61,21 +63,27 @@ async function returnableMenuItemIds(): Promise<Set<string>> {
   return new Set(items.filter((it) => returnableCats.has(it.categoryId)).map((it) => it.id));
 }
 
-export async function vatRateByMenuItemId(): Promise<Map<string, number>> {
+export type ItemBillMeta = { vatRate: number; group: BillGroup; unit: string | null };
+
+/** VAT %, bill section and unit of every menu item: the dish's own value if set, otherwise its category's. */
+export async function billMetaByMenuItemId(): Promise<Map<string, ItemBillMeta>> {
   const [items, categories] = await Promise.all([listAllMenuItems(), listCategories()]);
-  const catVat = new Map(categories.map((c) => [c.id, c.vatRate]));
-  const map = new Map<string, number>();
-  for (const it of items) map.set(it.id, catVat.get(it.categoryId) ?? FALLBACK_VAT_RATE);
+  const catById = new Map(categories.map((c) => [c.id, c]));
+  const map = new Map<string, ItemBillMeta>();
+  for (const it of items) {
+    const cat = catById.get(it.categoryId);
+    map.set(it.id, {
+      vatRate: it.vatRate ?? cat?.vatRate ?? FALLBACK_VAT_RATE,
+      group: it.group ?? cat?.group ?? "FOOD",
+      unit: it.unit,
+    });
+  }
   return map;
 }
 
-/** Bill section (Đồ ăn / Đồ uống / Khác) of every menu item, taken from its category. */
-export async function billGroupByMenuItemId(): Promise<Map<string, BillGroup>> {
-  const [items, categories] = await Promise.all([listAllMenuItems(), listCategories()]);
-  const catGroup = new Map(categories.map((c) => [c.id, c.group]));
-  const map = new Map<string, BillGroup>();
-  for (const it of items) map.set(it.id, catGroup.get(it.categoryId) ?? "FOOD");
-  return map;
+export async function vatRateByMenuItemId(): Promise<Map<string, number>> {
+  const meta = await billMetaByMenuItemId();
+  return new Map([...meta].map(([id, m]) => [id, m.vatRate]));
 }
 
 /** Confirmed, dine-in (not website), not-yet-billed orders for one table — what a cashier print would combine. */
@@ -88,16 +96,17 @@ function buildPreview(
   tableId: string,
   tableLabel: string,
   orders: Order[],
-  vatByItem: Map<string, number>,
+  metaByItem: Map<string, ItemBillMeta>,
   returnable: Set<string>,
-  groupByItem: Map<string, BillGroup>,
 ): TableBillPreview {
   const items: BillLine[] = [];
   for (const o of orders) {
     for (const it of o.items) {
-      const vatRate = (it.menuItemId ? vatByItem.get(it.menuItemId) : undefined) ?? FALLBACK_VAT_RATE;
-      const group = (it.menuItemId ? groupByItem.get(it.menuItemId) : undefined) ?? "FOOD"; // item deleted since the order: treat as food
-      items.push({ itemId: it.id, orderId: o.id, orderCreatedAt: o.createdAt, kitchenStatus: it.kitchenStatus, returnable: !!it.menuItemId && returnable.has(it.menuItemId), name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate, group });
+      const meta = it.menuItemId ? metaByItem.get(it.menuItemId) : undefined;
+      // Dish deleted since the order was placed: 8% VAT, counted as food.
+      const vatRate = meta?.vatRate ?? FALLBACK_VAT_RATE;
+      const group = meta?.group ?? "FOOD";
+      items.push({ itemId: it.id, orderId: o.id, orderCreatedAt: o.createdAt, kitchenStatus: it.kitchenStatus, returnable: !!it.menuItemId && returnable.has(it.menuItemId), name: it.nameSnapshot, qty: it.qty, unitPrice: it.unitPrice, lineTotal: it.lineTotal, vatRate, group, unit: meta?.unit ?? null });
     }
   }
   // Pre-discount figures; the cashier screen and finalize re-run computeBill() with the discount.
@@ -149,16 +158,15 @@ export async function listOpenTableBills(): Promise<
 
 /** Combined preview for one table — read-only, doesn't touch the orders. */
 export async function previewTableBill(tableId: string): Promise<TableBillPreview | null> {
-  const [orders, tableNames, vatByItem, returnable, groupByItem] = await Promise.all([
+  const [orders, tableNames, metaByItem, returnable] = await Promise.all([
     openOrdersForTable(tableId),
     listTableNames(),
-    vatRateByMenuItemId(),
+    billMetaByMenuItemId(),
     returnableMenuItemIds(),
-    billGroupByMenuItemId(),
   ]);
   if (orders.length === 0) return null;
   const tableLabel = tableNames.find((t) => t.tableId === tableId)?.displayName || defaultTableLabel(tableId);
-  return buildPreview(tableId, tableLabel, orders, vatByItem, returnable, groupByItem);
+  return buildPreview(tableId, tableLabel, orders, metaByItem, returnable);
 }
 
 /** Commits: stamps every open order for the table with one shared bill number so they print as a single bill. */

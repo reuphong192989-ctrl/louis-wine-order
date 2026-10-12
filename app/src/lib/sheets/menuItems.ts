@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, updateRow, cell } from "./core";
+import type { BillGroup } from "../bill-math";
 
 const TAB = "MenuItems";
 const HEADERS = [
@@ -20,6 +21,10 @@ const HEADERS = [
   "noteEn",
   "nameRu",
   "noteRu",
+  // Bill overrides (empty = follow the category's VAT / group; unit empty = "phần"). Appended Oct 2026.
+  "vatRate",
+  "group",
+  "unit",
 ];
 
 export type MenuItem = {
@@ -38,6 +43,12 @@ export type MenuItem = {
   noteEn: string | null;
   nameRu: string | null;
   noteRu: string | null;
+  /** VAT % for this dish; null = use the category's rate. */
+  vatRate: number | null;
+  /** Bill section for this dish; null = use the category's group. */
+  group: BillGroup | null;
+  /** Unit printed on the bill (Chai, Lon, Kg…); null = "phần". */
+  unit: string | null;
 };
 
 function decode(values: Record<string, string>): MenuItem {
@@ -57,6 +68,9 @@ function decode(values: Record<string, string>): MenuItem {
     noteEn: cell.strOrNull(values.noteEn ?? ""),
     nameRu: cell.strOrNull(values.nameRu ?? ""),
     noteRu: cell.strOrNull(values.noteRu ?? ""),
+    vatRate: values.vatRate === "" || values.vatRate == null || Number.isNaN(Number(values.vatRate)) ? null : cell.toInt(values.vatRate),
+    group: values.group === "FOOD" || values.group === "DRINK" || values.group === "OTHER" ? values.group : null,
+    unit: cell.strOrNull(values.unit ?? ""),
   };
 }
 
@@ -77,6 +91,9 @@ function encode(item: MenuItem): Record<string, string> {
     noteEn: cell.str(item.noteEn),
     nameRu: cell.str(item.nameRu),
     noteRu: cell.str(item.noteRu),
+    vatRate: item.vatRate === null ? "" : String(item.vatRate),
+    group: item.group ?? "",
+    unit: cell.str(item.unit),
   };
 }
 
@@ -116,10 +133,23 @@ export async function nextSortOrderInCategory(categoryId: string): Promise<numbe
   return items.reduce((max, it) => Math.max(max, it.sortOrder), -1) + 1;
 }
 
-export async function createMenuItem(input: Omit<MenuItem, "id">): Promise<MenuItem> {
-  const item: MenuItem = { ...input, id: randomUUID() };
+/** `id` is only passed when the caller has to know it beforehand (e.g. to write an undo log first). */
+export async function createMenuItem(input: Omit<MenuItem, "id">, id: string = randomUUID()): Promise<MenuItem> {
+  const item: MenuItem = { ...input, id };
   await appendRow(TAB, HEADERS, encode(item));
   return item;
+}
+
+/** Rewrites several existing dishes (full rows) in one write — used by the Book1 import and its undo. */
+export async function updateMenuItemsBatch(items: MenuItem[]): Promise<void> {
+  if (items.length === 0) return;
+  const rows = await readAllRows(TAB);
+  const rowById = new Map(rows.map((r) => [r.values.id, r.rowNumber]));
+  const updates = items.flatMap((it) => {
+    const rowNumber = rowById.get(it.id);
+    return rowNumber === undefined ? [] : [{ rowNumber, record: encode(it) }];
+  });
+  await batchUpdateRows(TAB, HEADERS, updates);
 }
 
 export async function updateMenuItem(id: string, input: Omit<MenuItem, "id">): Promise<MenuItem | null> {

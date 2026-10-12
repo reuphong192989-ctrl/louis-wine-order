@@ -13,7 +13,7 @@ const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate
 
 const DEFAULT_VAT_RATE = 8;
 
-const OTHER_BY_NAME = /thuốc|cigar|xì gà|khăn|khác|dịch vụ|phụ phí|đồ dùng/i;
+const OTHER_BY_NAME = /thuốc|cigar|xì gà|khăn|khác|dịch vụ|phụ phí|charge|phí|đồ dùng/i;
 const DRINK_BY_NAME = /bia|rượu|vang|nước|đồ uống|sâm|cocktail|trà|cà phê|sinh tố|soda|champagne/i;
 export function guessGroup(name: string): BillGroup {
   if (OTHER_BY_NAME.test(name)) return "OTHER";
