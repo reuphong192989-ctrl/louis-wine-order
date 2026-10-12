@@ -21,6 +21,9 @@ const HEADERS = [
   "bankAccountKey",
   "bankAccountLabel",
   "orderIds",
+  // Added Oct 2026 (appended at the end so older rows still read back "" = no percent / no customer name).
+  "discountPercent",
+  "customerName",
 ];
 
 export type BillRecord = {
@@ -34,6 +37,9 @@ export type BillRecord = {
   itemCount: number;
   subtotal: number;
   discount: number;
+  /** Set only when the discount was entered as a percentage. */
+  discountPercent: number | null;
+  customerName: string | null;
   vat: number;
   total: number;
   method: "CASH" | "TRANSFER";
@@ -54,6 +60,8 @@ function decode(v: Record<string, string>): BillRecord {
     itemCount: Number(v.itemCount) || 0,
     subtotal: cell.toInt(v.subtotal),
     discount: cell.toInt(v.discount),
+    discountPercent: v.discountPercent ? Number(v.discountPercent) : null,
+    customerName: cell.strOrNull(v.customerName ?? ""),
     vat: cell.toInt(v.vat),
     total: cell.toInt(v.total),
     method: v.method === "TRANSFER" ? "TRANSFER" : "CASH",
@@ -75,6 +83,8 @@ export async function appendBill(b: BillRecord): Promise<void> {
     itemCount: String(b.itemCount),
     subtotal: cell.int(b.subtotal),
     discount: cell.int(b.discount),
+    discountPercent: b.discountPercent === null ? "" : String(b.discountPercent),
+    customerName: b.customerName ?? "",
     vat: cell.int(b.vat),
     total: cell.int(b.total),
     method: b.method,

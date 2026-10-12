@@ -478,3 +478,6 @@ select.input { cursor: pointer; }
 .inv-qr-title { font-weight: 800; font-size: 11px; color: #7c2128; }
 .inv-thanks { text-align: center; font-style: italic; font-weight: 700; margin-top: 10px; }
 .inv-note { text-align: center; font-size: 9px; color: #555; margin-top: 2px; }
+.invoice-items .inv-group td { background: #f7f1e6; font-weight: 800; letter-spacing: 0.5px; padding: 2px 4px; }
+.inv-customer { margin: 2px 0; }
+.inv-provisional { text-align: center; font-weight: 800; font-size: 11px; color: #7c2128; border: 1px dashed #7c2128; padding: 3px; margin: 6px 0; }

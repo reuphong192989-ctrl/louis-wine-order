@@ -236,7 +236,14 @@ export default function BillReportView({ username, role }: { username: string; r
                             </span>
                           )}
                         </td>
-                        <td>{b.table}</td>
+                        <td>
+                          {b.table}
+                          {b.customerName && (
+                            <div className="text-muted" style={{ fontSize: 11 }} title="Tên khách trên hoá đơn">
+                              {b.customerName}
+                            </div>
+                          )}
+                        </td>
                         <td>{b.cashier}</td>
                         <td>{b.guestCount ?? "—"}</td>
                         <td>{formatVnd(b.subtotal)}</td>

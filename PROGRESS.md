@@ -1,6 +1,8 @@
 # Cập nhật tháng 10 — phản hồi giám sát + Book1.xlsx
 
-Trạng thái: **M1 đã code + kiểm chứng, chờ thử preview** (nhánh `feat/m1-stability-tables-qty`). M2–M4 chưa làm.
+Trạng thái: **M1 đã lên production (13/10) và kiểm chứng**: 15 bàn, giờ 10–22h, điểm 4.3. **M2 đã code + kiểm thử, chờ duyệt gộp** (nhánh `feat/m2-cashier-bill`). M3–M4 chưa làm.
+M2 gồm: bill tạm (phiếu tạm tính), chiết khấu % hoặc đ, VAT tính sau chiết khấu, tên khách (cột mới `Bills.customerName`, `Bills.discountPercent`), bill nhóm Đồ ăn/Đồ uống/Khác (cột mới `Categories.group`, trống = đoán theo tên), cột "Nhóm" ở Quản trị → Danh mục. Test: `npm run check:bill`.
+Lưu ý: preview Vercel KHÔNG có biến môi trường (chỉ production có) nên không thử chức năng được trên preview.
 Quyết định đã chốt: bếp chỉ hiện Đồ ăn · VAT tính trên giá sau chiết khấu · nhập Book1 sau khi sao lưu · giao từng mốc.
 Chưa làm / còn mở: khoá chống trùng đơn (idempotency) khi tablet gửi lại; tên phòng chính thức (đang để mã T3-01…). Nguyên tắc: giữ nguyên mọi tính năng hiện có; mọi thay đổi dữ liệu chỉ *thêm cột/thêm giá trị*, ô trống = hành vi cũ.
 

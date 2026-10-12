@@ -12,6 +12,7 @@ const updateSchema = z.object({
   nameRu: z.string().trim().max(120).optional().nullable(),
   vatRate: z.number().int().min(0).max(100).optional(),
   returnable: z.boolean().optional(),
+  group: z.enum(["FOOD", "DRINK", "OTHER"]).optional(),
 });
 
 export const PUT = withErrors(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
