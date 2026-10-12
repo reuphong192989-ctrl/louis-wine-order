@@ -5,6 +5,8 @@ import { z } from "zod";
 import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { findMenuItemsByIds } from "@/lib/sheets/menuItems";
+import { billMetaByMenuItemId, type BillGroup } from "@/lib/billing";
+import { needsKitchen } from "@/lib/kitchen";
 import { createOrder, listOrders, type OrderStatus } from "@/lib/sheets/orders";
 
 import { normalizeTableId } from "@/lib/table-id";
@@ -29,9 +31,9 @@ export const POST = withErrors(async (req: NextRequest) => {
   }
 
   const ids = parsed.data.items.map((i) => i.menuItemId);
-  const byId = await findMenuItemsByIds(ids);
+  const [byId, meta] = await Promise.all([findMenuItemsByIds(ids), billMetaByMenuItemId()]);
 
-  const lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null }[] = [];
+  const lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null; section: BillGroup }[] = [];
 
   for (const line of parsed.data.items) {
     const item = byId.get(line.menuItemId);
@@ -55,6 +57,8 @@ export const POST = withErrors(async (req: NextRequest) => {
       qty: line.qty,
       lineTotal,
       note: line.note?.trim() || null,
+      // Bill section at the moment of ordering — only FOOD lines are shown to / waited on by the kitchen.
+      section: meta.get(item.id)?.group ?? "FOOD",
     });
   }
 
@@ -79,5 +83,16 @@ export const GET = withErrors(async (req: NextRequest) => {
   // The kitchen display only ever sees orders staff have already confirmed.
   const status = auth.session.role === "KITCHEN" ? "CONFIRMED" : (req.nextUrl.searchParams.get("status") as OrderStatus | null);
   const orders = await listOrders(status ?? undefined);
+
+  // The kitchen screen only shows food: drinks/cigars/towels are served by the floor staff. The kitchen account
+  // always gets this view; the other roles opening the kitchen screen ask for it with ?section=food.
+  const foodOnly = auth.session.role === "KITCHEN" || req.nextUrl.searchParams.get("section") === "food";
+  if (foodOnly) {
+    return NextResponse.json({
+      orders: orders
+        .map((o) => ({ ...o, items: o.items.filter(needsKitchen) }))
+        .filter((o) => o.items.length > 0),
+    });
+  }
   return NextResponse.json({ orders });
 });

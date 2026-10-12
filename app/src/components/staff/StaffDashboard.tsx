@@ -8,6 +8,7 @@ import { usePolling } from "@/lib/use-polling";
 import { fetchWithTimeout, useConnectionHealth } from "@/lib/connection";
 import { isAlertSounding, playAlertSound, stopAlertSound } from "@/lib/sound";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
+import { kitchenFinishedFood, needsKitchen } from "@/lib/kitchen";
 import PushBanner from "@/components/shared/PushBanner";
 import type { OrderDTO, ReservationDTO, StaffCallDTO } from "@/types";
 
@@ -31,6 +32,8 @@ type BillLine = {
   qty: number;
   unitPrice: number;
   lineTotal: number;
+  /** Bill section (FOOD / DRINK / OTHER); only FOOD is made by the kitchen. */
+  group?: "FOOD" | "DRINK" | "OTHER";
 };
 
 const KITCHEN_STATUS_LABEL = { PENDING: "chưa làm", COOKING: "đang làm", DONE: "đã xong" } as const;
@@ -172,7 +175,7 @@ export default function StaffDashboard({ username, role }: { username: string; r
     // Kitchen just finished every item of a confirmed order — chime here too, not only via radio.
     const nowReadyIds = new Set(
       nextOrders
-        .filter((o) => o.status === "CONFIRMED" && o.items.length > 0 && o.items.every((it) => it.kitchenStatus === "DONE"))
+        .filter((o) => o.status === "CONFIRMED" && kitchenFinishedFood(o.items))
         .map((o) => o.id),
     );
     if (knownReadyOrderIds.current) {
@@ -983,8 +986,15 @@ export default function StaffDashboard({ username, role }: { username: string; r
                               <td>
                                 {l.name}
                                 <div className="text-muted" style={{ fontSize: 11 }}>
-                                  {formatVnd(l.unitPrice)} / đv ·{" "}
-                                  <span style={{ color: started ? "var(--color-accent)" : undefined }}>Bếp: {KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
+                                  {formatVnd(l.unitPrice)} / đv
+                                  {/* Drinks and other non-food lines aren't made by the kitchen — no "Bếp: chưa làm" for them. */}
+                                  {needsKitchen({ section: l.group }) && (
+                                    <>
+                                      {" "}
+                                      ·{" "}
+                                      <span style={{ color: started ? "var(--color-accent)" : undefined }}>Bếp: {KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                               <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
@@ -1327,7 +1337,8 @@ function FulfillmentCard({
   canCancel: boolean;
 }) {
   const on = o.online!;
-  const done = o.items.filter((i) => i.kitchenStatus === "DONE").length;
+  const foodLines = o.items.filter(needsKitchen);
+  const done = foodLines.filter((i) => i.kitchenStatus === "DONE").length;
   const pickup = on.channel === "PICKUP";
   const delivered = o.fulfillment === "DELIVERED";
   return (
@@ -1346,7 +1357,7 @@ function FulfillmentCard({
       </div>
       {on.address && <div>📍 {on.address}</div>}
       <div>
-        🍳 Bếp: {done}/{o.items.length} món xong · 💰 <b>{formatVnd(o.totalAmount)}</b>
+        🍳 Bếp: {done}/{foodLines.length} món xong · 💰 <b>{formatVnd(o.totalAmount)}</b>
       </div>
       <div style={{ fontWeight: 700 }}>
         {delivered

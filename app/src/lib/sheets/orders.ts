@@ -4,6 +4,7 @@ import { genCode } from "../site/validate";
 import { logCancelledItems, type CostBearer } from "./cancelledItems";
 import { listAllMenuItems } from "./menuItems";
 import { listCategories } from "./categories";
+import type { BillGroup } from "../bill-math";
 
 const ORDERS_TAB = "Orders";
 // itemsSummary is a read-only, human-friendly duplicate of the OrderItems rows
@@ -78,7 +79,9 @@ function buildItemsSummary(lines: { nameSnapshot: string; qty: number }[]): stri
 }
 
 const ORDER_ITEMS_TAB = "OrderItems";
-const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus", "note"];
+// section: bill section the dish was ordered under (FOOD / DRINK / OTHER), snapshotted at order time so the
+// kitchen screen can show food only. Appended Oct 2026; empty (older orders) = FOOD.
+const ORDER_ITEMS_HEADERS = ["id", "orderId", "menuItemId", "nameSnapshot", "unitPrice", "qty", "lineTotal", "kitchenStatus", "note", "section"];
 
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 export type KitchenStatus = "PENDING" | "COOKING" | "DONE";
@@ -93,6 +96,7 @@ export type OrderItemLine = {
   lineTotal: number;
   kitchenStatus: KitchenStatus;
   note: string | null;
+  section: BillGroup;
 };
 
 export type Order = {
@@ -198,6 +202,7 @@ function decodeOrderItem(values: Record<string, string>): OrderItemLine {
     lineTotal: cell.toInt(values.lineTotal),
     kitchenStatus: (values.kitchenStatus || "PENDING") as KitchenStatus,
     note: cell.strOrNull(values.note ?? ""),
+    section: values.section === "DRINK" || values.section === "OTHER" ? values.section : "FOOD",
   };
 }
 
@@ -246,7 +251,7 @@ export async function findOrderByCode(code: string): Promise<Order | null> {
 
 export async function createOrder(input: {
   tableId: string;
-  lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null }[];
+  lines: { menuItemId: string; nameSnapshot: string; unitPrice: number; qty: number; lineTotal: number; note: string | null; section?: BillGroup }[];
   /** Website orders: customer/delivery details and the final total after discount + shipping. */
   online?: OnlineOrderInfo;
   note?: string | null;
@@ -276,6 +281,7 @@ export async function createOrder(input: {
     id: randomUUID(),
     orderId: id,
     ...line,
+    section: line.section ?? "FOOD",
     kitchenStatus: "PENDING",
   }));
   // One append for all lines (was one request per line) — fewer writes against
@@ -293,6 +299,7 @@ export async function createOrder(input: {
       lineTotal: cell.int(item.lineTotal),
       kitchenStatus: "PENDING",
       note: cell.str(item.note),
+      section: item.section,
     }))
   );
 
@@ -479,6 +486,7 @@ export async function cancelOrder(
         lineTotal: it.lineTotal,
         kitchenStatus: it.kitchenStatus,
         scope: "order" as const,
+        section: it.section,
         cancelledAt: now,
         cancelledBy: by.username,
         cancelReason: reason,
@@ -538,6 +546,7 @@ export async function cancelOrderItem(
       lineTotal: Math.round(item.unitPrice * qty),
       kitchenStatus: item.kitchenStatus,
       scope: "item",
+      section: item.section,
       cancelledAt: new Date().toISOString(),
       cancelledBy: by.username,
       cancelReason: reason,
@@ -598,6 +607,7 @@ export async function returnOrderItem(
     lineTotal: Math.round(item.unitPrice * qty),
     kitchenStatus: item.kitchenStatus,
     scope: "return" as const,
+    section: item.section,
     cancelledAt: now,
     cancelledBy: by.username,
     cancelReason: note || "Khách trả lại (chưa dùng)",

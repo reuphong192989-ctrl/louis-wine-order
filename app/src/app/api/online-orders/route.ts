@@ -11,6 +11,7 @@ import { RESTAURANT } from "@/lib/site/constants";
 import { rateLimit, tooMany } from "@/lib/site/rate-limit";
 import { notifyStaff, orderMessage } from "@/lib/site/notify";
 import { notifyPush } from "@/lib/push";
+import { billMetaByMenuItemId } from "@/lib/billing";
 import { CHANNEL_LABEL } from "@/lib/site/constants";
 
 export const dynamic = "force-dynamic";
@@ -70,12 +71,20 @@ export async function POST(req: Request) {
     if (!wanted.size) return bad(msg.empty);
 
     // Prices always come from the database, never from the browser.
-    const byId = await findMenuItemsByIds([...wanted.keys()]);
+    const [byId, meta] = await Promise.all([findMenuItemsByIds([...wanted.keys()]), billMetaByMenuItemId()]);
     const lines = [];
     for (const [id, qty] of wanted) {
       const item = byId.get(id);
       if (!item || !item.available || item.priceValue == null) continue;
-      lines.push({ menuItemId: item.id, nameSnapshot: item.name, unitPrice: item.priceValue, qty, lineTotal: item.priceValue * qty, note: null });
+      lines.push({
+        menuItemId: item.id,
+        nameSnapshot: item.name,
+        unitPrice: item.priceValue,
+        qty,
+        lineTotal: item.priceValue * qty,
+        note: null,
+        section: meta.get(item.id)?.group ?? ("FOOD" as const), // only FOOD lines reach the kitchen screen
+      });
     }
     if (!lines.length) return bad(msg.unavailable);
 

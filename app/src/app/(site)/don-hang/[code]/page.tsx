@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findOrderByCode } from "@/lib/sheets/orders";
+import { kitchenAllDone, kitchenStarted } from "@/lib/kitchen";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { AutoRefresh } from "@/components/site/AutoRefresh";
@@ -25,8 +26,9 @@ export default async function OrderPage({ params }: { params: Promise<{ code: st
   const on = o.online;
 
   const cancelled = o.status === "CANCELLED";
-  const allDone = o.items.length > 0 && o.items.every((i) => i.kitchenStatus === "DONE");
-  const cooking = o.items.some((i) => i.kitchenStatus !== "PENDING");
+  // Only the food is cooked: drinks/others don't hold the order back at "kitchen".
+  const allDone = kitchenAllDone(o.items);
+  const cooking = kitchenStarted(o.items);
   // Received → confirmed → kitchen → ready / on the way → handed over.
   const steps = on.channel === "PICKUP" ? L.pickupSteps : L.deliverySteps;
   const step =

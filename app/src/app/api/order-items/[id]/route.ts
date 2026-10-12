@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/api-auth";
 import { withErrors } from "@/lib/api-handler";
 import { setOrderItemQty, setOrderItemStatus } from "@/lib/sheets/orders";
 import { notifyPush } from "@/lib/push";
+import { kitchenFinishedFood } from "@/lib/kitchen";
 
 const statusSchema = z.object({ kitchenStatus: z.enum(["PENDING", "COOKING", "DONE"]) });
 // Weighed items (fish by the kg…) need decimals: 1.2 kg. Rounded to 2 places.
@@ -40,7 +41,8 @@ export const PATCH = withErrors(async (req: NextRequest, { params }: { params: P
   if (!order) return NextResponse.json({ error: "Không tìm thấy món trong đơn." }, { status: 404 });
 
   // Kitchen just finished the last item of this order — tell staff instead of relying on the radio.
-  if (order.status === "CONFIRMED" && order.items.length > 0 && order.items.every((it) => it.kitchenStatus === "DONE")) {
+  // Drinks never get a cooking state, so "the kitchen is finished" means every FOOD line is done.
+  if (order.status === "CONFIRMED" && kitchenFinishedFood(order.items)) {
     after(() =>
       notifyPush(["OWNER", "ADMIN", "STAFF"], {
         title: "Bếp đã làm xong",
