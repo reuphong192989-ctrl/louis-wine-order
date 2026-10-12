@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { normalizeTableId } from "@/lib/table-id";
 type SwitchOption = { tableId: string; label: string };
 
 export default function TableSwitchModal({
@@ -39,7 +40,7 @@ export default function TableSwitchModal({
     setError(null);
 
     const tableNum = table.trim();
-    const newTableId = selectedTableId || (floor.trim() ? `${floor.trim()}-${tableNum}` : tableNum);
+    const newTableId = normalizeTableId(selectedTableId || (floor.trim() ? `${floor.trim()}-${tableNum}` : tableNum));
     if (!newTableId) {
       setError("Vui lòng chọn bàn hoặc nhập mã bàn.");
       return;

@@ -7,8 +7,9 @@ import { withErrors } from "@/lib/api-handler";
 import { findMenuItemsByIds } from "@/lib/sheets/menuItems";
 import { createOrder, listOrders, type OrderStatus } from "@/lib/sheets/orders";
 
+import { normalizeTableId } from "@/lib/table-id";
 const orderSchema = z.object({
-  tableId: z.string().trim().min(1).max(50),
+  tableId: z.string().trim().min(1).max(50).transform(normalizeTableId),
   items: z
     .array(
       z.object({

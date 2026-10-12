@@ -5,6 +5,7 @@ import { listTableNames } from "./sheets/tableNames";
 import { genCode } from "./site/validate";
 import { appendBill } from "./sheets/bills";
 
+import { defaultTableLabel } from "@/lib/table-id";
 const FALLBACK_VAT_RATE = 8; // item's menu/category was deleted since the order was placed
 
 export type BillLine = {
@@ -124,7 +125,7 @@ export async function listOpenTableBills(): Promise<
   return [...byTable.entries()]
     .map(([tableId, list]) => ({
       tableId,
-      tableLabel: nameMap.get(tableId) || tableId,
+      tableLabel: nameMap.get(tableId) || defaultTableLabel(tableId),
       orderCount: list.length,
       itemCount: list.reduce((s, o) => s + o.items.length, 0),
       total: list.reduce((s, o) => s + o.totalAmount, 0),
@@ -143,7 +144,7 @@ export async function previewTableBill(tableId: string): Promise<TableBillPrevie
     returnableMenuItemIds(),
   ]);
   if (orders.length === 0) return null;
-  const tableLabel = tableNames.find((t) => t.tableId === tableId)?.displayName || tableId;
+  const tableLabel = tableNames.find((t) => t.tableId === tableId)?.displayName || defaultTableLabel(tableId);
   return buildPreview(tableId, tableLabel, orders, vatByItem, returnable);
 }
 

@@ -5,6 +5,7 @@ import { listCancelledOrders } from "@/lib/sheets/orders";
 import { listCancelledItems } from "@/lib/sheets/cancelledItems";
 import { listTableNames } from "@/lib/sheets/tableNames";
 
+import { defaultTableLabel, floorOfTableId } from "@/lib/table-id";
 /** Manager-facing cancellation report — who cancelled what, when, and why (whole orders and single dishes). */
 export const GET = withErrors(async (req: NextRequest) => {
   const auth = await requireSession(["OWNER", "ADMIN"]);
@@ -21,12 +22,8 @@ export const GET = withErrors(async (req: NextRequest) => {
   ]);
   const nameMap = new Map(tableNames.map((t) => [t.tableId, t.displayName]));
 
-  // Tables switched via the staff "Đổi bàn" flow are named "<tầng>-<số bàn>" (e.g. "2-05") —
-  // best-effort only: plain/custom table codes without that pattern just leave "floor" blank.
-  const floorOf = (tableId: string): string | null => {
-    const [first, ...rest] = tableId.split("-");
-    return rest.length > 0 && /^\d+$/.test(first) ? first : null;
-  };
+  // Table QR codes are "T<tầng>-<bàn>" (older switches "2-05"); custom codes without a floor leave it blank.
+  const floorOf = floorOfTableId;
 
   // Who bears the cost of an after-confirmation whole-order cancel is stored on its CancelledItems rows.
   const bearerByOrder = new Map<string, { costBearer: string | null; costBearerStaff: string | null }>();
@@ -40,7 +37,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     id: o.id,
     kind: "order" as const,
     tableId: o.tableId,
-    tableLabel: nameMap.get(o.tableId) || o.tableId,
+    tableLabel: nameMap.get(o.tableId) || defaultTableLabel(o.tableId),
     floor: floorOf(o.tableId),
     online: o.online ? o.online.channel : null,
     cancelledAt: o.cancelledAt,
@@ -63,7 +60,7 @@ export const GET = withErrors(async (req: NextRequest) => {
       id: c.id,
       kind: "item" as const,
       tableId: c.tableId,
-      tableLabel: nameMap.get(c.tableId) || c.tableId,
+      tableLabel: nameMap.get(c.tableId) || defaultTableLabel(c.tableId),
       floor: floorOf(c.tableId),
       online: null,
       cancelledAt: c.cancelledAt,

@@ -260,12 +260,97 @@ select.input { cursor: pointer; }
   display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--color-divider); text-align: center;
 }
 
+/* After an order is sent: thank-you card with "my orders" / "review" (customer menu). */
+.sent-dialog { width: 420px; }
+.sent-check {
+  width: 56px; height: 56px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center;
+  font-size: 30px; font-weight: 800; color: #fff; background: #2e8b57;
+}
+.sent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sent-card {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 64px; padding: 10px;
+  border: 2px solid var(--color-accent); background: var(--color-neutral-100); cursor: pointer; text-align: left;
+  font: inherit; color: inherit;
+}
+.sent-card--review { border-color: var(--color-accent-2); }
+.sent-card-title { font-family: var(--font-heading); font-weight: 800; font-size: 14px; }
+.sent-card-sub { font-size: 11px; color: var(--color-neutral-600); }
+
+/* "Món đã gọi" */
+.history-dialog { width: 460px; text-align: left; max-height: 90dvh; }
+.history-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; max-height: 55dvh; }
+.history-round { border: 1px solid var(--color-divider); padding: 8px 10px; }
+.history-round.is-cancelled { opacity: 0.55; text-decoration: line-through; }
+.history-round-head { font-size: 12px; font-weight: 700; color: var(--color-neutral-600); margin-bottom: 4px; }
+.history-line { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 2px 0; }
+.history-status { flex: none; font-size: 12px; color: var(--color-accent); font-weight: 700; }
+.history-total { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; color: var(--color-accent); }
+
+/* Review from the table */
+.review-dialog { width: 420px; }
+.review-stars { display: flex; justify-content: center; gap: 6px; }
+.review-stars button { border: 0; background: none; font-size: 38px; line-height: 1; cursor: pointer; color: var(--color-neutral-300); }
+.review-stars button.on { color: #e0a82e; }
+.review-google { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--color-divider); padding-top: 12px; }
+
+/* ============ Table tablet mode (/order?kiosk=1): dark, big photos, category tabs on top ============ */
+.order-shell.kiosk { background: #141010; color: #f3ead8; }
+/* Popups and the cart keep their light card look (and dark text) on the dark tablet menu. */
+.kiosk .confirm-dialog, .kiosk .cart-panel, .kiosk .detail-sheet { color: var(--color-text); }
+.kiosk .order-header { background: #0d0a08; border-bottom: 1px solid #3a2e22; gap: 10px; }
+.kiosk .order-logo { color: #e3c178; }
+.kiosk .order-header .tag { color: #e3c178; background: transparent; border: 1px solid #6b5434; border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 700; }
+.kiosk .order-header .text-muted { color: #6f6253; }
+.kiosk .order-search::placeholder { color: #8f826f; }
+.kiosk .order-header .btn { min-height: 44px; border-radius: 999px; font-size: 14px; }
+.kiosk .order-header .btn-secondary { background: #2a211a; color: #f3ead8; border-color: #5a4630; }
+.kiosk .order-call-btn { background: #e3c178 !important; color: #1a120c !important; border-color: #e3c178 !important; font-weight: 800; }
+.kiosk .order-cart-btn { background: #7c2128; border-color: #7c2128; }
+.kiosk .order-search { background: #1f1915; color: #f3ead8; border-color: #4a3a2a; }
+.kiosk .lang-switch { border-color: #e3c178; }
+.kiosk .lang-switch button { color: #e3c178; }
+.kiosk .lang-switch button + button { border-left-color: #e3c178; }
+.kiosk .lang-switch button.active { background: #e3c178; color: #1a120c; }
+.kiosk .order-body { flex-direction: column; }
+.kiosk .order-sidebar {
+  width: 100%; height: auto; flex: none; display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden;
+  background: #0d0a08; padding: 8px 14px; border-bottom: 1px solid #3a2e22;
+}
+.kiosk .order-cat-btn {
+  flex: none; width: auto; white-space: nowrap; border: 1px solid #4a3a2a; border-radius: 999px;
+  padding: 10px 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: #cbb89a;
+}
+.kiosk .order-cat-btn.active { background: #e3c178; border-color: #e3c178; color: #1a120c; }
+.kiosk .order-main { padding: 18px 22px; }
+.kiosk .order-main h3 { color: #e3c178; font-size: 20px; }
+.kiosk .order-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.kiosk .item-card { background: #1e1915; border: 1px solid #2f261f; border-radius: 12px; overflow: hidden; }
+.kiosk .item-img { aspect-ratio: 4 / 3; background: #2a211a; }
+/* Bottle shots on white: a warm spotlight backdrop; multiply makes the photo's white disappear into it. */
+.kiosk .item-bottle-frame { background: radial-gradient(ellipse at 50% 38%, #fbf3e4 0%, #e3cda4 50%, #8a6a40 100%); }
+.kiosk .item-img--bottle { aspect-ratio: 4 / 5; padding: 14px 10px 6px; background: transparent; mix-blend-mode: multiply; }
+.kiosk .item-body { padding: 12px 14px; }
+.kiosk .item-name { color: #f6ecdc; font-size: 16px; }
+.kiosk .item-note { color: #a99a83; font-size: 12px; }
+.kiosk .item-price { color: #e3c178; font-size: 16px; }
+.kiosk .item-add-btn { width: 40px; height: 40px; font-size: 22px; background: #e3c178; color: #1a120c; }
+.kiosk .order-footer { background: #0d0a08; border-top: 1px solid #3a2e22; color: #cbb89a; }
+.kiosk .order-footer .text-muted { color: #8f826f; }
+.kiosk .order-total { color: #e3c178; font-size: 20px; }
+.kiosk .order-footer .btn { min-height: 48px; border-radius: 999px; padding: 0 24px; font-size: 15px; background: #7c2128; }
+
+/* Phones: two columns that always fit the screen (180px minimum made the page wider than a 400px phone). */
+@media (max-width: 480px) {
+  .order-grid, .kiosk .order-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .order-header .btn { padding: 6px 10px; }
+}
+
 @media (max-width: 860px) {
   .order-header { flex-wrap: wrap; height: auto; padding: 10px 14px; }
   .order-search { order: 5; max-width: none; flex-basis: 100%; }
   .order-body { flex-direction: column; }
   .order-sidebar { width: 100%; height: auto; display: flex; overflow-x: auto; overflow-y: hidden; }
-  .order-cat-btn { flex: none; white-space: nowrap; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.08); }
+  .order-cat-btn { flex: none; width: auto; white-space: nowrap; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.08); }
   .order-main { padding: 14px; }
   .cart-panel { width: 100%; }
 }

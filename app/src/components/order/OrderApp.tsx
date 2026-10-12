@@ -10,17 +10,22 @@ import type { CategoryDTO, MenuItemDTO } from "@/types";
 import CartDrawer, { type CartLine } from "./CartDrawer";
 import MenuItemModal from "./MenuItemModal";
 import OrderSentDialog from "./OrderSentDialog";
+import TableHistoryModal from "./TableHistoryModal";
+import FeedbackModal from "./FeedbackModal";
 import TableSwitchModal from "./TableSwitchModal";
 import Toast, { type ToastMsg } from "@/components/Toast";
 import { LANG_COOKIE, LANG_LABEL, fmt, priceLabel, type Lang } from "@/lib/site/i18n";
 import { categoryName, dishText, searchKey } from "@/lib/site/menu-i18n";
 import { ORDER_LANGS, orderDict } from "@/lib/order-i18n";
+import { normalizeTableId } from "@/lib/table-id";
 
 const HIGHLIGHT_TAB_ID = "__highlight__";
 const FEATURED_TAB_ID = "__featured__";
 
 // A tablet permanently assigned to a table (no QR) remembers its table here.
 const ASSIGNED_TABLE_KEY = "lwo-assigned-table";
+// Table tablet look (dark, big photos, tabs on top): turned on once with ?kiosk=1, off with ?kiosk=0.
+const KIOSK_KEY = "lwo-kiosk";
 
 // Categories whose product photos are tall standing bottles/cans — shown with
 // a portrait image box instead of the default landscape crop.
@@ -37,15 +42,19 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
     // Shared with the public website so the guest's choice follows them.
     document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
   }
-  const qrTableId = searchParams.get("table");
+  const qrRaw = searchParams.get("table");
+  const qrTableId = qrRaw ? normalizeTableId(qrRaw) : null;
   const [assignedTableId, setAssignedTableId] = useState<string | null>(null);
   const [overrideTableId, setOverrideTableId] = useState<string | null>(null);
   // Priority: an explicit in-session switch wins, then the QR code in the URL
   // (per-visit, a customer's own device), then a tablet's remembered table
   // assignment, then the historical "01" default.
-  const tableId = overrideTableId || qrTableId || assignedTableId || "01";
+  const tableId = overrideTableId || qrTableId || (assignedTableId ? normalizeTableId(assignedTableId) : null) || "01";
   const [showTableSwitch, setShowTableSwitch] = useState(false);
   const tableNames = useTableNames();
+
+  const kioskParam = searchParams.get("kiosk");
+  const [kiosk, setKiosk] = useState(kioskParam === "1");
 
   useEffect(() => {
     try {
@@ -54,6 +63,16 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
       // storage unavailable — fall back to the "01" default
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      if (kioskParam === "1") localStorage.setItem(KIOSK_KEY, "1");
+      else if (kioskParam === "0") localStorage.removeItem(KIOSK_KEY);
+      setKiosk(localStorage.getItem(KIOSK_KEY) === "1");
+    } catch {
+      setKiosk(kioskParam === "1");
+    }
+  }, [kioskParam]);
 
   const [categories, setCategories] = useState<CategoryDTO[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,6 +83,15 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
   const [orderError, setOrderError] = useState<string | null>(null);
   const [showSentDialog, setShowSentDialog] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+
+  // On a table tablet the thank-you card returns to the menu by itself for the next guest action.
+  useEffect(() => {
+    if (!kiosk || !showSentDialog) return;
+    const id = setTimeout(() => setShowSentDialog(false), 30_000);
+    return () => clearTimeout(id);
+  }, [kiosk, showSentDialog]);
   const [detailItem, setDetailItem] = useState<MenuItemDTO | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [callStaffCooldown, setCallStaffCooldown] = useState(false);
@@ -301,7 +329,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
   }
 
   return (
-    <div className="order-shell">
+    <div className={`order-shell${kiosk ? " kiosk" : ""}`}>
       <header className="order-header">
         <div style={{ flex: "none", lineHeight: 1.2 }}>
           <div className="order-logo" style={{ lineHeight: 1.1 }}>LOUIS WINE</div>
@@ -322,8 +350,11 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
         >
           {t.switchTable}
         </button>
-        <button className="btn btn-secondary" onClick={callStaff} disabled={callStaffCooldown} style={{ flex: "none" }}>
+        <button className="btn btn-secondary order-call-btn" onClick={callStaff} disabled={callStaffCooldown} style={{ flex: "none" }}>
           {t.callStaff}
+        </button>
+        <button className="btn btn-secondary order-history-btn" onClick={() => setShowHistory(true)} style={{ flex: "none" }}>
+          {t.history.button}
         </button>
         <div className="lang-switch" role="group" aria-label={t.language}>
           {ORDER_LANGS.map((l) => (
@@ -371,15 +402,16 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
               const tr = dishText(item.name, item.note, lang, item);
               return (
               <div className="item-card" key={item.id}>
-                {item.imageUrl && (
-                  <img
-                    className={`item-img ${bottleCategoryIds.has(item.categoryId) ? "item-img--bottle" : ""}`}
-                    src={item.imageUrl}
-                    alt={tr.name}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setDetailItem(item)}
-                  />
-                )}
+                {item.imageUrl &&
+                  (bottleCategoryIds.has(item.categoryId) ? (
+                    // Bottle shots: a backdrop behind the photo; on the tablet look the white studio
+                    // background blends into a warm "spotlight" instead of showing as a white box.
+                    <div className="item-bottle-frame" onClick={() => setDetailItem(item)} style={{ cursor: "pointer" }}>
+                      <img className="item-img item-img--bottle" src={item.imageUrl} alt={tr.name} />
+                    </div>
+                  ) : (
+                    <img className="item-img" src={item.imageUrl} alt={tr.name} style={{ cursor: "pointer" }} onClick={() => setDetailItem(item)} />
+                  ))}
                 <div className="item-body">
                   <div className="item-name" style={{ cursor: "pointer" }} onClick={() => setDetailItem(item)}>
                     {tr.name}
@@ -448,10 +480,24 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
             callStaff();
             setShowSentDialog(false);
           }}
+          onHistory={() => {
+            setShowSentDialog(false);
+            setShowHistory(true);
+          }}
+          onReview={() => {
+            setShowSentDialog(false);
+            setShowReview(true);
+          }}
           callStaffDisabled={callStaffCooldown}
           t={t.sent}
         />
       )}
+
+      {showHistory && (
+        <TableHistoryModal tableId={tableId} tableLabel={tableLabel(tableNames, tableId)} onClose={() => setShowHistory(false)} t={t.history} />
+      )}
+
+      {showReview && <FeedbackModal tableLabel={tableLabel(tableNames, tableId)} onClose={() => setShowReview(false)} t={t.review} />}
 
       {showTableSwitch && (
         <TableSwitchModal

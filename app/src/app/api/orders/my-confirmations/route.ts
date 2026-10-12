@@ -5,6 +5,7 @@ import { listOrdersConfirmedBy } from "@/lib/sheets/orders";
 import { listTableNames } from "@/lib/sheets/tableNames";
 import { todayVN } from "@/lib/site/validate";
 
+import { defaultTableLabel } from "@/lib/table-id";
 /** The logged-in staff member's own confirmations for one day (Vietnam time) — never anyone else's. */
 export const GET = withErrors(async (req: NextRequest) => {
   const auth = await requireSession(["OWNER", "ADMIN", "STAFF", "CASHIER"]);
@@ -26,7 +27,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     orders: orders.map((o) => ({
       id: o.id,
       tableId: o.tableId,
-      tableLabel: o.online ? o.tableId : `Bàn ${nameMap.get(o.tableId) || o.tableId}`,
+      tableLabel: o.online ? o.tableId : `Bàn ${nameMap.get(o.tableId) || defaultTableLabel(o.tableId)}`,
       onlineCode: o.online?.code ?? null,
       createdAt: o.createdAt,
       confirmedAt: o.confirmedAt,
