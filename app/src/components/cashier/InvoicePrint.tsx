@@ -1,8 +1,10 @@
 "use client";
 
+import { Fragment } from "react";
 import { formatQty, formatVnd } from "@/lib/format";
 import { COMPANY, RESTAURANT } from "@/lib/site/constants";
 import { mergeBillLines } from "@/lib/bill-lines";
+import { BILL_GROUPS, BILL_GROUP_LABEL } from "@/lib/bill-math";
 import { vndInWords } from "@/lib/vnd-words";
 import type { FinalizedBill } from "@/lib/billing";
 import type { TransferAccount } from "./TransferQr";
@@ -32,12 +34,18 @@ export default function InvoicePrint({
   bill,
   printedByLabel,
   transfer = null,
+  provisional = false,
 }: {
   bill: FinalizedBill;
   printedByLabel: string;
   transfer?: { account: TransferAccount; note: string; qrSrc: string } | null;
+  /** "Phiếu tạm tính": the running bill printed before the guest pays — no bill number, no payment method, no QR. */
+  provisional?: boolean;
 }) {
   const lines = mergeBillLines(bill.items);
+  // Dishes first, then drinks, then the rest; numbering (TT) runs on across the sections.
+  const sections = BILL_GROUPS.map((g) => ({ group: g, rows: lines.filter((l) => l.group === g) })).filter((s) => s.rows.length > 0);
+  let rowNo = 0;
   const paidBy =
     bill.paymentMethod === "TRANSFER"
       ? `Chuyển khoản${bill.bankAccountLabel ? ` — ${bill.bankAccountLabel}` : ""}`
@@ -68,8 +76,8 @@ export default function InvoicePrint({
         </div>
       </div>
 
-      <div className="inv-title">HÓA ĐƠN THANH TOÁN</div>
-      <div className="inv-billno">Số: {bill.billNo}</div>
+      <div className="inv-title">{provisional ? "PHIẾU TẠM TÍNH" : "HÓA ĐƠN THANH TOÁN"}</div>
+      {!provisional && <div className="inv-billno">Số: {bill.billNo}</div>}
 
       <table className="invoice-meta">
         <tbody>
@@ -89,6 +97,11 @@ export default function InvoicePrint({
           </tr>
         </tbody>
       </table>
+      {bill.customerName && (
+        <div className="inv-customer">
+          Khách hàng: <b>{bill.customerName}</b>
+        </div>
+      )}
 
       <table className="invoice-items">
         <thead>
@@ -104,17 +117,24 @@ export default function InvoicePrint({
           </tr>
         </thead>
         <tbody>
-          {lines.map((l, i) => (
-            <tr key={i}>
-              <td style={{ textAlign: "center" }}>{i + 1}</td>
-              <td>{l.name}</td>
-              <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
-              <td style={{ textAlign: "center" }}>phần</td>
-              <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
-              <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
-              <td style={{ textAlign: "center" }}>{l.vatRate}%</td>
-              <td style={{ textAlign: "right" }}>{formatVnd(Math.round((l.lineTotal * l.vatRate) / 100))}</td>
-            </tr>
+          {sections.map((s) => (
+            <Fragment key={s.group}>
+              <tr className="inv-group">
+                <td colSpan={8}>{BILL_GROUP_LABEL[s.group]}</td>
+              </tr>
+              {s.rows.map((l) => (
+                <tr key={`${s.group}-${rowNo}`}>
+                  <td style={{ textAlign: "center" }}>{++rowNo}</td>
+                  <td>{l.name}</td>
+                  <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
+                  <td style={{ textAlign: "center" }}>phần</td>
+                  <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
+                  <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
+                  <td style={{ textAlign: "center" }}>{l.vatRate}%</td>
+                  <td style={{ textAlign: "right" }}>{formatVnd(Math.round((l.lineTotal * l.vatRate) / 100))}</td>
+                </tr>
+              ))}
+            </Fragment>
           ))}
         </tbody>
       </table>
@@ -127,7 +147,7 @@ export default function InvoicePrint({
           </tr>
           {bill.discountAmount > 0 && (
             <tr>
-              <td>Chiết khấu</td>
+              <td>Chiết khấu{bill.discountPercent ? ` (${bill.discountPercent}%)` : ""}</td>
               <td>-{formatVnd(bill.discountAmount)}</td>
             </tr>
           )}
@@ -150,7 +170,14 @@ export default function InvoicePrint({
         </tbody>
       </table>
       <div className="inv-words">Bằng chữ: {vndInWords(bill.totalAmount)}</div>
-      <div className="inv-paid">Hình thức thanh toán: {paidBy}</div>
+      {bill.discountAmount > 0 && (
+        <div className="inv-note">Cột “Tiền thuế” theo giá niêm yết; thuế thanh toán ở trên đã tính sau chiết khấu.</div>
+      )}
+      {provisional ? (
+        <div className="inv-provisional">PHIẾU TẠM TÍNH — CHƯA PHẢI HOÁ ĐƠN THANH TOÁN</div>
+      ) : (
+        <div className="inv-paid">Hình thức thanh toán: {paidBy}</div>
+      )}
 
       {transfer && (
         <div className="inv-qr">

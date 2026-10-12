@@ -1,14 +1,28 @@
 import { randomUUID } from "crypto";
 import { appendRow, batchUpdateRows, deleteRow, readAllRows, readAllRowsCached, updateRow, cell } from "./core";
+import type { BillGroup } from "../bill-math";
 
 const TAB = "Categories";
 // nameEn / nameRu: optional translations for foreign guests (empty = built-in dictionary, then Vietnamese).
 // vatRate: % applied to this category's items on a cashier-printed bill (internal use only, not an e-invoice).
 // returnable: guests may hand back unused, untouched units (unopened beer/wine, cigars,
 // cold towels) before paying — "true"/"false"; empty = guessed from the name (see below).
-const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate", "returnable"];
+// group: which section of the printed bill / which screen the category belongs to — "FOOD" | "DRINK" | "OTHER";
+// empty = guessed from the name (see guessGroup) until a manager sets it in Quản trị → Danh mục.
+const HEADERS = ["id", "slug", "name", "sortOrder", "nameEn", "nameRu", "vatRate", "returnable", "group"];
 
 const DEFAULT_VAT_RATE = 8;
+
+const OTHER_BY_NAME = /thuốc|cigar|xì gà|khăn|khác|dịch vụ|phụ phí|đồ dùng/i;
+const DRINK_BY_NAME = /bia|rượu|vang|nước|đồ uống|sâm|cocktail|trà|cà phê|sinh tố|soda|champagne/i;
+export function guessGroup(name: string): BillGroup {
+  if (OTHER_BY_NAME.test(name)) return "OTHER";
+  if (DRINK_BY_NAME.test(name)) return "DRINK";
+  return "FOOD";
+}
+function parseGroup(v: string | undefined): BillGroup | null {
+  return v === "FOOD" || v === "DRINK" || v === "OTHER" ? v : null;
+}
 
 // Until a manager sets the flag explicitly, drinks/tobacco/towels are returnable and food is not.
 const RETURNABLE_BY_NAME = /bia|rượu|vang|nước|đồ uống|cigar|xì gà|thuốc|khăn/i;
@@ -25,6 +39,7 @@ export type Category = {
   nameRu: string | null;
   vatRate: number;
   returnable: boolean;
+  group: BillGroup;
 };
 
 function decode(values: Record<string, string>): Category {
@@ -37,6 +52,7 @@ function decode(values: Record<string, string>): Category {
     nameRu: cell.strOrNull(values.nameRu ?? ""),
     vatRate: values.vatRate === "" || values.vatRate == null ? DEFAULT_VAT_RATE : cell.toInt(values.vatRate),
     returnable: values.returnable === "true" ? true : values.returnable === "false" ? false : defaultReturnable(values.name),
+    group: parseGroup(values.group) ?? guessGroup(values.name),
   };
 }
 
@@ -68,6 +84,7 @@ export async function createCategory(input: { name: string; slug: string; sortOr
     nameRu: null,
     vatRate: DEFAULT_VAT_RATE,
     returnable: defaultReturnable(input.name),
+    group: guessGroup(input.name),
   };
   await appendRow(TAB, HEADERS, {
     id: category.id,
@@ -78,13 +95,14 @@ export async function createCategory(input: { name: string; slug: string; sortOr
     nameRu: "",
     vatRate: cell.int(category.vatRate),
     returnable: "",
+    group: "", // guessed from the name until a manager picks one
   });
   return category;
 }
 
 export async function updateCategory(
   id: string,
-  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null; vatRate?: number; returnable?: boolean }
+  patch: { name?: string; sortOrder?: number; nameEn?: string | null; nameRu?: string | null; vatRate?: number; returnable?: boolean; group?: BillGroup }
 ): Promise<Category | null> {
   const rows = await readAllRows(TAB);
   const row = rows.find((r) => r.values.id === id);
@@ -98,6 +116,7 @@ export async function updateCategory(
     nameRu: patch.nameRu === undefined ? current.nameRu : patch.nameRu || null,
     vatRate: patch.vatRate ?? current.vatRate,
     returnable: patch.returnable ?? current.returnable,
+    group: patch.group ?? current.group,
   };
   await updateRow(TAB, row.rowNumber, HEADERS, {
     id: next.id,
@@ -109,6 +128,8 @@ export async function updateCategory(
     vatRate: cell.int(next.vatRate),
     // Keep "" (name-based default) until someone actually changes the flag.
     returnable: patch.returnable === undefined ? row.values.returnable ?? "" : cell.bool(next.returnable),
+    // Same idea: keep "" (name-based guess) until someone actually picks a group.
+    group: patch.group === undefined ? row.values.group ?? "" : next.group,
   });
   return next;
 }

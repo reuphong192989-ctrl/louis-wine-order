@@ -13,6 +13,7 @@ type CategoryRow = {
   nameRu?: string | null;
   vatRate: number;
   returnable: boolean;
+  group: "FOOD" | "DRINK" | "OTHER";
   _count: { items: number };
 };
 
@@ -120,6 +121,15 @@ export default function CategoriesManager() {
     await load();
   }
 
+  async function saveGroup(id: string, group: CategoryRow["group"]) {
+    await fetch(`/api/categories/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group }),
+    });
+    await load();
+  }
+
   async function saveReturnable(id: string, returnable: boolean) {
     await fetch(`/api/categories/${id}`, {
       method: "PUT",
@@ -153,6 +163,9 @@ export default function CategoriesManager() {
             <th>Tên</th>
             <th>Slug</th>
             <th>Số món</th>
+            <th style={{ width: 110 }} title="Nhóm trên hoá đơn in (Đồ ăn / Đồ uống / Khác) và màn hình phục vụ">
+              Nhóm
+            </th>
             <th style={{ width: 90 }}>VAT %</th>
             <th style={{ width: 110 }} title="Khách được trả lại hàng chưa dùng (bia chưa khui, rượu chưa mở, xì gà, khăn lạnh...) trước khi thanh toán">
               Cho trả lại
@@ -223,6 +236,19 @@ export default function CategoriesManager() {
               </td>
               <td className="text-muted">{cat.slug}</td>
               <td>{cat._count.items}</td>
+              <td>
+                <select
+                  className="input"
+                  value={cat.group}
+                  style={{ padding: "4px 6px" }}
+                  title="Danh mục này thuộc nhóm nào trên hoá đơn in"
+                  onChange={(e) => saveGroup(cat.id, e.target.value as CategoryRow["group"])}
+                >
+                  <option value="FOOD">Đồ ăn</option>
+                  <option value="DRINK">Đồ uống</option>
+                  <option value="OTHER">Khác</option>
+                </select>
+              </td>
               <td>
                 <input
                   className="input"

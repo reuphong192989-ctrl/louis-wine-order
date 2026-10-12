@@ -15,13 +15,18 @@ export const GET = withErrors(async (_req: NextRequest, { params }: { params: Pr
   return NextResponse.json({ bill });
 });
 
-const finalizeSchema = z.object({
-  guestCount: z.number().int().min(0).max(999).nullable(),
-  discountAmount: z.number().int().min(0),
-  method: z.enum(["CASH", "TRANSFER"]),
-  bankAccountKey: z.enum(["no_invoice", "invoice"]).nullable(),
-  bankAccountLabel: z.string().trim().max(200).nullable(),
-});
+const finalizeSchema = z
+  .object({
+    guestCount: z.number().int().min(0).max(999).nullable(),
+    // Discount: a fixed amount (đ) or a percentage — send at most one; the server works the amount out itself.
+    discountAmount: z.number().int().min(0).optional(),
+    discountPercent: z.number().min(0).max(100).optional(),
+    customerName: z.string().trim().max(80).nullable().optional(),
+    method: z.enum(["CASH", "TRANSFER"]),
+    bankAccountKey: z.enum(["no_invoice", "invoice"]).nullable(),
+    bankAccountLabel: z.string().trim().max(200).nullable(),
+  })
+  .refine((d) => !(d.discountAmount && d.discountPercent), { message: "Chỉ nhập chiết khấu theo % hoặc theo số tiền, không nhập cả hai." });
 
 /** Combines every open order for the table under one bill number — this is what the cashier prints. */
 export const POST = withErrors(async (req: NextRequest, { params }: { params: Promise<{ tableId: string }> }) => {
@@ -38,7 +43,14 @@ export const POST = withErrors(async (req: NextRequest, { params }: { params: Pr
     return NextResponse.json({ error: "Chuyển khoản chỉ nhận vào tài khoản công ty (có xuất hoá đơn). Khách không lấy hoá đơn thì thanh toán tiền mặt." }, { status: 400 });
   }
 
-  const result = await finalizeTableBill(decodeURIComponent(tableId), { ...parsed.data, printedBy: auth.session.username });
+  const { discountAmount, discountPercent, customerName, ...rest } = parsed.data;
+  const discount = discountPercent ? { type: "percent" as const, value: discountPercent } : discountAmount ? { type: "amount" as const, value: discountAmount } : null;
+  const result = await finalizeTableBill(decodeURIComponent(tableId), {
+    ...rest,
+    discount,
+    customerName: customerName?.trim() || null,
+    printedBy: auth.session.username,
+  });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ bill: result.bill });
 });

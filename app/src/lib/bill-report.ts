@@ -33,6 +33,7 @@ export type ReportBill = {
   total: number;
   method: MethodKey;
   account: string;
+  customerName: string;
   /** Billed before bills were stored (10/2026): discount unknown, VAT recomputed from today's rates. */
   legacy: boolean;
 };
@@ -119,6 +120,7 @@ export async function buildBillReport(from: string, to: string): Promise<BillRep
       total: b.total,
       method: methodKey(b.method, b.bankAccountKey),
       account: b.bankAccountLabel ?? "",
+      customerName: b.customerName ?? "",
       legacy: false,
     }));
 
@@ -161,6 +163,7 @@ export async function buildBillReport(from: string, to: string): Promise<BillRep
         total: subtotal + vat,
         method: methodKey(first.paymentMethod, first.bankAccountKey),
         account: first.bankAccountLabel ?? "",
+        customerName: "",
         legacy: true,
       });
     }
@@ -249,7 +252,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
     ["Cộng", s.billCount, s.billsTotal, s.byMethod.CASH, s.billsTotal - s.byMethod.CASH, s.onlineTotal, s.grandTotal],
   ];
   const billRows = [
-    ["Ngày", "Giờ", "Số HĐ", "Bàn", "Thu ngân", "Số khách", "Số món", "Tiền món", "Chiết khấu", "VAT", "Tổng thu", "Hình thức", "Tài khoản", "Ghi chú"],
+    ["Ngày", "Giờ", "Số HĐ", "Bàn", "Thu ngân", "Số khách", "Số món", "Tiền món", "Chiết khấu", "VAT", "Tổng thu", "Hình thức", "Tài khoản", "Ghi chú", "Khách hàng"],
     ...r.bills.map((b) => [
       dmy(b.date),
       TIME.format(new Date(b.paidAt)),
@@ -265,6 +268,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
       METHOD_LABEL[b.method],
       b.account,
       b.legacy ? "HĐ cũ: chưa lưu chiết khấu, VAT tính lại" : "",
+      b.customerName,
     ]),
     ["Cộng", "", `${r.bills.length} HĐ`, "", "", s.guests, "", s.subtotal, s.discount, s.vat, s.billsTotal],
   ];
@@ -276,7 +280,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
   return buildXlsx([
     { name: "Tổng hợp", rows: summaryRows, widths: [34, 18], moneyCols: [1] },
     { name: "Theo ngày", rows: dayRows, widths: [12, 8, 16, 16, 16, 16, 16], moneyCols: [2, 3, 4, 5, 6], boldRows: [0, dayRows.length - 1] },
-    { name: "Hoá đơn", rows: billRows, widths: [11, 7, 12, 8, 12, 9, 8, 14, 12, 12, 14, 26, 30, 34], moneyCols: [7, 8, 9, 10], boldRows: [0, billRows.length - 1] },
+    { name: "Hoá đơn", rows: billRows, widths: [11, 7, 12, 8, 12, 9, 8, 14, 12, 12, 14, 26, 30, 34, 22], moneyCols: [7, 8, 9, 10], boldRows: [0, billRows.length - 1] },
     { name: "Đơn online", rows: onlineRows, widths: [11, 7, 12, 16, 22, 12, 14, 26], moneyCols: [6], boldRows: [0, onlineRows.length - 1] },
   ]);
 }

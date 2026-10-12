@@ -8,6 +8,7 @@ import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
 import TransferQr, { useVietQr } from "./TransferQr";
 import { mergeBillLines } from "@/lib/bill-lines";
+import { computeBill } from "@/lib/bill-math";
 import type { TableBillPreview, FinalizedBill } from "@/lib/billing";
 
 type OpenTable = { tableId: string; tableLabel: string; orderCount: number; itemCount: number; total: number; oldestCreatedAt: string };
@@ -31,6 +32,9 @@ export default function CashierBoard({ username, role }: { username: string; rol
   const [bankAccounts, setBankAccounts] = useState<BankAccounts | null>(null);
   const [guestCount, setGuestCount] = useState("");
   const [discountAmount, setDiscountAmount] = useState("");
+  const [discountType, setDiscountType] = useState<"percent" | "amount">("percent");
+  const [customerName, setCustomerName] = useState("");
+  const [tempBill, setTempBill] = useState<FinalizedBill | null>(null);
   const [method, setMethod] = useState<"CASH" | "TRANSFER">("CASH");
   const [bankAccountKey, setBankAccountKey] = useState<"no_invoice" | "invoice" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,12 +64,40 @@ export default function CashierBoard({ username, role }: { username: string; rol
     setError(null);
     setGuestCount("");
     setDiscountAmount("");
+    setDiscountType("percent");
+    setCustomerName("");
+    setTempBill(null);
     setMethod("CASH");
     setBankAccountKey(null);
     const res = await fetch(`/api/billing/table/${encodeURIComponent(tableId)}`);
     const data = await res.json().catch(() => null);
     if (res.ok) setPreview(data.bill);
     else setError(data?.error ?? "Không tải được hoá đơn bàn này.");
+  }
+
+  const discountNumber = Math.max(0, Number(discountAmount) || 0);
+  // Same arithmetic as the server (finalize), so the on-screen total is exactly what gets printed.
+  const totals = preview ? computeBill(preview.items, discountNumber > 0 ? { type: discountType, value: discountNumber } : null) : null;
+
+  /** "Bill tạm": print the running bill (with the discount/customer typed so far) without closing the table. */
+  function printTempBill() {
+    if (!preview || !totals) return;
+    setTempBill({
+      ...preview,
+      vatGroups: totals.vatGroups,
+      totalVat: totals.totalVat,
+      billNo: "",
+      guestCount: guestCount.trim() ? Number(guestCount) : null,
+      discountAmount: totals.discountAmount,
+      discountPercent: totals.discountPercent,
+      customerName: customerName.trim() || null,
+      totalAmount: totals.total,
+      paymentMethod: method,
+      bankAccountKey: null,
+      bankAccountLabel: null,
+      printedBy: username,
+      printedAt: new Date().toISOString(),
+    });
   }
 
   async function confirmAndPrint() {
@@ -87,7 +119,9 @@ export default function CashierBoard({ username, role }: { username: string; rol
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           guestCount: guestCount.trim() ? Number(guestCount) : null,
-          discountAmount: discountAmount.trim() ? Number(discountAmount) : 0,
+          // The server recomputes the amount from the real bill; send only the one the cashier typed.
+          ...(discountType === "percent" ? { discountPercent: discountNumber } : { discountAmount: Math.round(discountNumber) }),
+          customerName: customerName.trim() || null,
           method,
           bankAccountKey: method === "TRANSFER" ? bankAccountKey : null,
           bankAccountLabel,
@@ -117,8 +151,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
 
   const selectedAccount =
     method === "TRANSFER" && bankAccountKey && bankAccounts ? (bankAccountKey === "invoice" ? bankAccounts.invoice : bankAccounts.noInvoice) : null;
-  const discountValue = Math.max(0, Number(discountAmount) || 0);
-  const payable = preview ? Math.max(0, preview.subtotal - discountValue + preview.totalVat) : 0;
+  const payable = totals?.total ?? 0;
 
   // Paid by transfer → the same VietQR shown on screen is also printed on the paper bill.
   const paidAccount =
@@ -130,6 +163,22 @@ export default function CashierBoard({ username, role }: { username: string; rol
   const transferNote = finalizedBill ? `${finalizedBill.billNo} Ban ${finalizedBill.tableLabel}` : "";
   const printQr = useVietQr(paidAccount, finalizedBill?.totalAmount ?? 0, transferNote);
   const qrPending = !!paidAccount && !!printQr.bin && !printQr.src;
+
+  if (tempBill) {
+    return (
+      <div>
+        <div className="no-print" style={{ display: "flex", gap: 8, padding: "var(--space-4)", justifyContent: "center" }}>
+          <button className="btn btn-primary" onClick={() => window.print()}>
+            In phiếu tạm tính (A5)
+          </button>
+          <button className="btn btn-secondary" onClick={() => setTempBill(null)}>
+            Quay lại
+          </button>
+        </div>
+        <InvoicePrint bill={tempBill} printedByLabel={username} provisional />
+      </div>
+    );
+  }
 
   if (finalizedBill) {
     return (
@@ -242,13 +291,13 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     <span>Tiền món</span>
                     <span>{formatVnd(preview.subtotal)}</span>
                   </div>
-                  {discountValue > 0 && (
+                  {totals && totals.discountAmount > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Chiết khấu</span>
-                      <span>-{formatVnd(discountValue)}</span>
+                      <span>Chiết khấu{totals.discountPercent ? ` (${totals.discountPercent}%)` : ""}</span>
+                      <span>-{formatVnd(totals.discountAmount)}</span>
                     </div>
                   )}
-                  {preview.vatGroups.map((g) => (
+                  {(totals?.vatGroups ?? preview.vatGroups).map((g) => (
                     <div key={g.rate} style={{ display: "flex", justifyContent: "space-between" }} className="text-muted">
                       <span>VAT {g.rate}%</span>
                       <span>{formatVnd(g.amount)}</span>
@@ -265,9 +314,35 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     <label>SL khách</label>
                     <input className="input" type="number" min={0} value={guestCount} onChange={(e) => setGuestCount(e.target.value)} />
                   </div>
-                  <div className="field" style={{ width: 160 }}>
-                    <label>Tiền chiết khấu</label>
-                    <input className="input" type="number" min={0} value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
+                  <div className="field" style={{ width: 210 }}>
+                    <label>Chiết khấu</label>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <input
+                        className="input"
+                        type="number"
+                        min={0}
+                        max={discountType === "percent" ? 100 : undefined}
+                        step={discountType === "percent" ? "any" : 1000}
+                        inputMode="decimal"
+                        style={{ flex: 1, minWidth: 0 }}
+                        value={discountAmount}
+                        onChange={(e) => setDiscountAmount(e.target.value)}
+                      />
+                      <select
+                        className="input"
+                        style={{ width: 64, padding: "0 4px" }}
+                        value={discountType}
+                        onChange={(e) => setDiscountType(e.target.value as "percent" | "amount")}
+                        aria-label="Đơn vị chiết khấu"
+                      >
+                        <option value="percent">%</option>
+                        <option value="amount">đ</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="field" style={{ flex: 1, minWidth: 180 }}>
+                    <label>Tên khách hàng (tuỳ chọn)</label>
+                    <input className="input" maxLength={80} value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                   </div>
                 </div>
 
@@ -320,9 +395,14 @@ export default function CashierBoard({ username, role }: { username: string; rol
                   </p>
                 )}
 
-                <button className="btn btn-primary" disabled={busy} onClick={confirmAndPrint}>
-                  {busy ? "Đang lập hoá đơn..." : "Xác nhận & In hoá đơn"}
-                </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn btn-secondary" disabled={busy} onClick={printTempBill}>
+                    In bill tạm
+                  </button>
+                  <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy} onClick={confirmAndPrint}>
+                    {busy ? "Đang lập hoá đơn..." : "Xác nhận & In hoá đơn"}
+                  </button>
+                </div>
               </div>
             )}
           </section>
