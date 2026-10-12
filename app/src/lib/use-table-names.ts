@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { defaultTableLabel } from "./table-id";
 
 export type TableNameMap = Record<string, string>;
 
@@ -30,5 +31,5 @@ export function useTableNames(): TableNameMap {
 }
 
 export function tableLabel(map: TableNameMap, tableId: string): string {
-  return map[tableId] || tableId;
+  return map[tableId] || defaultTableLabel(tableId);
 }

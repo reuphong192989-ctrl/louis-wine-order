@@ -4,6 +4,7 @@ import { withErrors } from "@/lib/api-handler";
 import { listCancelledItems } from "@/lib/sheets/cancelledItems";
 import { listTableNames } from "@/lib/sheets/tableNames";
 
+import { defaultTableLabel } from "@/lib/table-id";
 const WINDOW_MS = 3 * 3600 * 1000;
 
 /** Dishes taken back after confirmation in the last few hours — the kitchen screen flashes these so cooks stop. */
@@ -23,7 +24,7 @@ export const GET = withErrors(async () => {
     cancellations: items.filter((c) => c.scope !== "return").map((c) => ({
       id: c.id,
       tableId: c.tableId,
-      tableLabel: nameMap.get(c.tableId) || c.tableId,
+      tableLabel: nameMap.get(c.tableId) || defaultTableLabel(c.tableId),
       name: c.nameSnapshot,
       qty: c.qty,
       kitchenStatus: c.kitchenStatus,

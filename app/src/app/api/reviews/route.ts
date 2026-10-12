@@ -30,16 +30,19 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const msg = dict(langFromRequest(req)).errors;
-  if (!rateLimit(req, "reviews", 3, 30 * 60 * 1000)) return tooMany(msg.tooMany);
   try {
     const b = await req.json().catch(() => null);
     if (!b) return bad(msg.invalid);
+    // Restaurant tablets all share the restaurant's internet address, so they get a bigger allowance.
+    const fromTable = b.source === "table";
+    if (!rateLimit(req, fromTable ? "reviews-table" : "reviews", fromTable ? 30 : 3, 30 * 60 * 1000)) return tooMany(msg.tooMany);
     const customerName = cleanText(b.customerName, 60);
     if (!customerName) return bad(msg.reviewName);
     const rating = Math.floor(Number(b.rating));
     if (!(rating >= 1 && rating <= 5)) return bad(msg.stars);
-    const comment = cleanText(b.comment, 1000);
-    if (!comment || comment.length < 5) return bad(msg.comment);
+    // At the table a star rating alone is fine; the website form still asks for a comment.
+    const comment = cleanText(b.comment, 1000) ?? "";
+    if (!fromTable && comment.length < 5) return bad(msg.comment);
     const visitType = VISIT_TYPES.includes(b.visitType) ? (b.visitType as string) : null;
 
     await createReview({ customerName, rating, comment, visitType, isLumiaGuest: !!b.isLumiaGuest });

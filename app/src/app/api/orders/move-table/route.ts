@@ -5,9 +5,10 @@ import { withErrors } from "@/lib/api-handler";
 import { moveOpenTableOrders } from "@/lib/sheets/orders";
 import { logTableSwitch } from "@/lib/sheets/tableSwitchLog";
 
+import { normalizeTableId } from "@/lib/table-id";
 const schema = z.object({
   fromTableId: z.string().trim().min(1).max(50),
-  toTableId: z.string().trim().min(1, "Vui lòng chọn bàn mới.").max(50),
+  toTableId: z.string().trim().min(1, "Vui lòng chọn bàn mới.").max(50).transform(normalizeTableId),
 });
 
 /** Guest changes table mid-meal: move every open order (incl. what's already in the kitchen) to the new table. */

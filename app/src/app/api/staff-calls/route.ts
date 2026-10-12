@@ -5,7 +5,8 @@ import { withErrors } from "@/lib/api-handler";
 import { createStaffCall, listStaffCalls, type StaffCallStatus } from "@/lib/sheets/staffCalls";
 import { notifyPush } from "@/lib/push";
 
-const schema = z.object({ tableId: z.string().trim().min(1).max(50) });
+import { normalizeTableId } from "@/lib/table-id";
+const schema = z.object({ tableId: z.string().trim().min(1).max(50).transform(normalizeTableId) });
 
 /** Customer taps "Gọi nhân viên". No auth: any table device can call. */
 export const POST = withErrors(async (req: NextRequest) => {

@@ -5,11 +5,12 @@ import { verifyPassword } from "@/lib/auth";
 import { findUserByUsername } from "@/lib/sheets/users";
 import { logTableSwitch } from "@/lib/sheets/tableSwitchLog";
 
+import { normalizeTableId } from "@/lib/table-id";
 const schema = z.object({
   username: z.string().trim().min(1),
   password: z.string().min(1),
   previousTableId: z.string().trim().nullable(),
-  newTableId: z.string().trim().min(1).max(50),
+  newTableId: z.string().trim().min(1).max(50).transform(normalizeTableId),
 });
 
 /**
@@ -38,5 +39,5 @@ export const POST = withErrors(async (req: NextRequest) => {
     role: user.role,
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, tableId: parsed.data.newTableId });
 });

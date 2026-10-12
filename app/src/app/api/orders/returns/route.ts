@@ -4,6 +4,7 @@ import { withErrors } from "@/lib/api-handler";
 import { listCancelledItems } from "@/lib/sheets/cancelledItems";
 import { listTableNames } from "@/lib/sheets/tableNames";
 
+import { defaultTableLabel } from "@/lib/table-id";
 /** Manager report: unused units guests handed back (for reconciling bar/stock counts). */
 export const GET = withErrors(async (req: NextRequest) => {
   const auth = await requireSession(["OWNER", "ADMIN"]);
@@ -21,7 +22,7 @@ export const GET = withErrors(async (req: NextRequest) => {
       .filter((c) => c.scope === "return")
       .map((c) => ({
         id: c.id,
-        tableLabel: nameMap.get(c.tableId) || c.tableId,
+        tableLabel: nameMap.get(c.tableId) || defaultTableLabel(c.tableId),
         name: c.nameSnapshot,
         qty: c.qty,
         value: c.lineTotal,

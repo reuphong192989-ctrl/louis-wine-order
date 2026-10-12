@@ -4,6 +4,7 @@ import { listAllOrdersRaw } from "./orders";
 import { listStaffCalls } from "./staffCalls";
 import { listTableSwitchLog } from "./tableSwitchLog";
 
+import { defaultTableLabel, normalizeTableId } from "../table-id";
 const TAB = "TableNames";
 const HEADERS = ["id", "tableId", "displayName", "updatedBy", "updatedAt"];
 
@@ -85,10 +86,13 @@ export async function listKnownTableIds(): Promise<string[]> {
 export async function listSwitchOptions(): Promise<{ tableId: string; label: string }[]> {
   const [names, knownIds] = await Promise.all([listTableNames(), listKnownTableIds()]);
   const nameMap = new Map(names.map((n) => [n.tableId, n.displayName]));
-  const ids = new Set([...knownIds, ...names.map((n) => n.tableId)]);
+  // Tables that have a printed QR card (Tầng 2–5, bàn 01–15) are always offered.
+  const printed: string[] = [];
+  for (let f = 2; f <= 5; f++) for (let t = 1; t <= 15; t++) printed.push(`T${f}-${String(t).padStart(2, "0")}`);
+  const ids = new Set([...printed, ...knownIds.map(normalizeTableId), ...names.map((n) => n.tableId)]);
   return [...ids]
-    .map((tableId) => ({ tableId, label: nameMap.get(tableId) || tableId }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .map((tableId) => ({ tableId, label: nameMap.get(tableId) || defaultTableLabel(tableId) }))
+    .sort((a, b) => a.tableId.localeCompare(b.tableId, "vi", { numeric: true }));
 }
 
 export const TABLE_NAMES_TAB = TAB;
