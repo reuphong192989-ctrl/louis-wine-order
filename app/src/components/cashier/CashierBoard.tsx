@@ -49,7 +49,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
       return;
     }
     if (res.ok) setTables((await res.json()).tables);
-  }, 5_000);
+  }, 5_000, true); // paused while this screen isn't the one being looked at; resumes instantly on return
 
   useEffect(() => {
     fetch("/api/bank-accounts")

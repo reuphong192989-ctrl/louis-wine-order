@@ -120,8 +120,9 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
   }, []);
 
   // Refresh the menu periodically so price/stock/photo changes made by admin
-  // show up without the customer needing to reload the page.
-  usePolling(fetchMenu, 20_000);
+  // show up without the customer needing to reload the page. Paused while the
+  // customer's screen is locked/backgrounded — nobody's browsing the menu then.
+  usePolling(fetchMenu, 20_000, true);
 
   // Hydrate cart from localStorage once we know the table id.
   useEffect(() => {
@@ -136,7 +137,9 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
 
   // While an order is waiting on staff, poll its status every few seconds —
   // there's no WebSocket push on serverless hosting, so this is the
-  // realtime substitute for "staff confirmed/cancelled my order".
+  // realtime substitute for "staff confirmed/cancelled my order". Paused
+  // while the customer's screen is locked/backgrounded; resumes with an
+  // immediate check the moment they look at it again.
   usePolling(async () => {
     if (orderStatus !== "sent" || !lastOrderIdRef.current) return;
     try {
@@ -155,7 +158,7 @@ export default function OrderApp({ initialLang = "vi" }: { initialLang?: Lang })
     } catch {
       // transient network error — next poll will retry
     }
-  }, 3_000);
+  }, 3_000, true);
 
   const itemsById = useMemo(() => {
     const map = new Map<string, MenuItemDTO>();

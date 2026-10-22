@@ -57,6 +57,19 @@ async function q<T extends QueryResultRow = QueryResultRow>(text: string, params
 
 const headerCache = (g.__louisPgHeaders ??= new Map<string, string[]>());
 
+type CacheEntry = { at: number; rows: SheetRow[] };
+const g2 = globalThis as typeof globalThis & {
+  __louisPgCache?: Map<string, CacheEntry>;
+  __louisPgInflight?: Map<string, Promise<SheetRow[]>>;
+};
+const rowCache = (g2.__louisPgCache ??= new Map<string, CacheEntry>());
+const inflight = (g2.__louisPgInflight ??= new Map<string, Promise<SheetRow[]>>());
+
+function invalidate(tab: string) {
+  rowCache.delete(tab);
+  inflight.delete(tab);
+}
+
 const DDL = `
 CREATE TABLE IF NOT EXISTS app_tabs (
   tab text PRIMARY KEY,
@@ -167,13 +180,71 @@ export async function readAllRows(tab: string): Promise<SheetRow[]> {
   });
 }
 
-/** PostgreSQL has no per-minute quota, so "cached" reads simply read fresh. */
-export async function readTabsCached(tabs: string[], _ttlMs: number): Promise<SheetRow[][]> {
-  return Promise.all(tabs.map(readAllRows));
+/**
+ * Cached read of several tabs, fetched together in ONE query for whichever tabs
+ * are stale. Concurrent callers (e.g. several screens polling at once) on the
+ * same warm serverless instance share the in-flight request instead of each
+ * opening its own round trip — PostgreSQL has no per-minute request quota like
+ * Sheets did, but every byte still counts against the plan's network-transfer
+ * allowance, and polling screens were re-reading the full Orders/OrderItems
+ * tables several times a second before this cache existed.
+ */
+export async function readTabsCached(tabs: string[], ttlMs: number): Promise<SheetRow[][]> {
+  const now = Date.now();
+  const missing = tabs.filter((t) => {
+    const hit = rowCache.get(t);
+    return !(hit && now - hit.at < ttlMs) && !inflight.has(t);
+  });
+
+  if (missing.length > 0) {
+    const request = (async () => {
+      await ready();
+      const headersByTab = new Map(await Promise.all(missing.map(async (t) => [t, await headersFor(t)] as const)));
+      const res = await q<{ tab: string; id: string; data: Record<string, string> }>(
+        "SELECT tab, id, data FROM app_rows WHERE tab = ANY($1::text[]) ORDER BY tab, id",
+        [missing],
+      );
+      const byTab = new Map<string, SheetRow[]>(missing.map((t) => [t, []]));
+      for (const r of res.rows) {
+        const headers = headersByTab.get(r.tab) ?? [];
+        const values: Record<string, string> = {};
+        for (const h of headers) values[h] = "";
+        for (const [k, v] of Object.entries(r.data)) values[k] = v == null ? "" : String(v);
+        byTab.get(r.tab)?.push({ rowNumber: Number(r.id), values });
+      }
+      return byTab;
+    })();
+
+    missing.forEach((t) => {
+      const p = request.then((byTab) => byTab.get(t) ?? []);
+      inflight.set(t, p);
+      p.then(
+        (rows) => {
+          if (inflight.get(t) === p) {
+            rowCache.set(t, { at: Date.now(), rows });
+            inflight.delete(t);
+          }
+        },
+        () => {
+          if (inflight.get(t) === p) inflight.delete(t);
+        },
+      );
+    });
+  }
+
+  return Promise.all(
+    tabs.map((t) => {
+      const p = inflight.get(t);
+      if (p) return p;
+      const hit = rowCache.get(t);
+      return hit ? Promise.resolve(hit.rows) : readAllRows(t);
+    }),
+  );
 }
 
-export async function readAllRowsCached(tab: string, _ttlMs: number): Promise<SheetRow[]> {
-  return readAllRows(tab);
+export async function readAllRowsCached(tab: string, ttlMs: number): Promise<SheetRow[]> {
+  const [rows] = await readTabsCached([tab], ttlMs);
+  return rows;
 }
 
 export async function ensureTab(tab: string, headers: string[]): Promise<void> {
@@ -188,6 +259,7 @@ export async function appendRow(tab: string, headers: string[], record: Record<s
 /** Inserts all rows in one transaction — either every row lands or none does. */
 export async function appendRows(tab: string, headers: string[], records: Record<string, string>[]): Promise<void> {
   if (records.length === 0) return;
+  invalidate(tab);
   await withTx(async (c) => {
     await rememberHeaders(tab, headers, c);
     const params: unknown[] = [tab];
@@ -200,6 +272,7 @@ export async function appendRows(tab: string, headers: string[], records: Record
 }
 
 export async function clearTabData(tab: string): Promise<void> {
+  invalidate(tab);
   await ready();
   await q("DELETE FROM app_rows WHERE tab = $1", [tab]);
 }
@@ -214,6 +287,7 @@ export async function batchUpdateRows(
   updates: { rowNumber: number; record: Record<string, string> }[],
 ): Promise<void> {
   if (updates.length === 0) return;
+  invalidate(tab);
   await withTx(async (c) => {
     await rememberHeaders(tab, headers, c);
     for (const { rowNumber, record } of updates) {
@@ -233,6 +307,7 @@ export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
 
 export async function deleteRows(tab: string, rowNumbers: number[]): Promise<void> {
   if (rowNumbers.length === 0) return;
+  invalidate(tab);
   await ready();
   await q("DELETE FROM app_rows WHERE tab = $1 AND id = ANY($2::bigint[])", [tab, rowNumbers]);
 }
@@ -249,4 +324,6 @@ export async function closePool(): Promise<void> {
   g.__louisPgPool = undefined;
   g.__louisPgReady = undefined;
   headerCache.clear();
+  rowCache.clear();
+  inflight.clear();
 }

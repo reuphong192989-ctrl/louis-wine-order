@@ -12,6 +12,7 @@
     "check:import": "tsx scripts/check-menu-import.ts",
     "check:import-db": "tsx --tsconfig tsconfig.json scripts/check-menu-import-db.ts",
     "check:kitchen": "tsx --tsconfig tsconfig.json scripts/check-kitchen-db.ts",
+    "check:pg-cache": "tsx --tsconfig tsconfig.json scripts/check-pg-cache.ts",
     "migrate:pg": "tsx scripts/migrate-sheets-to-postgres.ts"
   },
   "dependencies": {
