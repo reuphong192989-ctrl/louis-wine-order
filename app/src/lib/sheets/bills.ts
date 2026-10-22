@@ -24,6 +24,10 @@ const HEADERS = [
   // Added Oct 2026 (appended at the end so older rows still read back "" = no percent / no customer name).
   "discountPercent",
   "customerName",
+  // Added 22/10/2026: dishes a manager marked "Mời" (served, not charged) — appended at the end so
+  // older rows still read back "" = 0đ comped / no comped dishes.
+  "compAmount",
+  "compedItems",
 ];
 
 export type BillRecord = {
@@ -39,6 +43,9 @@ export type BillRecord = {
   discount: number;
   /** Set only when the discount was entered as a percentage. */
   discountPercent: number | null;
+  /** Total value of dishes a manager marked "Mời" (served, not charged) and their names, for the report. */
+  compAmount: number;
+  compedItems: string;
   customerName: string | null;
   vat: number;
   total: number;
@@ -61,6 +68,8 @@ function decode(v: Record<string, string>): BillRecord {
     subtotal: cell.toInt(v.subtotal),
     discount: cell.toInt(v.discount),
     discountPercent: v.discountPercent ? Number(v.discountPercent) : null,
+    compAmount: cell.toInt(v.compAmount),
+    compedItems: v.compedItems ?? "",
     customerName: cell.strOrNull(v.customerName ?? ""),
     vat: cell.toInt(v.vat),
     total: cell.toInt(v.total),
@@ -84,6 +93,8 @@ export async function appendBill(b: BillRecord): Promise<void> {
     subtotal: cell.int(b.subtotal),
     discount: cell.int(b.discount),
     discountPercent: b.discountPercent === null ? "" : String(b.discountPercent),
+    compAmount: cell.int(b.compAmount),
+    compedItems: b.compedItems,
     customerName: b.customerName ?? "",
     vat: cell.int(b.vat),
     total: cell.int(b.total),
