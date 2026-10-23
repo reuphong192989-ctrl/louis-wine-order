@@ -9,6 +9,7 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed-sheets.ts",
     "check:bill": "tsx scripts/check-bill-math.ts",
+    "check:cell": "tsx scripts/check-cell-helpers.ts",
     "check:import": "tsx scripts/check-menu-import.ts",
     "check:import-db": "tsx --tsconfig tsconfig.json scripts/check-menu-import-db.ts",
     "check:kitchen": "tsx --tsconfig tsconfig.json scripts/check-kitchen-db.ts",

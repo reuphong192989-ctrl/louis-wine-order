@@ -285,15 +285,32 @@ export async function deleteRows(tab: string, rowNumbers: number[]): Promise<voi
 }
 
 // ---- small encode/decode helpers shared by every entity module ----
+// A row written before a column was added should read back exactly like an empty cell ("" / null /
+// fallback) — see readAllRows()'s own comment. On Postgres that promise only half-holds: `values[h]`
+// is pre-filled "" for every header the tab's `app_tabs.headers` registry already knows, but that
+// registry is only updated on a WRITE (rememberHeaders), not eagerly when code adds a new column. So a
+// brand new column reads back `undefined` (key missing from `values` entirely), not "", until the first
+// row is written after deploy — every toInt/numOrNull call below treats `undefined` the same as `""` so
+// that gap can never surface as NaN (and, once serialized over JSON, NaN → null → a client-side crash:
+// `null.toLocaleString()` threw "Application error" on /thu-ngan/bao-cao the day compAmount/compedItems
+// were added, because no bill had been finalized yet to register the new columns).
 export const cell = {
   str: (v: string | null | undefined): string => v ?? "",
-  strOrNull: (s: string): string | null => (s === "" ? null : s),
+  strOrNull: (s: string | null | undefined): string | null => (s ? s : null),
   num: (v: number | null | undefined): string => (v == null ? "" : String(v)),
-  numOrNull: (s: string): number | null => (s === "" ? null : Number(s)),
+  numOrNull: (s: string | null | undefined): number | null => {
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isNaN(n) ? null : n;
+  },
   int: (v: number): string => String(v),
-  toInt: (s: string, fallback = 0): number => (s === "" ? fallback : parseInt(s, 10)),
+  toInt: (s: string | null | undefined, fallback = 0): number => {
+    if (!s) return fallback;
+    const n = parseInt(s, 10);
+    return Number.isNaN(n) ? fallback : n;
+  },
   bool: (v: boolean): string => (v ? "true" : "false"),
-  toBool: (s: string): boolean => s === "true",
+  toBool: (s: string | null | undefined): boolean => s === "true",
 };
 
 /**
