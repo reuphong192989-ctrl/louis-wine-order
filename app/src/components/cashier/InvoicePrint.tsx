@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { formatQty, formatVnd } from "@/lib/format";
 import { COMPANY, RESTAURANT } from "@/lib/site/constants";
 import { mergeBillLines } from "@/lib/bill-lines";
-import { BILL_GROUPS, BILL_GROUP_LABEL } from "@/lib/bill-math";
+import { BILL_GROUPS, BILL_GROUP_LABEL, billLineCompKey } from "@/lib/bill-math";
 import { vndInWords } from "@/lib/vnd-words";
 import type { FinalizedBill } from "@/lib/billing";
 import type { TransferAccount } from "./TransferQr";
@@ -43,6 +43,7 @@ export default function InvoicePrint({
   provisional?: boolean;
 }) {
   const lines = mergeBillLines(bill.items);
+  const compedKeys = new Set(bill.compedKeys);
   // Dishes first, then drinks, then the rest; numbering (TT) runs on across the sections.
   const sections = BILL_GROUPS.map((g) => ({ group: g, rows: lines.filter((l) => l.group === g) })).filter((s) => s.rows.length > 0);
   let rowNo = 0;
@@ -122,18 +123,24 @@ export default function InvoicePrint({
               <tr className="inv-group">
                 <td colSpan={8}>{BILL_GROUP_LABEL[s.group]}</td>
               </tr>
-              {s.rows.map((l) => (
-                <tr key={`${s.group}-${rowNo}`}>
-                  <td style={{ textAlign: "center" }}>{++rowNo}</td>
-                  <td>{l.name}</td>
-                  <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
-                  <td style={{ textAlign: "center" }}>{l.unit || "phần"}</td>
-                  <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
-                  <td style={{ textAlign: "right" }}>{formatVnd(l.lineTotal)}</td>
-                  <td style={{ textAlign: "center" }}>{l.vatRate}%</td>
-                  <td style={{ textAlign: "right" }}>{formatVnd(Math.round((l.lineTotal * l.vatRate) / 100))}</td>
-                </tr>
-              ))}
+              {s.rows.map((l) => {
+                const comped = compedKeys.has(billLineCompKey(l));
+                return (
+                  <tr key={`${s.group}-${rowNo}`}>
+                    <td style={{ textAlign: "center" }}>{++rowNo}</td>
+                    <td>
+                      {l.name}
+                      {comped && <span style={{ marginLeft: 4, fontStyle: "italic" }}>(Mời)</span>}
+                    </td>
+                    <td style={{ textAlign: "center" }}>{formatQty(l.qty)}</td>
+                    <td style={{ textAlign: "center" }}>{l.unit || "phần"}</td>
+                    <td style={{ textAlign: "right" }}>{formatVnd(l.unitPrice)}</td>
+                    <td style={{ textAlign: "right" }}>{comped ? "Miễn phí" : formatVnd(l.lineTotal)}</td>
+                    <td style={{ textAlign: "center" }}>{l.vatRate}%</td>
+                    <td style={{ textAlign: "right" }}>{comped ? formatVnd(0) : formatVnd(Math.round((l.lineTotal * l.vatRate) / 100))}</td>
+                  </tr>
+                );
+              })}
             </Fragment>
           ))}
         </tbody>
@@ -145,6 +152,12 @@ export default function InvoicePrint({
             <td>Cộng tiền món</td>
             <td>{formatVnd(bill.subtotal)}</td>
           </tr>
+          {bill.compAmount > 0 && (
+            <tr>
+              <td>Mời (miễn phí)</td>
+              <td>-{formatVnd(bill.compAmount)}</td>
+            </tr>
+          )}
           {bill.discountAmount > 0 && (
             <tr>
               <td>Chiết khấu{bill.discountPercent ? ` (${bill.discountPercent}%)` : ""}</td>
@@ -170,9 +183,7 @@ export default function InvoicePrint({
         </tbody>
       </table>
       <div className="inv-words">Bằng chữ: {vndInWords(bill.totalAmount)}</div>
-      {bill.discountAmount > 0 && (
-        <div className="inv-note">Cột “Tiền thuế” theo giá niêm yết; thuế thanh toán ở trên đã tính sau chiết khấu.</div>
-      )}
+      {bill.compAmount > 0 && <div className="inv-note">Món đánh dấu “(Mời)” không tính tiền và không tính thuế VAT.</div>}
       {provisional ? (
         <div className="inv-provisional">PHIẾU TẠM TÍNH — CHƯA PHẢI HOÁ ĐƠN THANH TOÁN</div>
       ) : (
