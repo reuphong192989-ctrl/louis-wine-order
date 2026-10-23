@@ -8,7 +8,7 @@ import { usePolling } from "@/lib/use-polling";
 import InvoicePrint from "./InvoicePrint";
 import TransferQr, { useVietQr } from "./TransferQr";
 import { mergeBillLines } from "@/lib/bill-lines";
-import { computeBill } from "@/lib/bill-math";
+import { applyComp, billLineCompKey, computeBill } from "@/lib/bill-math";
 import type { TableBillPreview, FinalizedBill } from "@/lib/billing";
 
 type OpenTable = { tableId: string; tableLabel: string; orderCount: number; itemCount: number; total: number; oldestCreatedAt: string };
@@ -26,6 +26,7 @@ function BankAccountCard({ info, tag }: { info: BankAccount; tag: string }) {
 
 export default function CashierBoard({ username, role }: { username: string; role: string }) {
   const router = useRouter();
+  const isManager = role === "OWNER" || role === "ADMIN";
   const [tables, setTables] = useState<OpenTable[] | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [preview, setPreview] = useState<TableBillPreview | null>(null);
@@ -33,6 +34,8 @@ export default function CashierBoard({ username, role }: { username: string; rol
   const [guestCount, setGuestCount] = useState("");
   const [discountAmount, setDiscountAmount] = useState("");
   const [discountType, setDiscountType] = useState<"percent" | "amount">("percent");
+  // Printed rows (billLineCompKey) marked "Mời" — served, not charged. Manager-only (checked again on the server).
+  const [compedKeys, setCompedKeys] = useState<Set<string>>(new Set());
   const [customerName, setCustomerName] = useState("");
   const [tempBill, setTempBill] = useState<FinalizedBill | null>(null);
   const [method, setMethod] = useState<"CASH" | "TRANSFER">("CASH");
@@ -65,6 +68,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
     setGuestCount("");
     setDiscountAmount("");
     setDiscountType("percent");
+    setCompedKeys(new Set());
     setCustomerName("");
     setTempBill(null);
     setMethod("CASH");
@@ -76,8 +80,19 @@ export default function CashierBoard({ username, role }: { username: string; rol
   }
 
   const discountNumber = Math.max(0, Number(discountAmount) || 0);
-  // Same arithmetic as the server (finalize), so the on-screen total is exactly what gets printed.
-  const totals = preview ? computeBill(preview.items, discountNumber > 0 ? { type: discountType, value: discountNumber } : null) : null;
+  // Same arithmetic as the server (finalize): zero out "Mời" dishes first, then discount/VAT on what's left,
+  // so the on-screen total is exactly what gets printed.
+  const { lines: billableItems, compAmount } = preview ? applyComp(preview.items, compedKeys) : { lines: [], compAmount: 0 };
+  const totals = preview ? computeBill(billableItems, discountNumber > 0 ? { type: discountType, value: discountNumber } : null) : null;
+
+  function toggleComp(key: string) {
+    setCompedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   /** "Bill tạm": print the running bill (with the discount/customer typed so far) without closing the table. */
   function printTempBill() {
@@ -90,6 +105,8 @@ export default function CashierBoard({ username, role }: { username: string; rol
       guestCount: guestCount.trim() ? Number(guestCount) : null,
       discountAmount: totals.discountAmount,
       discountPercent: totals.discountPercent,
+      compAmount,
+      compedKeys: [...compedKeys],
       customerName: customerName.trim() || null,
       totalAmount: totals.total,
       paymentMethod: method,
@@ -121,6 +138,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
           guestCount: guestCount.trim() ? Number(guestCount) : null,
           // The server recomputes the amount from the real bill; send only the one the cashier typed.
           ...(discountType === "percent" ? { discountPercent: discountNumber } : { discountAmount: Math.round(discountNumber) }),
+          compedKeys: isManager ? [...compedKeys] : [],
           customerName: customerName.trim() || null,
           method,
           bankAccountKey: method === "TRANSFER" ? bankAccountKey : null,
@@ -269,6 +287,7 @@ export default function CashierBoard({ username, role }: { username: string; rol
                 <table className="table">
                   <thead>
                     <tr>
+                      {isManager && <th title="Món được mời — không tính tiền">Mời</th>}
                       <th>Món</th>
                       <th>SL</th>
                       <th>Đơn giá</th>
@@ -276,14 +295,30 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     </tr>
                   </thead>
                   <tbody>
-                    {mergeBillLines(preview.items).map((l, i) => (
-                      <tr key={i}>
-                        <td>{l.name}</td>
-                        <td>{formatQty(l.qty)}</td>
-                        <td>{formatVnd(l.unitPrice)}</td>
-                        <td>{formatVnd(l.lineTotal)}</td>
-                      </tr>
-                    ))}
+                    {mergeBillLines(preview.items).map((l, i) => {
+                      const key = billLineCompKey(l);
+                      const comped = compedKeys.has(key);
+                      return (
+                        <tr key={i} style={comped ? { opacity: 0.6 } : undefined}>
+                          {isManager && (
+                            <td>
+                              <input type="checkbox" checked={comped} onChange={() => toggleComp(key)} title="Mời — không tính tiền món này" />
+                            </td>
+                          )}
+                          <td>
+                            {l.name}
+                            {comped && (
+                              <span className="tag tag-outline" style={{ marginLeft: 6, fontSize: 11 }}>
+                                Mời
+                              </span>
+                            )}
+                          </td>
+                          <td>{formatQty(l.qty)}</td>
+                          <td>{formatVnd(l.unitPrice)}</td>
+                          <td>{comped ? "Miễn phí" : formatVnd(l.lineTotal)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 360 }}>
@@ -291,6 +326,12 @@ export default function CashierBoard({ username, role }: { username: string; rol
                     <span>Tiền món</span>
                     <span>{formatVnd(preview.subtotal)}</span>
                   </div>
+                  {compAmount > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Mời (miễn phí)</span>
+                      <span>-{formatVnd(compAmount)}</span>
+                    </div>
+                  )}
                   {totals && totals.discountAmount > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span>Chiết khấu{totals.discountPercent ? ` (${totals.discountPercent}%)` : ""}</span>

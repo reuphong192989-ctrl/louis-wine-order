@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatQty, formatVnd } from "@/lib/format";
 import { useTableNames, tableLabel } from "@/lib/use-table-names";
+import ResetTestDataPanel from "./ResetTestDataPanel";
 import type { OrderDTO } from "@/types";
 
 const STATUS_LABEL: Record<OrderDTO["status"], string> = {
@@ -144,6 +145,8 @@ export default function OrdersManager() {
           {bulkBusy ? "Đang xoá..." : `Xoá ${bulkMatchCount} đơn trong khoảng này`}
         </button>
       </div>
+
+      <ResetTestDataPanel />
 
       <table className="table">
         <thead>

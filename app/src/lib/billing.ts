@@ -4,7 +4,7 @@ import { listCategories } from "./sheets/categories";
 import { listTableNames } from "./sheets/tableNames";
 import { genCode } from "./site/validate";
 import { appendBill } from "./sheets/bills";
-import { computeBill, type BillGroup, type DiscountInput, type VatGroup } from "./bill-math";
+import { applyComp, computeBill, type BillGroup, type DiscountInput, type VatGroup } from "./bill-math";
 
 export type { BillGroup, VatGroup };
 
@@ -47,6 +47,9 @@ export type FinalizedBill = TableBillPreview & {
   discountAmount: number;
   /** Set only when the cashier entered the discount as a percentage. */
   discountPercent: number | null;
+  /** Dishes a manager marked "Mời" (served but not charged) — total waived, plus which printed rows (see billLineCompKey). */
+  compAmount: number;
+  compedKeys: string[];
   customerName: string | null;
   totalAmount: number;
   paymentMethod: "CASH" | "TRANSFER";
@@ -176,6 +179,8 @@ export async function finalizeTableBill(
     guestCount: number | null;
     /** Entered as a percentage or a fixed amount; the amount is always recomputed here from the real bill. */
     discount: DiscountInput;
+    /** Printed rows (billLineCompKey) a manager marked "Mời" — validated server-side by the API route. */
+    compedKeys: string[];
     customerName: string | null;
     method: "CASH" | "TRANSFER";
     bankAccountKey: BankAccountKey | null;
@@ -196,12 +201,17 @@ export async function finalizeTableBill(
     if ("error" in result) return { error: result.error };
   }
 
-  // Discount comes off the price before VAT, so VAT is charged on what the guest actually pays for.
-  const totals = computeBill(preview.items, input.discount);
+  // "Mời" dishes are zeroed out before VAT/discount so neither is charged on something given away for free;
+  // bill.subtotal below stays the full pre-comp figure (what was actually served) for the printed "Tiền món" line.
+  const compedKeys = new Set(input.compedKeys);
+  const { lines: billableItems, compAmount } = applyComp(preview.items, compedKeys);
+  const totals = computeBill(billableItems, input.discount);
   const totalAmount = totals.total;
   const printedAt = new Date().toISOString();
 
-  // Keep the printed figures (discount, VAT, total) for the daily/weekly bill report.
+  const compedNames = [...new Set(preview.items.filter((l) => compedKeys.has(`${l.name}|${l.unitPrice}|${l.vatRate}`)).map((l) => l.name))];
+
+  // Keep the printed figures (discount, comp, VAT, total) for the daily/weekly bill report.
   await appendBill({
     billNo,
     tableId: preview.tableId,
@@ -211,9 +221,11 @@ export async function finalizeTableBill(
     cashier: input.printedBy,
     guestCount: input.guestCount,
     itemCount: Math.round(preview.items.reduce((n, l) => n + l.qty, 0) * 100) / 100,
-    subtotal: totals.subtotal,
+    subtotal: preview.subtotal,
     discount: totals.discountAmount,
     discountPercent: totals.discountPercent,
+    compAmount,
+    compedItems: compedNames.join(", "),
     customerName: input.customerName,
     vat: totals.totalVat,
     total: totalAmount,
@@ -232,6 +244,8 @@ export async function finalizeTableBill(
       guestCount: input.guestCount,
       discountAmount: totals.discountAmount,
       discountPercent: totals.discountPercent,
+      compAmount,
+      compedKeys: [...compedKeys],
       customerName: input.customerName,
       totalAmount,
       paymentMethod: input.method,

@@ -139,6 +139,7 @@ export default function BillReportView({ username, role }: { username: string; r
                 ["Số khách", String(s.guests)],
                 ["Tiền món", formatVnd(s.subtotal)],
                 ["Chiết khấu", formatVnd(s.discount)],
+                ["Mời (miễn phí)", formatVnd(s.compAmount)],
                 ["Thuế VAT", formatVnd(s.vat)],
                 ["Thu hoá đơn", formatVnd(s.billsTotal)],
                 ["Thu online", `${formatVnd(s.onlineTotal)} (${s.onlineCount} đơn)`],
@@ -216,6 +217,7 @@ export default function BillReportView({ username, role }: { username: string; r
                       <th>Khách</th>
                       <th>Tiền món</th>
                       <th>Chiết khấu</th>
+                      <th>Mời</th>
                       <th>VAT</th>
                       <th>Tổng thu</th>
                       <th>Hình thức</th>
@@ -248,6 +250,7 @@ export default function BillReportView({ username, role }: { username: string; r
                         <td>{b.guestCount ?? "—"}</td>
                         <td>{formatVnd(b.subtotal)}</td>
                         <td>{b.discount ? `-${formatVnd(b.discount)}` : "—"}</td>
+                        <td title={b.compedItems || undefined}>{b.compAmount ? `-${formatVnd(b.compAmount)}` : "—"}</td>
                         <td>{formatVnd(b.vat)}</td>
                         <td style={{ fontWeight: 700 }}>{formatVnd(b.total)}</td>
                         <td>

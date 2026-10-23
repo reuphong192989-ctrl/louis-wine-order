@@ -21,6 +21,8 @@ const finalizeSchema = z
     // Discount: a fixed amount (đ) or a percentage — send at most one; the server works the amount out itself.
     discountAmount: z.number().int().min(0).optional(),
     discountPercent: z.number().min(0).max(100).optional(),
+    // Printed rows (billLineCompKey) a manager marked "Mời" (served, not charged) — see the role check below.
+    compedKeys: z.array(z.string()).max(200).optional(),
     customerName: z.string().trim().max(80).nullable().optional(),
     method: z.enum(["CASH", "TRANSFER"]),
     bankAccountKey: z.enum(["no_invoice", "invoice"]).nullable(),
@@ -42,12 +44,18 @@ export const POST = withErrors(async (req: NextRequest, { params }: { params: Pr
   if (parsed.data.method === "TRANSFER" && parsed.data.bankAccountKey !== "invoice") {
     return NextResponse.json({ error: "Chuyển khoản chỉ nhận vào tài khoản công ty (có xuất hoá đơn). Khách không lấy hoá đơn thì thanh toán tiền mặt." }, { status: 400 });
   }
+  // "Mời" waives a dish's charge — a cashier account (not OWNER/ADMIN) can't grant that on their own,
+  // even if they somehow sent the field; checked here, not just hidden in the UI.
+  if (parsed.data.compedKeys?.length && auth.session.role !== "OWNER" && auth.session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Chỉ tài khoản quản lý mới được chọn \"Mời\" cho món." }, { status: 403 });
+  }
 
-  const { discountAmount, discountPercent, customerName, ...rest } = parsed.data;
+  const { discountAmount, discountPercent, customerName, compedKeys, ...rest } = parsed.data;
   const discount = discountPercent ? { type: "percent" as const, value: discountPercent } : discountAmount ? { type: "amount" as const, value: discountAmount } : null;
   const result = await finalizeTableBill(decodeURIComponent(tableId), {
     ...rest,
     discount,
+    compedKeys: compedKeys ?? [],
     customerName: customerName?.trim() || null,
     printedBy: auth.session.username,
   });

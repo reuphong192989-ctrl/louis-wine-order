@@ -29,6 +29,9 @@ export type ReportBill = {
   itemCount: number;
   subtotal: number;
   discount: number;
+  /** Total value of dishes a manager marked "Mời" (served, not charged); 0 for bills printed before 22/10/2026. */
+  compAmount: number;
+  compedItems: string;
   vat: number;
   total: number;
   method: MethodKey;
@@ -59,6 +62,7 @@ export type BillReport = {
     guests: number;
     subtotal: number;
     discount: number;
+    compAmount: number;
     vat: number;
     billsTotal: number;
     byMethod: Record<MethodKey, number>;
@@ -116,6 +120,8 @@ export async function buildBillReport(from: string, to: string): Promise<BillRep
       itemCount: b.itemCount,
       subtotal: b.subtotal,
       discount: b.discount,
+      compAmount: b.compAmount,
+      compedItems: b.compedItems,
       vat: b.vat,
       total: b.total,
       method: methodKey(b.method, b.bankAccountKey),
@@ -159,6 +165,8 @@ export async function buildBillReport(from: string, to: string): Promise<BillRep
         itemCount: Math.round(itemCount * 100) / 100,
         subtotal,
         discount: 0,
+        compAmount: 0,
+        compedItems: "",
         vat,
         total: subtotal + vat,
         method: methodKey(first.paymentMethod, first.bankAccountKey),
@@ -207,6 +215,7 @@ export async function buildBillReport(from: string, to: string): Promise<BillRep
       guests: bills.reduce((s, b) => s + (b.guestCount ?? 0), 0),
       subtotal: bills.reduce((s, b) => s + b.subtotal, 0),
       discount: bills.reduce((s, b) => s + b.discount, 0),
+      compAmount: bills.reduce((s, b) => s + b.compAmount, 0),
       vat: bills.reduce((s, b) => s + b.vat, 0),
       billsTotal,
       byMethod,
@@ -234,6 +243,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
     ["Số khách", s.guests],
     ["Tiền món", s.subtotal],
     ["Chiết khấu", s.discount],
+    ["Mời (miễn phí)", s.compAmount],
     ["Thuế VAT", s.vat],
     [{ v: "Tổng thu hoá đơn", bold: true }, { v: s.billsTotal, bold: true, money: true }],
     [],
@@ -252,7 +262,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
     ["Cộng", s.billCount, s.billsTotal, s.byMethod.CASH, s.billsTotal - s.byMethod.CASH, s.onlineTotal, s.grandTotal],
   ];
   const billRows = [
-    ["Ngày", "Giờ", "Số HĐ", "Bàn", "Thu ngân", "Số khách", "Số món", "Tiền món", "Chiết khấu", "VAT", "Tổng thu", "Hình thức", "Tài khoản", "Ghi chú", "Khách hàng"],
+    ["Ngày", "Giờ", "Số HĐ", "Bàn", "Thu ngân", "Số khách", "Số món", "Tiền món", "Chiết khấu", "Mời", "VAT", "Tổng thu", "Hình thức", "Tài khoản", "Ghi chú", "Khách hàng"],
     ...r.bills.map((b) => [
       dmy(b.date),
       TIME.format(new Date(b.paidAt)),
@@ -263,14 +273,15 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
       b.itemCount,
       b.subtotal,
       b.discount,
+      b.compAmount,
       b.vat,
       b.total,
       METHOD_LABEL[b.method],
       b.account,
-      b.legacy ? "HĐ cũ: chưa lưu chiết khấu, VAT tính lại" : "",
+      [b.legacy ? "HĐ cũ: chưa lưu chiết khấu, VAT tính lại" : "", b.compedItems ? `Mời: ${b.compedItems}` : ""].filter(Boolean).join(" · "),
       b.customerName,
     ]),
-    ["Cộng", "", `${r.bills.length} HĐ`, "", "", s.guests, "", s.subtotal, s.discount, s.vat, s.billsTotal],
+    ["Cộng", "", `${r.bills.length} HĐ`, "", "", s.guests, "", s.subtotal, s.discount, s.compAmount, s.vat, s.billsTotal],
   ];
   const onlineRows = [
     ["Ngày", "Giờ", "Mã đơn", "Hình thức nhận", "Khách", "Người thu", "Tổng thu", "Thanh toán"],
@@ -280,7 +291,7 @@ export function billReportXlsx(r: BillReport, generatedBy: string): Uint8Array {
   return buildXlsx([
     { name: "Tổng hợp", rows: summaryRows, widths: [34, 18], moneyCols: [1] },
     { name: "Theo ngày", rows: dayRows, widths: [12, 8, 16, 16, 16, 16, 16], moneyCols: [2, 3, 4, 5, 6], boldRows: [0, dayRows.length - 1] },
-    { name: "Hoá đơn", rows: billRows, widths: [11, 7, 12, 8, 12, 9, 8, 14, 12, 12, 14, 26, 30, 34, 22], moneyCols: [7, 8, 9, 10], boldRows: [0, billRows.length - 1] },
+    { name: "Hoá đơn", rows: billRows, widths: [11, 7, 12, 8, 12, 9, 8, 14, 12, 12, 12, 14, 26, 30, 34, 22], moneyCols: [7, 8, 9, 10, 11], boldRows: [0, billRows.length - 1] },
     { name: "Đơn online", rows: onlineRows, widths: [11, 7, 12, 16, 22, 12, 14, 26], moneyCols: [6], boldRows: [0, onlineRows.length - 1] },
   ]);
 }
