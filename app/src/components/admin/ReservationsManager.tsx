@@ -53,7 +53,7 @@ export default function ReservationsManager({ lumiaOnly = false }: { lumiaOnly?:
     } catch (e) {
       setError((e as Error).message);
     }
-  }, 15_000);
+  }, 15_000, true); // paused while this admin tab isn't the one being looked at
 
   async function setStatus(id: string, status: Reservation["status"]) {
     setBusy(id);

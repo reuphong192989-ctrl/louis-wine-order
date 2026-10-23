@@ -27,6 +27,15 @@ export function installFakePg() {
       return { rows: [{ headers: merged }] };
     }
     if (/^SELECT id, data FROM app_rows/i.test(t)) return { rows: rows.filter((r) => r.tab === params[0]).map((r) => ({ id: String(r.id), data: r.data })) };
+    if (/^SELECT tab, id, data FROM app_rows WHERE tab = ANY\(\$1::text\[\]\)/i.test(t)) {
+      const wanted = new Set(params[0] as string[]);
+      return {
+        rows: rows
+          .filter((r) => wanted.has(r.tab))
+          .sort((a, b) => (a.tab === b.tab ? a.id - b.id : a.tab < b.tab ? -1 : 1))
+          .map((r) => ({ tab: r.tab, id: String(r.id), data: r.data })),
+      };
+    }
     if (/^INSERT INTO app_rows/i.test(t)) {
       for (const p of params.slice(1)) rows.push({ id: nextId++, tab: params[0] as string, data: JSON.parse(p as string) });
       return { rows: [] };
