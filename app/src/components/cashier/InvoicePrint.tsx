@@ -149,15 +149,11 @@ export default function InvoicePrint({
       <table className="invoice-totals">
         <tbody>
           <tr>
+            {/* Only dishes that are charged: the sum of the "Thành tiền" column. "Mời" dishes read "Miễn phí" there,
+                so the free dishes' list price is NOT added here and therefore nothing is subtracted afterwards. */}
             <td>Cộng tiền món</td>
-            <td>{formatVnd(bill.subtotal)}</td>
+            <td>{formatVnd(bill.subtotal - bill.compAmount)}</td>
           </tr>
-          {bill.compAmount > 0 && (
-            <tr>
-              <td>Mời (miễn phí)</td>
-              <td>-{formatVnd(bill.compAmount)}</td>
-            </tr>
-          )}
           {bill.discountAmount > 0 && (
             <tr>
               <td>Chiết khấu{bill.discountPercent ? ` (${bill.discountPercent}%)` : ""}</td>
@@ -183,7 +179,11 @@ export default function InvoicePrint({
         </tbody>
       </table>
       <div className="inv-words">Bằng chữ: {vndInWords(bill.totalAmount)}</div>
-      {bill.compAmount > 0 && <div className="inv-note">Món đánh dấu “(Mời)” không tính tiền và không tính thuế VAT.</div>}
+      {bill.compAmount > 0 && (
+        <div className="inv-note">
+          Món đánh dấu “(Mời)” miễn phí, không tính tiền và không tính thuế VAT (giá trị món mời: {formatVnd(bill.compAmount)}).
+        </div>
+      )}
       {provisional ? (
         <div className="inv-provisional">PHIẾU TẠM TÍNH — CHƯA PHẢI HOÁ ĐƠN THANH TOÁN</div>
       ) : (
