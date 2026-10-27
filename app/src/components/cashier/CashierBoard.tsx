@@ -324,12 +324,12 @@ export default function CashierBoard({ username, role }: { username: string; rol
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: 360 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>Tiền món</span>
-                    <span>{formatVnd(preview.subtotal)}</span>
+                    {/* Charged dishes only (same as the printed bill): "Mời" dishes are free, not added and then subtracted. */}
+                    <span>{formatVnd(preview.subtotal - compAmount)}</span>
                   </div>
                   {compAmount > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Mời (miễn phí)</span>
-                      <span>-{formatVnd(compAmount)}</span>
+                    <div className="text-muted" style={{ fontSize: 12 }}>
+                      Món mời (miễn phí, không tính tiền/VAT): {formatVnd(compAmount)}
                     </div>
                   )}
                   {totals && totals.discountAmount > 0 && (
